@@ -229,15 +229,15 @@
                     await Tone.start(); 
                     console.log("DEBUG: Tone.js iniciat. Nou estat AudioContext:", Tone.context.state);
                     showCustomMessage("Sistema d'àudio activat!", "success", 2000);
-                    return true; // Indica èxit
+                    return true; 
                 } catch (error) { 
                     console.error("Error en Tone.start():", error); 
                     showCustomMessage("Error activant el sistema d'àudio. Fes clic a la pàgina i torna a intentar-ho.", "error", 5000);
-                    return false; // Indica error
+                    return false; 
                 }
             } else {
                 console.log("DEBUG: AudioContext ja estava 'running'.");
-                return true; // Ja estava actiu
+                return true; 
             }
         }
 
@@ -322,8 +322,8 @@
             console.log(`DEBUG: Iniciant analyzeTextForContext amb text: "${text.substring(0,30)}..." i inspiració: "${inspiration}"`);
 
             if (!pipeline) { 
-                console.error("ERROR CRÍTIC: La funció 'pipeline' de Transformers.js no està definida. L'import ha fallat?");
-                showCustomMessage("Error crític: No s'ha pogut carregar la IA (pipeline no definit).", "error", 0);
+                console.error("ERROR CRÍTIC: La funció 'pipeline' de Transformers.js no està definida. L'import ha fallat o encara no s'ha completat?");
+                showCustomMessage("Error crític: La IA d'anàlisi no està disponible. Refresca la pàgina.", "error", 0);
                 return currentContext;
             }
 
@@ -724,8 +724,9 @@
 
             if (startSessionBtn) {
                 console.log("DEBUG: Botó 'start-session-btn' trobat."); 
-                startSessionBtn.addEventListener('click', () => {
+                startSessionBtn.addEventListener('click', async () => { // Afegit async
                     console.log("DEBUG: Botó 'start-session-btn' clicat."); 
+                    await initializeTone(); // Intenta inicialitzar Tone.js aquí
                     activeGameInspiration = sessionInspirationInput ? sessionInspirationInput.value.trim() : "";
                     
                     if (currentInspirationDisplay) {
@@ -793,13 +794,14 @@
             });
             
             if (testSoundBtn) {
+                 console.log("DEBUG: Botó 'test-sound-btn' trobat.");
                 testSoundBtn.addEventListener('click', async () => {
-                    console.log("DEBUG: Botó 'Prova de So' clicat.");
+                    console.log("DEBUG: Botó 'Prova de So' CLICAT.");
                     const toneInitialized = await initializeTone(); 
                     if (toneInitialized && Tone.context.state === 'running') {
                         try {
                             const synth = new Tone.Synth().toDestination();
-                            synth.triggerAttackRelease("C4", "8n", Tone.now()); // Assegura que es programa per "ara"
+                            synth.triggerAttackRelease("C4", "8n", Tone.now()); 
                             console.log("DEBUG: Prova de so executada (C4).");
                             showCustomMessage("Prova de so: Hauries d'haver escoltat una nota!", "success");
                         } catch (e) {
@@ -807,9 +809,12 @@
                             showCustomMessage("Error en reproduir la nota de prova.", "error");
                         }
                     } else {
-                        showCustomMessage("Prova de so: L'AudioContext no està actiu. Fes clic de nou o en un altre botó per intentar activar-lo.", "error", 5000);
+                        console.log("DEBUG: Prova de so FALLIDA. AudioContext no 'running'. Estat actual:", Tone.context.state);
+                        showCustomMessage("Prova de so: L'AudioContext no està actiu. Potser has de fer clic de nou o l'entorn ho impedeix.", "error", 5000);
                     }
                 });
+            } else {
+                 console.error("ERROR: Botó 'test-sound-btn' NO trobat!");
             }
 
         });
