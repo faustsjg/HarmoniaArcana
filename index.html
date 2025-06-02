@@ -36,6 +36,21 @@
 
     <div id="custom-message-box"></div>
 
+    <div id="new-game-name-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-lg font-semibold text-purple-300 mb-4">Anomena la Nova Partida</h3>
+            <input type="text" id="new-game-name-input" class="input-styled mb-4" placeholder="Nom de la partida...">
+            <div class="mb-4">
+                <label for="new-game-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Inspiració Musical (opcional):</label>
+                <input type="text" id="new-game-inspiration-input" class="input-styled" placeholder="Ex: El Senyor dels Anells, Hans Zimmer...">
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-new-game-name-btn" class="py-2 px-4 bg-gray-600 hover:bg-gray-700 rounded-md text-sm">Cancel·lar</button>
+                <button id="submit-new-game-name-btn" class="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md text-sm font-semibold">Confirmar i Iniciar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="w-full max-w-xl">
         <header class="mb-6 text-left">
             <h1 class="text-3xl font-bold text-purple-400">Harmonia Arcana</h1>
@@ -142,9 +157,11 @@
         let activeGameInspiration = ""; 
         let currentSessionClips = [];
         
-        let classifierPipeline = null; // Es manté per si es reactiva Transformers.js
-        let isModelLoading = false;    
+        // let classifierPipeline = null; // Comentat ja que no s'usa pipeline
+        let isModelLoading = false;    // Encara que no carreguem el model, mantenim per si es reactiva
         let currentLoadingMessageId = null; 
+
+        // --- Definició de Funcions ---
 
         function showCustomMessage(message, type = 'info', duration = 3000, messageId = null) {
             const customMessageBox = document.getElementById('custom-message-box');
@@ -213,6 +230,7 @@
             }
         }
         async function initializeTone() {
+            // const statusDot = document.getElementById('status-dot'); // No s'usa aquí
             console.log('DEBUG: Iniciant initializeTone(). Estat actual AudioContext:', Tone.context.state);
             if (Tone.context.state !== 'running') {
                 try { 
@@ -314,11 +332,10 @@
             }
             console.log(`DEBUG: Iniciant analyzeTextForContext amb text: "${text.substring(0,30)}..." i inspiració: "${inspiration}"`);
 
-            // SIMULACIÓ DE TRANSFORMERS.JS (ja que la càrrega real pot ser problemàtica inicialment)
+            // TORNEM A LA SIMULACIÓ PER AÏLLAR PROBLEMES
             if (statusMessage) statusMessage.textContent = "Processant context (simulat)...";
             if (statusDot) statusDot.className = 'status-dot dot-yellow';
             
-            // Simula una petita espera com si el model estigués processant
             await new Promise(resolve => setTimeout(resolve, 500)); 
 
             const randomIndex = Math.floor(Math.random() * MUSIC_CONTEXTS.length);
@@ -379,9 +396,10 @@
             const statusDot = document.getElementById('status-dot');
             const toggleListeningBtn = document.getElementById('toggle-listening-btn');
             const transcriptPreview = document.getElementById('transcript-preview');
+            const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition; 
 
             console.log("DEBUG: Iniciant setupSpeechRecognition"); 
-            if (!SpeechRecognition) {
+            if (!SpeechRecognitionAPI) { 
                 console.log("DEBUG: SpeechRecognition API no suportada.");
                 let errorMsg = "Reconeixement de veu no disponible en aquest navegador. ";
                 if (window.location.protocol !== 'https:') { errorMsg += "Intenta carregar la pàgina per HTTPS."; } 
@@ -415,7 +433,7 @@
                 console.log("DEBUG: Botó toggleListeningBtn HABILITAT."); 
             }
 
-            recognition = new SpeechRecognition();
+            recognition = new SpeechRecognitionAPI(); 
             recognition.continuous = true; 
             recognition.interimResults = true; 
             recognition.lang = 'ca-ES';
@@ -679,7 +697,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log("DEBUG: DOMContentLoaded - Iniciant configuració.");
             
-            // Obtenció d'elements del DOM DINS de DOMContentLoaded
             const initialSetupScreen = document.getElementById('initial-setup-screen');
             const activeSessionContent = document.getElementById('active-session-content'); 
             const sessionInspirationInput = document.getElementById('session-inspiration-input');
@@ -693,17 +710,18 @@
             const stopMusicBtn = document.getElementById('stop-music-btn');
             const endSessionBtn = document.getElementById('end-session-btn');
 
-            if (!initialSetupScreen || !activeSessionContent || !startSessionBtn || !testSoundBtn || !toggleListeningBtn) {
-                console.error("ERROR CRÍTIC: Un o més elements principals del DOM no s'han trobat. L'aplicació no funcionarà correctament.");
+            if (!initialSetupScreen || !activeSessionContent || !startSessionBtn || !testSoundBtn || !toggleListeningBtn /*afegeix comprovacions per a altres botons/elements crítics si cal*/) {
+                console.error("ERROR CRÍTIC: Un o més elements principals del DOM no s'han trobat dins de DOMContentLoaded. L'aplicació no funcionarà correctament.");
                 showCustomMessage("Error crític en inicialitzar la interfície. Refresca la pàgina.", "error", 0);
                 return; 
             }
+            console.log("DEBUG: Tots els elements principals del DOM trobats dins de DOMContentLoaded.");
             
             setupSpeechRecognition(); 
             showScreen('initial-setup-screen'); 
 
             if (startSessionBtn) {
-                console.log("DEBUG: Botó 'start-session-btn' TROBAT dins de DOMContentLoaded."); 
+                console.log("DEBUG: Afegint event listener a 'start-session-btn'."); 
                 startSessionBtn.addEventListener('click', async () => { 
                     console.log("DEBUG: Botó 'start-session-btn' CLICAT."); 
                     await initializeTone(); 
@@ -724,8 +742,6 @@
                     renderSessionClipButtons(); 
                     showCustomMessage(`Sessió iniciada! ${activeGameInspiration ? 'Amb inspiració: ' + activeGameInspiration : 'Sense inspiració específica.'}`, "success", 4000);
                 });
-            } else {
-                console.error("ERROR: Botó 'start-session-btn' NO trobat dins de DOMContentLoaded!");
             }
 
             if (generateSessionClipsBtn) {
@@ -759,8 +775,6 @@
                         stopListening(); 
                     }
                 });
-            } else {
-                 console.error("ERROR: Botó 'toggleListeningBtn' NO trobat a DOMContentLoaded!");
             }
 
             if (skipContextBtn) {
@@ -780,7 +794,7 @@
             }
             
             if (testSoundBtn) {
-                 console.log("DEBUG: Botó 'test-sound-btn' TROBAT dins de DOMContentLoaded.");
+                 console.log("DEBUG: Afegint event listener a 'test-sound-btn'.");
                 testSoundBtn.addEventListener('click', async () => {
                     console.log("DEBUG: Botó 'Prova de So' CLICAT.");
                     const toneInitialized = await initializeTone(); 
@@ -799,8 +813,6 @@
                         showCustomMessage("Prova de so: L'AudioContext no està actiu. Potser has de fer clic de nou o l'entorn ho impedeix.", "error", 5000);
                     }
                 });
-            } else {
-                 console.error("ERROR CRÍTIC: Botó 'test-sound-btn' NO trobat!");
             }
 
         });
