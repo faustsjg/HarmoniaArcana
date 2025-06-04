@@ -36,6 +36,21 @@
 
     <div id="custom-message-box"></div>
 
+    <div id="new-game-name-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-lg font-semibold text-purple-300 mb-4">Anomena la Nova Partida</h3>
+            <input type="text" id="new-game-name-input" class="input-styled mb-4" placeholder="Nom de la partida...">
+            <div class="mb-4">
+                <label for="new-game-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Inspiració Musical (opcional):</label>
+                <input type="text" id="new-game-inspiration-input" class="input-styled" placeholder="Ex: El Senyor dels Anells, Hans Zimmer...">
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-new-game-name-btn" class="py-2 px-4 bg-gray-600 hover:bg-gray-700 rounded-md text-sm">Cancel·lar</button>
+                <button id="submit-new-game-name-btn" class="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md text-sm font-semibold">Confirmar i Iniciar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="w-full max-w-xl">
         <header class="mb-6 text-left">
             <h1 class="text-3xl font-bold text-purple-400">Harmonia Arcana</h1>
@@ -113,39 +128,35 @@
     <script type="module"> 
         console.log("DEBUG: El JavaScript principal s'està carregant com a mòdul."); 
         
-        // --- INICI SECCIÓ TRANSFORMERS.JS COMENTADA PER A DEPURACIÓ ---
-        // let pipelineImport = null; 
-        // let TransformersEnvImport = null;
-        // try {
-        //     console.log("DEBUG: Intentant importar Transformers.js...");
-        //     const transformersModule = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
-        //     console.log("DEBUG: Transformers.js importat, mòdul:", transformersModule);
+        let pipelineImport = null; 
+        let TransformersEnvImport = null;
 
-        //     if (transformersModule && typeof transformersModule.pipeline === 'function') {
-        //         pipelineImport = transformersModule.pipeline;
-        //         console.log("DEBUG: Funció 'pipeline' de Transformers.js assignada.");
-        //     } else {
-        //          console.error("ERROR: La funció 'pipeline' NO S'HA POGUT ASSIGNAR des de Transformers.js.");
-        //     }
+        try {
+            console.log("DEBUG: Intentant importar Transformers.js...");
+            const transformersModule = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
+            console.log("DEBUG: Transformers.js importat, mòdul:", transformersModule);
 
-        //     if (transformersModule && typeof transformersModule.env === 'object' && transformersModule.env !== null) {
-        //         TransformersEnvImport = transformersModule.env;
-        //         console.log("DEBUG: Objecte 'env' de Transformers.js assignat. Configurant per a models locals...");
-        //         TransformersEnvImport.allowLocalModels = true;
-        //         TransformersEnvImport.localModelPath = '/HarmoniaArcana/models/'; 
-        //         TransformersEnvImport.allowRemoteModels = false; 
-        //         console.log("DEBUG: Transformers.js configurat per a models locals a:", TransformersEnvImport.localModelPath);
-        //     } else {
-        //         console.error("ERROR: L'objecte 'env' NO S'HA POGUT ASSIGNAR des de Transformers.js o no és un objecte vàlid.");
-        //     }
-        // } catch (e) {
-        //     console.error("ERROR CRÍTIC DURANT LA IMPORTACIÓ/CONFIG DE TRANSFORMERS.JS:", e);
-        // }
-        console.log("DEBUG: Importació i configuració de Transformers.js COMENTADA temporalment.");
-        // --- FI SECCIÓ TRANSFORMERS.JS COMENTADA ---
+            if (transformersModule && typeof transformersModule.pipeline === 'function') {
+                pipelineImport = transformersModule.pipeline;
+                console.log("DEBUG: Funció 'pipeline' de Transformers.js assignada.");
+            } else {
+                 console.error("ERROR: La funció 'pipeline' NO S'HA POGUT ASSIGNAR des de Transformers.js.");
+            }
 
+            if (transformersModule && typeof transformersModule.env === 'object' && transformersModule.env !== null) {
+                TransformersEnvImport = transformersModule.env;
+                console.log("DEBUG: Objecte 'env' de Transformers.js assignat. Configurant per a models locals...");
+                TransformersEnvImport.allowLocalModels = true;
+                TransformersEnvImport.localModelPath = '/HarmoniaArcana/models/'; 
+                TransformersEnvImport.allowRemoteModels = false; 
+                console.log("DEBUG: Transformers.js configurat per a models locals a:", TransformersEnvImport.localModelPath);
+            } else {
+                console.error("ERROR: L'objecte 'env' NO S'HA POGUT ASSIGNAR des de Transformers.js o no és un objecte vàlid.");
+            }
+        } catch (e) {
+            console.error("ERROR CRÍTIC DURANT LA IMPORTACIÓ/CONFIG DE TRANSFORMERS.JS:", e);
+        }
 
-        // Variables globals d'estat de l'aplicació
         let recognition; 
         let isListening = false;
         let accumulatedTranscript = "";
@@ -157,11 +168,9 @@
         let activeGameInspiration = ""; 
         let currentSessionClips = [];
         
-        let classifierPipeline = null; // Es manté per si es reactiva Transformers.js
-        let isModelLoading = false;    // Encara que no carreguem el model, mantenim per si es reactiva
+        let classifierPipeline = null; 
+        let isModelLoading = false;    
         let currentLoadingMessageId = null; 
-
-        // --- Definició de Funcions ---
 
         function showCustomMessage(message, type = 'info', duration = 3000, messageId = null) {
             const customMessageBox = document.getElementById('custom-message-box');
@@ -230,7 +239,7 @@
             }
         }
         async function initializeTone() {
-            // const statusDot = document.getElementById('status-dot'); 
+            const statusDot = document.getElementById('status-dot'); 
             console.log('DEBUG: Iniciant initializeTone(). Estat actual AudioContext:', Tone.context.state);
             if (Tone.context.state !== 'running') {
                 try { 
@@ -331,23 +340,86 @@
                 return currentContext; 
             }
             console.log(`DEBUG: Iniciant analyzeTextForContext amb text: "${text.substring(0,30)}..." i inspiració: "${inspiration}"`);
-            
-            // SIMULACIÓ fins que Transformers.js estigui completament integrat i provat
-            if (statusMessage) statusMessage.textContent = "Processant context (simulat)...";
-            if (statusDot) statusDot.className = 'status-dot dot-yellow';
-            
-            await new Promise(resolve => setTimeout(resolve, 500)); 
 
-            const randomIndex = Math.floor(Math.random() * MUSIC_CONTEXTS.length);
-            const newSimulatedContext = MUSIC_CONTEXTS[randomIndex];
-            
-            console.log(`[SIMULACIÓ] Text analitzat -> Context simulat: ${newSimulatedContext}`);
-            showCustomMessage(`Context detectat (simulat): ${newSimulatedContext}`, "info");
-            
-            if (statusMessage) statusMessage.textContent = `Ambient: ${newSimulatedContext}. ${isListening ? 'Escoltant...' : 'Pausat.'}`;
-            if (statusDot) statusDot.className = 'status-dot dot-green';
+            if (!pipelineImport) { 
+                console.error("ERROR CRÍTIC: La funció 'pipelineImport' de Transformers.js no està definida. L'import inicial ha fallat.");
+                showCustomMessage("Error crític: La IA d'anàlisi no està disponible (pipelineImport no definit).", "error", 0);
+                return currentContext;
+            }
 
-            return newSimulatedContext;
+            if (isModelLoading) {
+                showCustomMessage("El model d'IA ja s'està carregant, espera un moment...", "info");
+                console.log("DEBUG: analyzeTextForContext - Model ja carregant.");
+                return currentContext;
+            }
+
+            if (!classifierPipeline) {
+                isModelLoading = true;
+                currentLoadingMessageId = `loading-model-${Date.now()}`; 
+                showCustomMessage("Iniciant càrrega del model d'anàlisi (pot trigar)...", "info", 0, currentLoadingMessageId); 
+                console.log("DEBUG: Intentant carregar el model de Transformers.js: Xenova/mobilebert-uncased-mnli");
+                try {
+                    classifierPipeline = await pipelineImport('zero-shot-classification', 'Xenova/mobilebert-uncased-mnli', { 
+                        progress_callback: (progress) => {
+                            console.log("Progrés càrrega model:", progress);
+                            let progressPercent = progress.progress ? Math.round(progress.progress) : 0;
+                            let statusText = progress.status;
+                            if (progress.status === 'progress' && progress.file){
+                                statusText = `descarregant ${progress.file.split('/').pop()}`; 
+                            } else if (progress.status === 'ready') {
+                                statusText = `preparant model`;
+                            } else if (progress.status === 'done') {
+                                statusText = `model gairebé llest`;
+                            }
+                            showCustomMessage(`Carregant IA: ${statusText} (${progressPercent}%)...`, "info", 0, currentLoadingMessageId);
+                        }
+                    });
+                    showCustomMessage("Model d'anàlisi de context carregat!", "success", 3000);
+                    console.log("DEBUG: Model de Transformers.js carregat correctament.");
+                    isModelLoading = false;
+                    currentLoadingMessageId = null; 
+                } catch (error) {
+                    console.error("Error carregant el model de classificació de Transformers.js:", error);
+                    showCustomMessage("Error CRÍTIC: No s'ha pogut carregar el model d'IA. Comprova la connexió i la consola.", "error", 10000);
+                    isModelLoading = false;
+                    classifierPipeline = null; 
+                    currentLoadingMessageId = null;
+                    return currentContext; 
+                }
+            }
+
+            if (!classifierPipeline) { 
+                 showCustomMessage("El model d'IA no està disponible. Intenta-ho més tard.", "error");
+                 console.log("DEBUG: analyzeTextForContext cridat, però classifierPipeline és null després de l'intent de càrrega.");
+                 return currentContext;
+            }
+
+            try {
+                if (statusMessage) statusMessage.textContent = "Processant context (local)...";
+                if (statusDot) statusDot.className = 'status-dot dot-yellow';
+                
+                let textToAnalyze = text;
+                if (inspiration.trim()) {
+                    textToAnalyze = `Considerant la inspiració musical de "${inspiration}", la situació o diàleg és: ${text}`;
+                }
+
+                console.log(`[Transformers.js] Analitzant text: "${textToAnalyze}"`);
+                const result = await classifierPipeline(textToAnalyze, MUSIC_CONTEXTS, { hypothesis_template: "Aquesta situació o diàleg és sobre {}." });
+                console.log("[Transformers.js] Resultat classificació:", result);
+
+                if (result && result.labels && result.labels.length > 0 && result.scores && result.scores.length > 0) {
+                    const bestMatch = result.labels[0]; 
+                    showCustomMessage(`Context detectat (local): ${bestMatch} (${Math.round(result.scores[0]*100)}%)`, "info");
+                    if (statusMessage) statusMessage.textContent = `Ambient: ${bestMatch}. ${isListening ? 'Escoltant...' : 'Pausat.'}`;
+                    return bestMatch;
+                }
+                showCustomMessage("No s'ha pogut determinar el context (local).", "info");
+                return currentContext; 
+            } catch (error) {
+                console.error("Error durant la classificació amb Transformers.js:", error);
+                showCustomMessage("Error analitzant context localment.", "error");
+                return currentContext;
+            }
         }
         
         async function checkMicPermission() { 
@@ -694,9 +766,33 @@
             });
         }
         
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => { // DOMContentLoaded ara és async
             console.log("DEBUG: DOMContentLoaded - Iniciant configuració.");
             
+            // Intenta importar Transformers.js aquí, un cop el DOM està llest, però abans de configurar listeners que en depenguin directament
+            // Aquesta importació no hauria de bloquejar la resta si es fa amb await dins d'un async DOMContentLoaded
+            try {
+                console.log("DEBUG: Intentant importar Transformers.js dins de DOMContentLoaded...");
+                const transformersModule = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
+                pipelineImport = transformersModule.pipeline;
+                TransformersEnvImport = transformersModule.env; 
+                if (!pipelineImport || !TransformersEnvImport) {
+                     console.error("ERROR: La funció 'pipeline' o 'env' no s'ha pogut assignar des de Transformers.js (dins DOMContentLoaded).");
+                     showCustomMessage("Error greu: No es pot inicialitzar la IA (dins DOMContentLoaded).", "error", 0);
+                } else {
+                    console.log("DEBUG: Funcions 'pipeline' i 'env' de Transformers.js disponibles (dins DOMContentLoaded).");
+                    // Configura per utilitzar models allotjats localment (al teu repo de GitHub Pages)
+                    TransformersEnvImport.allowLocalModels = true;
+                    TransformersEnvImport.localModelPath = '/HarmoniaArcana/models/'; // Assegura't que '/HarmoniaArcana/' és el nom del teu repo
+                    TransformersEnvImport.allowRemoteModels = false; // Forcem que només busqui localment
+                    console.log("DEBUG: Transformers.js configurat per a models locals a:", TransformersEnvImport.localModelPath);
+                }
+            } catch (e) {
+                console.error("ERROR CRÍTIC DURANT LA IMPORTACIÓ/CONFIG DE TRANSFORMERS.JS (dins DOMContentLoaded):", e);
+                showCustomMessage("Error crític: No s'ha pogut carregar la IA principal. Refresca la pàgina.", "error", 0);
+            }
+
+
             const initialSetupScreen = document.getElementById('initial-setup-screen');
             const activeSessionContent = document.getElementById('active-session-content'); 
             const sessionInspirationInput = document.getElementById('session-inspiration-input');
@@ -751,57 +847,11 @@
                 });
             }
 
-            if (generateSessionClipsBtn) {
-                generateSessionClipsBtn.addEventListener('click', generateSceneClipsWithAI);
-            }
-
-            if (stopMusicBtn) {
-                stopMusicBtn.addEventListener('click', () => {
-                    console.log("DEBUG: Botó 'Aturar Música' clicat.");
-                    stopCurrentMusic();
-                    showCustomMessage("Música aturada manualment.", "info");
-                });
-            }
-
-            if (endSessionBtn) {
-                endSessionBtn.addEventListener('click', () => {
-                    if (isListening) stopListening();
-                    stopCurrentMusic();
-                    if(sessionInspirationInput) sessionInspirationInput.value = ""; 
-                    classifierPipeline = null; 
-                    isModelLoading = false;
-                    pipelineImport = null; 
-                    showScreen('initial-setup-screen');
-                });
-            }
-
-            if (toggleListeningBtn) {
-                 console.log("DEBUG: Afegint event listener a 'toggleListeningBtn'."); 
-                toggleListeningBtn.addEventListener('click', () => { 
-                    console.log("DEBUG: Botó 'toggleListeningBtn' clicat! isListening:", isListening); 
-                    if (!isListening) {
-                        startListening(); 
-                    } else {
-                        stopListening(); 
-                    }
-                });
-            }
-
-            if (skipContextBtn) {
-                skipContextBtn.addEventListener('click', () => { 
-                    console.log("DEBUG: Botó 'Forçar Anàlisi' clicat.");
-                    if (!isListening && !accumulatedTranscript.trim()) { 
-                         showCustomMessage("Inicia l'escolta o parla primer per poder forçar una anàlisi.", "info"); 
-                         return;
-                    }
-                    if (!isListening && accumulatedTranscript.trim()) { 
-                        showCustomMessage("Forçant anàlisi del text anterior...", "info"); 
-                    } else { 
-                        showCustomMessage("Forçant anàlisi del text acumulat...", "info"); 
-                    }
-                    processAccumulatedTranscript(); 
-                });
-            }
+            if (generateSessionClipsBtn) { generateSessionClipsBtn.addEventListener('click', generateSceneClipsWithAI); }
+            if (stopMusicBtn) { stopMusicBtn.addEventListener('click', () => { console.log("DEBUG: Botó 'Aturar Música' clicat."); stopCurrentMusic(); showCustomMessage("Música aturada manualment.", "info"); });}
+            if (endSessionBtn) { endSessionBtn.addEventListener('click', () => { if (isListening) stopListening(); stopCurrentMusic(); if(sessionInspirationInput) sessionInspirationInput.value = ""; classifierPipeline = null; isModelLoading = false; /* pipelineImport es manté per si es torna a iniciar sessió */ showScreen('initial-setup-screen');}); }
+            if (toggleListeningBtn) { console.log("DEBUG: Afegint event listener a 'toggleListeningBtn'.");  toggleListeningBtn.addEventListener('click', () => {  console.log("DEBUG: Botó 'toggleListeningBtn' clicat! isListening:", isListening);  if (!isListening) { startListening();  } else { stopListening();  } }); }
+            if (skipContextBtn) { skipContextBtn.addEventListener('click', () => {  console.log("DEBUG: Botó 'Forçar Anàlisi' clicat."); if (!isListening && !accumulatedTranscript.trim()) {  showCustomMessage("Inicia l'escolta o parla primer per poder forçar una anàlisi.", "info");  return; } if (!isListening && accumulatedTranscript.trim()) {  showCustomMessage("Forçant anàlisi del text anterior...", "info");  } else {  showCustomMessage("Forçant anàlisi del text acumulat...", "info");  } processAccumulatedTranscript();  }); }
         });
     </script>
 </body>
