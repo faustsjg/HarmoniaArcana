@@ -36,21 +36,6 @@
 
     <div id="custom-message-box"></div>
 
-    <div id="new-game-name-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3 class="text-lg font-semibold text-purple-300 mb-4">Anomena la Nova Partida</h3>
-            <input type="text" id="new-game-name-input" class="input-styled mb-4" placeholder="Nom de la partida...">
-            <div class="mb-4">
-                <label for="new-game-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Inspiració Musical (opcional):</label>
-                <input type="text" id="new-game-inspiration-input" class="input-styled" placeholder="Ex: El Senyor dels Anells, Hans Zimmer...">
-            </div>
-            <div class="flex justify-end space-x-3">
-                <button id="cancel-new-game-name-btn" class="py-2 px-4 bg-gray-600 hover:bg-gray-700 rounded-md text-sm">Cancel·lar</button>
-                <button id="submit-new-game-name-btn" class="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md text-sm font-semibold">Confirmar i Iniciar</button>
-            </div>
-        </div>
-    </div>
-
     <div class="w-full max-w-xl">
         <header class="mb-6 text-left">
             <h1 class="text-3xl font-bold text-purple-400">Harmonia Arcana</h1>
@@ -68,7 +53,6 @@
                     <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3">
                         <i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia
                     </button>
-                    <!-- Botó de Prova de So eliminat de l'HTML -->
                 </div>
             </section>
 
@@ -129,18 +113,7 @@
     <script type="module"> 
         console.log("DEBUG: El JavaScript principal s'està carregant com a mòdul."); 
         
-        let pipelineImport = null; 
-        try {
-            const transformersModule = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
-            pipelineImport = transformersModule.pipeline; 
-            if (!pipelineImport) {
-                 console.error("ERROR: La funció 'pipeline' no s'ha pogut assignar des de Transformers.js.");
-            } else {
-                console.log("DEBUG: Funció 'pipeline' de Transformers.js disponible.");
-            }
-        } catch (e) {
-            console.error("ERROR CRÍTIC: No s'ha pogut importar la llibreria Transformers.js. Comprova la URL i la connexió.", e);
-        }
+        let pipelineImport = null; // Es definirà dinàmicament a analyzeTextForContext
 
         // Variables globals d'estat de l'aplicació
         let recognition; 
@@ -227,7 +200,6 @@
             }
         }
         async function initializeTone() {
-            const statusDot = document.getElementById('status-dot'); 
             console.log('DEBUG: Iniciant initializeTone(). Estat actual AudioContext:', Tone.context.state);
             if (Tone.context.state !== 'running') {
                 try { 
@@ -335,7 +307,7 @@
                 return currentContext;
             }
 
-            if (!classifierPipeline) {
+            if (!classifierPipeline) { 
                 isModelLoading = true;
                 currentLoadingMessageId = `loading-model-${Date.now()}`; 
                 showCustomMessage("Iniciant càrrega del model d'anàlisi (pot trigar)...", "info", 0, currentLoadingMessageId); 
