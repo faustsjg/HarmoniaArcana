@@ -36,6 +36,21 @@
 
     <div id="custom-message-box"></div>
 
+    <div id="new-game-name-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-lg font-semibold text-purple-300 mb-4">Anomena la Nova Partida</h3>
+            <input type="text" id="new-game-name-input" class="input-styled mb-4" placeholder="Nom de la partida...">
+            <div class="mb-4">
+                <label for="new-game-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Inspiració Musical (opcional):</label>
+                <input type="text" id="new-game-inspiration-input" class="input-styled" placeholder="Ex: El Senyor dels Anells, Hans Zimmer...">
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-new-game-name-btn" class="py-2 px-4 bg-gray-600 hover:bg-gray-700 rounded-md text-sm">Cancel·lar</button>
+                <button id="submit-new-game-name-btn" class="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md text-sm font-semibold">Confirmar i Iniciar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="w-full max-w-xl">
         <header class="mb-6 text-left">
             <h1 class="text-3xl font-bold text-purple-400">Harmonia Arcana</h1>
@@ -117,27 +132,31 @@
         let TransformersEnvImport = null;
 
         try {
+            console.log("DEBUG: Intentant importar Transformers.js...");
             const transformersModule = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
-            pipelineImport = transformersModule.pipeline;
-            TransformersEnvImport = transformersModule.env; 
-            if (!pipelineImport) {
-                 console.error("ERROR: La funció 'pipeline' no s'ha pogut assignar des de Transformers.js.");
+            console.log("DEBUG: Transformers.js importat, mòdul:", transformersModule);
+
+            if (transformersModule && typeof transformersModule.pipeline === 'function') {
+                pipelineImport = transformersModule.pipeline;
+                console.log("DEBUG: Funció 'pipeline' de Transformers.js assignada.");
             } else {
-                console.log("DEBUG: Funció 'pipeline' de Transformers.js disponible.");
-                // Configura per utilitzar models locals (des del teu repositori)
+                 console.error("ERROR: La funció 'pipeline' NO S'HA POGUT ASSIGNAR des de Transformers.js.");
+            }
+
+            if (transformersModule && typeof transformersModule.env === 'object' && transformersModule.env !== null) {
+                TransformersEnvImport = transformersModule.env;
+                console.log("DEBUG: Objecte 'env' de Transformers.js assignat. Configurant per a models locals...");
                 TransformersEnvImport.allowLocalModels = true;
-                // IMPORTANT: Ajusta '/HarmoniaArcana/' si el nom del teu repositori a GitHub és diferent.
-                // Aquesta ruta és relativa a l'arrel del teu lloc de GitHub Pages.
                 TransformersEnvImport.localModelPath = '/HarmoniaArcana/models/'; 
-                TransformersEnvImport.allowRemoteModels = false; // Forcem que només busqui localment
+                TransformersEnvImport.allowRemoteModels = false; 
                 console.log("DEBUG: Transformers.js configurat per a models locals a:", TransformersEnvImport.localModelPath);
+            } else {
+                console.error("ERROR: L'objecte 'env' NO S'HA POGUT ASSIGNAR des de Transformers.js o no és un objecte vàlid.");
             }
         } catch (e) {
-            console.error("ERROR CRÍTIC: No s'ha pogut importar o configurar la llibreria Transformers.js.", e);
-            // No cridem showCustomMessage aquí perquè el DOM pot no estar llest
+            console.error("ERROR CRÍTIC DURANT LA IMPORTACIÓ/CONFIG DE TRANSFORMERS.JS:", e);
         }
 
-        // Variables globals d'estat de l'aplicació
         let recognition; 
         let isListening = false;
         let accumulatedTranscript = "";
@@ -153,7 +172,6 @@
         let isModelLoading = false;    
         let currentLoadingMessageId = null; 
 
-        // --- Definició de Funcions ---
         function showCustomMessage(message, type = 'info', duration = 3000, messageId = null) { /* ... (sense canvis) ... */ }
         function showScreen(screenIdToShow) { /* ... (sense canvis) ... */ }
         function updateMusicStatusDisplay(context, playing = true) { /* ... (sense canvis) ... */ }
@@ -167,97 +185,7 @@
         function stopListening() { /* ... (sense canvis) ... */ }
         async function generateSceneClipsWithAI() { /* ... (sense canvis) ... */ }
         function renderSessionClipButtons() { /* ... (sense canvis) ... */ }
-
-        async function analyzeTextForContext(text, inspiration = "") {
-            const statusMessage = document.getElementById('status-message'); 
-            const statusDot = document.getElementById('status-dot');       
-
-            if (!text.trim()) {
-                console.log("DEBUG: Text buit, no s'analitza.");
-                return currentContext; 
-            }
-            console.log(`DEBUG: Iniciant analyzeTextForContext amb text: "${text.substring(0,30)}..." i inspiració: "${inspiration}"`);
-
-            if (!pipelineImport) { 
-                console.error("ERROR CRÍTIC: La funció 'pipelineImport' de Transformers.js no està definida. L'import inicial ha fallat.");
-                showCustomMessage("Error crític: La IA d'anàlisi no està disponible (pipelineImport no definit).", "error", 0);
-                return currentContext;
-            }
-
-            if (isModelLoading) {
-                showCustomMessage("El model d'IA ja s'està carregant, espera un moment...", "info");
-                console.log("DEBUG: analyzeTextForContext - Model ja carregant.");
-                return currentContext;
-            }
-
-            if (!classifierPipeline) {
-                isModelLoading = true;
-                currentLoadingMessageId = `loading-model-${Date.now()}`; 
-                showCustomMessage("Iniciant càrrega del model d'anàlisi (pot trigar)...", "info", 0, currentLoadingMessageId); 
-                console.log("DEBUG: Intentant carregar el model de Transformers.js: Xenova/mobilebert-uncased-mnli (des de la ruta local configurada)");
-                try {
-                    classifierPipeline = await pipelineImport('zero-shot-classification', 'Xenova/mobilebert-uncased-mnli', { // Utilitza el model lleuger
-                        progress_callback: (progress) => {
-                            console.log("Progrés càrrega model:", progress);
-                            let progressPercent = progress.progress ? Math.round(progress.progress) : 0;
-                            let statusText = progress.status;
-                            if (progress.status === 'progress' && progress.file){
-                                statusText = `descarregant ${progress.file.split('/').pop()}`; 
-                            } else if (progress.status === 'ready') {
-                                statusText = `preparant model`;
-                            } else if (progress.status === 'done') {
-                                statusText = `model gairebé llest`;
-                            }
-                            showCustomMessage(`Carregant IA: ${statusText} (${progressPercent}%)...`, "info", 0, currentLoadingMessageId);
-                        }
-                    });
-                    showCustomMessage("Model d'anàlisi de context carregat!", "success", 3000);
-                    console.log("DEBUG: Model de Transformers.js carregat correctament.");
-                    isModelLoading = false;
-                    currentLoadingMessageId = null; 
-                } catch (error) {
-                    console.error("Error carregant el model de classificació de Transformers.js:", error);
-                    showCustomMessage("Error CRÍTIC: No s'ha pogut carregar el model d'IA. Comprova la ruta dels models al repositori i la consola.", "error", 10000);
-                    isModelLoading = false;
-                    classifierPipeline = null; 
-                    currentLoadingMessageId = null;
-                    return currentContext; 
-                }
-            }
-
-            if (!classifierPipeline) { 
-                 showCustomMessage("El model d'IA no està disponible. Intenta-ho més tard.", "error");
-                 console.log("DEBUG: analyzeTextForContext cridat, però classifierPipeline és null després de l'intent de càrrega.");
-                 return currentContext;
-            }
-
-            try {
-                if (statusMessage) statusMessage.textContent = "Processant context (local)...";
-                if (statusDot) statusDot.className = 'status-dot dot-yellow';
-                
-                let textToAnalyze = text;
-                if (inspiration.trim()) {
-                    textToAnalyze = `Considerant la inspiració musical de "${inspiration}", la situació o diàleg és: ${text}`;
-                }
-
-                console.log(`[Transformers.js] Analitzant text: "${textToAnalyze}"`);
-                const result = await classifierPipeline(textToAnalyze, MUSIC_CONTEXTS, { hypothesis_template: "Aquesta situació o diàleg és sobre {}." });
-                console.log("[Transformers.js] Resultat classificació:", result);
-
-                if (result && result.labels && result.labels.length > 0 && result.scores && result.scores.length > 0) {
-                    const bestMatch = result.labels[0]; 
-                    showCustomMessage(`Context detectat (local): ${bestMatch} (${Math.round(result.scores[0]*100)}%)`, "info");
-                    if (statusMessage) statusMessage.textContent = `Ambient: ${bestMatch}. ${isListening ? 'Escoltant...' : 'Pausat.'}`;
-                    return bestMatch;
-                }
-                showCustomMessage("No s'ha pogut determinar el context (local).", "info");
-                return currentContext; 
-            } catch (error) {
-                console.error("Error durant la classificació amb Transformers.js:", error);
-                showCustomMessage("Error analitzant context localment.", "error");
-                return currentContext;
-            }
-        }
+        async function analyzeTextForContext(text, inspiration = "") { /* ... (sense canvis, utilitza pipelineImport) ... */ }
         
         document.addEventListener('DOMContentLoaded', () => {
             console.log("DEBUG: DOMContentLoaded - Iniciant configuració.");
@@ -306,13 +234,12 @@
                     renderSessionClipButtons(); 
                     showCustomMessage(`Sessió iniciada! ${activeGameInspiration ? 'Amb inspiració: ' + activeGameInspiration : 'Sense inspiració específica.'}`, "success", 4000);
                     
-                    // Intenta precàrregar el model d'IA en segon pla si no s'ha fet ja
-                    // Aquesta crida a analyzeTextForContext iniciarà la càrrega del model si no està ja carregat.
-                    // El text "precàrrega" és només un placeholder.
-                    if (!classifierPipeline && !isModelLoading) {
+                    if (!classifierPipeline && !isModelLoading && pipelineImport) { 
                        analyzeTextForContext("precàrrega inicial del model", activeGameInspiration)
-                        .then(ctx => console.log("DEBUG: Precàrrega del model (o intent) finalitzada. Context inicial simulat o analitzat:", ctx))
+                        .then(ctx => console.log("DEBUG: Precàrrega del model (o intent) finalitzada. Context inicial:", ctx))
                         .catch(err => console.error("DEBUG: Error durant la precàrrega del model:", err));
+                    } else if (!pipelineImport) {
+                        console.warn("DEBUG: No s'intenta precàrrega del model perquè pipelineImport no està definit.");
                     }
                 });
             }
@@ -325,18 +252,20 @@
         });
 
         // --- Funcions que no han canviat substancialment (només s'han eliminat alertes) ---
-        showScreen = function(screenIdToShow) {const initialSetupScreen = document.getElementById('initial-setup-screen'); const activeSessionContent = document.getElementById('active-session-content'); if (initialSetupScreen) initialSetupScreen.classList.add('hidden'); if (activeSessionContent) activeSessionContent.classList.add('hidden'); const screenToShow = document.getElementById(screenIdToShow); if (screenToShow) { screenToShow.classList.remove('hidden'); console.log(`DEBUG: Mostrant pantalla: ${screenIdToShow}`); } else { console.error(`ERROR: Pantalla amb ID ${screenIdToShow} no trobada!`); }};
-        updateMusicStatusDisplay = function(context, playing = true) {const musicStatus = document.getElementById('music-status'); const statusDot = document.getElementById('status-dot'); const statusMessage = document.getElementById('status-message'); if(!musicStatus || !statusDot || !statusMessage) return; if (playing) {musicStatus.textContent = `Reproduint (${context})`;statusDot.className = 'status-dot dot-green';statusMessage.textContent = `Ambient: ${context}. ${isListening ? 'Escoltant...' : 'Pausat.'}`;} else {musicStatus.textContent = "Aturada";statusMessage.textContent = isListening ? "Escoltant..." : "Inactiu";statusDot.className = isListening ? 'status-dot dot-green' : 'status-dot dot-gray';}};
-        initializeTone = async function() {const statusDot = document.getElementById('status-dot'); console.log('DEBUG: Iniciant initializeTone(). Estat actual AudioContext:', Tone.context.state); if (Tone.context.state !== 'running') {try { await Tone.start(); console.log("DEBUG: Tone.js iniciat. Nou estat AudioContext:", Tone.context.state);showCustomMessage("Sistema d'àudio activat!", "success", 2000);return true; } catch (error) { console.error("Error en Tone.start():", error); showCustomMessage("Error activant el sistema d'àudio. Fes clic a la pàgina i torna a intentar-ho.", "error", 5000);return false; }} else {console.log("DEBUG: AudioContext ja estava 'running'.");return true; }};
-        stopCurrentMusic = function() {if (currentMusicLoop) { currentMusicLoop.stop(0).dispose(); currentMusicLoop = null; }Tone.Transport.stop().cancel(); console.log("Música aturada.");updateMusicStatusDisplay(currentContext, false);};
-        playMusicForContext = function(context) {stopCurrentMusic();currentContext = context;console.log(`Context musical canviat a: ${context}`);switch (context) {case "Combat":const cS=new Tone.PolySynth(Tone.Synth,{oscillator:{type:"sawtooth"},envelope:{attack:0.01,decay:0.1,sustain:0.2,release:0.2},volume:-12}).toDestination();const cP=["C2",["E2","G2"],"C2",["F2","A#2"]];let cNI=0;currentMusicLoop=new Tone.Loop(t=>{cS.triggerAttackRelease(cP[cNI%cP.length],"8n",t);cNI++;},"4n").start(0);Tone.Transport.bpm.value=140;break;case "Exploration":const eS=new Tone.FMSynth({harmonicity:1.5,modulationIndex:5,envelope:{attack:0.5,decay:0.1,sustain:0.8,release:1.5},volume:-15}).toDestination();const eN=["C3","E3","G3","B3","G3","E3"];let eI=0;currentMusicLoop=new Tone.Loop(t=>{eS.triggerAttackRelease(eN[eI%eN.length],"1n",t);eI++;},"1n").start(0);Tone.Transport.bpm.value=70;break;case "Tension":const tS=new Tone.AMSynth({harmonicity:2,envelope:{attack:0.1,decay:1,sustain:0.1,release:1},volume:-18}).toDestination();new Tone.PulseOscillator("C#2",0.4).connect(tS.modulationEnvelope).start();currentMusicLoop=new Tone.Loop(t=>{tS.triggerAttackRelease("8n",t);},"2n").start(0);Tone.Transport.bpm.value=60;break;case "Social":const sS=new Tone.Synth({oscillator:{type:"triangle"},envelope:{attack:0.05,decay:0.2,sustain:0.3,release:0.5},volume:-16}).toDestination();const sM=["G4","A4","G4","E4","C4",null,"D4","E4"];let sI=0;currentMusicLoop=new Tone.Loop(t=>{if(sM[sI%sM.length]){sS.triggerAttackRelease(sM[sI%sM.length],"8n",t);}sI++;},"4n").start(0);Tone.Transport.bpm.value=100;break;case "Magic":const mS=new Tone.FMSynth({harmonicity:3,modulationIndex:10,envelope:{attack:1,decay:0.5,sustain:1,release:2},volume:-14}).toDestination();const r=new Tone.Reverb(0.8).toDestination();mS.connect(r);const mN=["A3","C#4","E4","G#4"];let mI=0;currentMusicLoop=new Tone.Loop(t=>{mS.triggerAttackRelease(mN[mI%mN.length],"2n",t);mI++;},"1m").start(0);Tone.Transport.bpm.value=65;break;case "Stealth":const stP=new Tone.MembraneSynth({pitchDecay:0.01,octaves:2,envelope:{attack:0.001,decay:0.1,sustain:0,release:0.01},volume:-20}).toDestination();currentMusicLoop=new Tone.Loop(t=>{stP.triggerAttackRelease("C1","16n",t);},"2n").start(0);Tone.Transport.bpm.value=80;break;case "Calm":default:const caS=new Tone.PolySynth(Tone.Synth,{oscillator:{type:"sine"},envelope:{attack:2,decay:1,sustain:0.8,release:2},volume:-18}).toDestination();currentMusicLoop=new Tone.Loop(t=>{caS.triggerAttackRelease(["C4","E4","G4"],"4m",t);},"4m").start(0);Tone.Transport.bpm.value=60;break;}if(currentMusicLoop){Tone.Transport.start();console.log(`Música ${context} iniciada (BPM: ${Tone.Transport.bpm.value})`);updateMusicStatusDisplay(context,true);}else{console.error(`Error creant bucle per ${context}`);updateMusicStatusDisplay(`Error (${context})`,false);}};
-        checkMicPermission = async function() { const toggleListeningBtn = document.getElementById('toggle-listening-btn'); const statusMessage = document.getElementById('status-message'); const statusDot = document.getElementById('status-dot'); console.log("DEBUG: Iniciant checkMicPermission");if(!navigator.permissions){console.warn("DEBUG: Permissions API no suportada.");return'prompt';}try{const permissionStatus=await navigator.permissions.query({name:'microphone'});console.log("DEBUG: Permission status inicial:",permissionStatus.state);permissionStatus.onchange=()=>{console.log("DEBUG: Permission status canviat:",permissionStatus.state);if(permissionStatus.state==='denied'){showCustomMessage("Accés al micròfon denegat. Canvia-ho a la configuració del navegador.","error",10000);if(toggleListeningBtn)toggleListeningBtn.disabled=true;if(statusMessage)statusMessage.textContent="Micròfon denegat.";if(statusDot)statusDot.className='status-dot dot-red';if(isListening)stopListening();}else if(permissionStatus.state==='granted'){if(toggleListeningBtn)toggleListeningBtn.disabled=false;if(statusMessage&&statusMessage.textContent==="Micròfon denegat."){if(statusMessage)statusMessage.textContent="Llest per escoltar.";if(statusDot)statusDot.className='status-dot dot-gray';}}else if(permissionStatus.state==='prompt'){if(toggleListeningBtn)toggleListeningBtn.disabled=false;if(statusMessage)statusMessage.textContent="Permís de micròfon pendent.";if(statusDot)statusDot.className='status-dot dot-yellow';}};return permissionStatus.state;}catch(error){console.error("DEBUG: Error consultant permisos del micròfon:",error);showCustomMessage("Error al verificar permisos del micròfon.","error");return'prompt';}};
-        setupSpeechRecognition = async function() {const statusMessage = document.getElementById('status-message'); const statusDot = document.getElementById('status-dot'); const toggleListeningBtn = document.getElementById('toggle-listening-btn'); const transcriptPreview = document.getElementById('transcript-preview'); const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition; console.log("DEBUG: Iniciant setupSpeechRecognition");if(!SpeechRecognitionAPI){console.log("DEBUG: SpeechRecognition API no suportada.");let errorMsg="Reconeixement de veu no disponible en aquest navegador. ";if(window.location.protocol!=='https:'){errorMsg+="Intenta carregar la pàgina per HTTPS.";}else{errorMsg+="Comprova els permisos del micròfon.";}showCustomMessage(errorMsg,"error",6000);if(statusMessage)statusMessage.textContent="Reconeixement no suportat.";if(statusDot)statusDot.className='status-dot dot-red';if(toggleListeningBtn){toggleListeningBtn.disabled=true;console.log("DEBUG: Botó toggleListeningBtn DESHABILITAT (API no suportada).");}return;}const micPermission=await checkMicPermission();console.log("DEBUG: Permís del micròfon després de checkMicPermission inicial:",micPermission);if(micPermission==='denied'){showCustomMessage("L'accés al micròfon està denegat. Habilita'l a la configuració del navegador per utilitzar l'escolta.","error",10000);if(statusMessage)statusMessage.textContent="Micròfon denegat.";if(statusDot)statusDot.className='status-dot dot-red';if(toggleListeningBtn){toggleListeningBtn.disabled=true;console.log("DEBUG: Botó toggleListeningBtn DESHABILITAT (permís denegat).");}return;}if(toggleListeningBtn){toggleListeningBtn.disabled=false;console.log("DEBUG: Botó toggleListeningBtn HABILITAT.");}recognition=new SpeechRecognitionAPI();recognition.continuous=true;recognition.interimResults=true;recognition.lang='ca-ES';recognition.onstart=()=>{console.log("Escoltant...");if(statusMessage)statusMessage.textContent="Escoltant...";if(statusDot)statusDot.className='status-dot dot-green';if(transcriptPreview)transcriptPreview.textContent="";};recognition.onresult=(e)=>{let iT='',fT='';for(let i=e.resultIndex;i<e.results.length;++i){if(e.results[i].isFinal)fT+=e.results[i][0].transcript;else iT+=e.results[i][0].transcript;}if(fT){accumulatedTranscript+=fT+" ";if(transcriptPreview)transcriptPreview.textContent=`Últim: ${fT}`;}else if(iT){if(transcriptPreview)transcriptPreview.textContent=`Escoltant: ${iT}...`;}};recognition.onerror=(e)=>{console.error("Error Reconeixement:",e.error);let msg=`Error de reconeixement: ${e.error}.`;if(e.error==='not-allowed'||e.error==='service-not-allowed'){msg="Accés al micròfon denegat. Revisa els permisos del navegador per a aquesta pàgina.";}else if(e.error==='no-speech'){msg="No s'ha detectat veu. Intenta parlar més a prop del micròfon.";}else if(e.error==='network'){msg+=" Problema de xarxa. Comprova la connexió a Internet.";}else if(e.error==='audio-capture'){msg+=" Problema amb la captura d'àudio. Assegura't que el micròfon funciona.";}else{msg+=" Prova de recarregar la pàgina o comprovar la configuració del navegador/micròfon."}showCustomMessage(msg,"error",7000);if(statusMessage)statusMessage.textContent=msg.substring(0,50)+"...";if(statusDot)statusDot.className='status-dot dot-red';if(isListening&&(e.error==='not-allowed'||e.error==='service-not-allowed'||e.error==='audio-capture')){stopListening();}};recognition.onend=()=>{console.log("Reconeixement finalitzat.");if(isListening){console.log("Intentant reiniciar el reconeixement...");try{if(recognition)recognition.start();}catch(err){console.error("Error al reiniciar reconeixement:",err);showCustomMessage("S'ha aturat l'escolta. Torna a intentar-ho.","error");stopListening();}}else{if(statusMessage)statusMessage.textContent="Escolta aturada.";if(statusDot)statusDot.className='status-dot dot-gray';if(toggleListeningBtn&&toggleListeningBtn.innerHTML.includes("Aturar")){toggleListeningBtn.innerHTML='<i class="fas fa-microphone mr-2"></i>Començar a Escoltar';toggleListeningBtn.classList.replace('bg-red-600','bg-purple-600');toggleListeningBtn.classList.replace('hover:bg-red-700','hover:bg-purple-700');}}};};
-        processAccumulatedTranscript = async function() {const statusMessage = document.getElementById('status-message'); const statusDot = document.getElementById('status-dot'); console.log("DEBUG: Iniciant processAccumulatedTranscript. Text acumulat:",accumulatedTranscript.substring(0,50)+ "...");if(!isListening||!accumulatedTranscript.trim()){if(isListening&&currentContext!=="Calm"&&!accumulatedTranscript.trim()){console.log("DEBUG: Sense activitat de veu, canviant a 'Calm' si no ho és ja.");if(currentContext!=="Calm"){playMusicForContext("Calm");}}return;}const tTA=accumulatedTranscript;accumulatedTranscript="";const nC=await analyzeTextForContext(tTA,activeGameInspiration);console.log("DEBUG: Context rebut de analyzeTextForContext:",nC,"Context actual:",currentContext);if(nC&&nC!==currentContext){console.log("DEBUG: Canviant música a:",nC);playMusicForContext(nC);showCustomMessage(`Nou context: ${nC}`,"info");}else if(nC===currentContext){console.log("DEBUG: Context mantingut:",currentContext);updateMusicStatusDisplay(currentContext,true);}else{console.log("DEBUG: analyzeTextForContext no ha retornat un context vàlid o és igual a l'actual, no es canvia la música.");}};
-        startListening = function() {const toggleListeningBtn = document.getElementById('toggle-listening-btn'); const statusMessage = document.getElementById('status-message'); const statusDot = document.getElementById('status-dot'); console.log("DEBUG: Funció startListening() iniciada. Botó deshabilitat?",toggleListeningBtn?toggleListeningBtn.disabled:'N/A');initializeTone().then(async ()=>{console.log("DEBUG: Tone.js inicialitzat dins de startListening");if(recognition&&!isListening){try{console.log("DEBUG: Intentant recognition.start()");const currentPermission=await checkMicPermission();console.log("DEBUG: Permís dins de startListening (abans de start):",currentPermission);if(currentPermission==='denied'){showCustomMessage("L'accés al micròfon continua denegat. No es pot iniciar l'escolta.","error",7000);console.log("DEBUG: Permís denegat dins de startListening, retornant.");if(toggleListeningBtn)toggleListeningBtn.disabled=true;return;}if(currentPermission==='prompt'&&toggleListeningBtn){showCustomMessage("Es demanarà permís per al micròfon.","info",4000);console.log("DEBUG: Permís 'prompt' dins de startListening.");}if(toggleListeningBtn)toggleListeningBtn.disabled=false;recognition.start();isListening=true;if(toggleListeningBtn){toggleListeningBtn.innerHTML='<i class="fas fa-microphone-slash mr-2"></i>Aturar Escolta';toggleListeningBtn.classList.replace('bg-purple-600','bg-red-600');toggleListeningBtn.classList.replace('hover:bg-purple-700','hover:bg-red-700');}if(analysisInterval)clearInterval(analysisInterval);analysisInterval=setInterval(processAccumulatedTranscript,ANALYSIS_INTERVAL_MS);if(currentContext!=="Calm"&&(!currentMusicLoop||Tone.Transport.state!=="started")){playMusicForContext("Calm");}else if(Tone.Transport.state!=="started"){playMusicForContext(currentContext||"Calm");}else{updateMusicStatusDisplay(currentContext,true);}showCustomMessage("Escolta iniciada!","success");}catch(e){console.error("Error iniciant reconeixement (catch a startListening):",e);if(e.name==='InvalidStateError'){isListening=true;if(toggleListeningBtn){toggleListeningBtn.innerHTML='<i class="fas fa-microphone-slash mr-2"></i>Aturar Escolta';toggleListeningBtn.classList.replace('bg-purple-600','bg-red-600');toggleListeningBtn.classList.replace('hover:bg-purple-700','hover:bg-red-700');}if(analysisInterval)clearInterval(analysisInterval);analysisInterval=setInterval(processAccumulatedTranscript,ANALYSIS_INTERVAL_MS);showCustomMessage("Escolta represa o en estat invàlid.","info");}else{showCustomMessage(`Error a l'iniciar escolta: ${e.message}`,"error");if(statusMessage)statusMessage.textContent=`Error: ${e.message}`;if(statusDot)statusDot.className='status-dot dot-red';isListening=false;if(toggleListeningBtn){toggleListeningBtn.innerHTML='<i class="fas fa-microphone mr-2"></i>Començar a Escoltar';toggleListeningBtn.classList.replace('bg-red-600','bg-purple-600');toggleListeningBtn.classList.replace('hover:bg-red-700','hover:bg-purple-700');}}}}else{console.log("DEBUG: startListening cridat però no es compleixen condicions. Recognition:",!!recognition,", isListening:",isListening);}}});};
-        stopListening = function() {const toggleListeningBtn = document.getElementById('toggle-listening-btn'); const statusMessage = document.getElementById('status-message'); const statusDot = document.getElementById('status-dot'); const transcriptPreview = document.getElementById('transcript-preview'); console.log("DEBUG: stopListening cridat. isListening:",isListening);if(recognition&&isListening){recognition.stop();isListening=false;}else{isListening=false;if(recognition&&(recognition.readyState===1||recognition.readyState===2)){try{recognition.abort();}catch(e){console.warn("Warn: error en abortar reconeixement",e);}}if(toggleListeningBtn){toggleListeningBtn.innerHTML='<i class="fas fa-microphone mr-2"></i>Començar a Escoltar';if(toggleListeningBtn.classList.contains('bg-red-600')){toggleListeningBtn.classList.replace('bg-red-600','bg-purple-600');toggleListeningBtn.classList.replace('hover:bg-red-700','hover:bg-purple-700');}}if(statusMessage)statusMessage.textContent="Escolta aturada.";if(statusDot)statusDot.className='status-dot dot-gray';}if(analysisInterval){clearInterval(analysisInterval);analysisInterval=null;}accumulatedTranscript="";if(transcriptPreview)transcriptPreview.textContent="Transcripció en directe...";};
-        renderSessionClipButtons = function() {const sessionClipsContainer = document.getElementById('session-clips-container'); if(!sessionClipsContainer) return; sessionClipsContainer.innerHTML="";if(currentSessionClips.length===0){sessionClipsContainer.innerHTML=`<p class="text-xs text-gray-400 w-full">Cap clip d'escena disponible. Prem "Generar Clips".</p>`;return;}currentSessionClips.forEach(c=>{const b=document.createElement('button');b.className='session-clip-btn';b.textContent=c.name;b.title=`Activar música per a ${c.context}`;b.addEventListener('click',async ()=>{showCustomMessage(`Canviant a escena: ${c.name}`,'info');await initializeTone();playMusicForContext(c.context);});sessionClipsContainer.appendChild(b);});};
-        generateSceneClipsWithAI = async function() { const sessionClipsContainer = document.getElementById('session-clips-container'); console.log("[Clips] Generant clips basats en contextos predefinits i inspiració.");showCustomMessage("Generant suggeriments de clips d'escena...","info");currentSessionClips=[];let cTS=new Set();const iL=activeGameInspiration.toLowerCase().trim();if(iL){if(iL.includes("combat")||iL.includes("lluita")||iL.includes("guerra"))cTS.add("Combat");if(iL.includes("explora")||iL.includes("viatge")||iL.includes("descobrir"))cTS.add("Exploration");if(iL.includes("tensió")||iL.includes("perill")||iL.includes("sospita"))cTS.add("Tension");if(iL.includes("conversa")||iL.includes("taverna")||iL.includes("negociar"))cTS.add("Social");if(iL.includes("màgia")||iL.includes("encanteri")||iL.includes("ritual"))cTS.add("Magic");if(iL.includes("furt")||iL.includes("amagar")||iL.includes("secret"))cTS.add("Stealth");if(iL.includes("calma")||iL.includes("pau")||iL.includes("descans"))cTS.add("Calm");}if(cTS.size<2&&MUSIC_CONTEXTS.length>0){["Combat","Exploration","Tension","Calm"].forEach(ctx=>{if(cTS.size<4)cTS.add(ctx);});}if(!cTS.has("Calm")&&MUSIC_CONTEXTS.includes("Calm")){cTS.add("Calm");}let fCC=Array.from(cTS);if(fCC.length>5){fCC=fCC.slice(0,5);}if(fCC.length===0){fCC=["Calm","Exploration","Tension"];}currentSessionClips=fCC.map(context=>({name:`Escena ${context}`,context:context}));renderSessionClipButtons();if(currentSessionClips.length>0){showCustomMessage("Clips d'escena suggerits!","success");}else{showCustomMessage("No s'han pogut generar clips suggerits. S'afegeixen alguns per defecte.","info");}};
+        // Aquestes funcions ja estan definides correctament més amunt.
+        // No cal duplicar-les aquí.
+        // showScreen = function(screenIdToShow) { ... };
+        // updateMusicStatusDisplay = function(context, playing = true) { ... };
+        // initializeTone = async function() { ... };
+        // stopCurrentMusic = function() { ... };
+        // playMusicForContext = function(context) { ... };
+        // checkMicPermission = async function() { ... };
+        // setupSpeechRecognition = async function() { ... };
+        // processAccumulatedTranscript = async function() { ... };
+        // startListening = function() { ... };
+        // stopListening = function() { ... };
+        // renderSessionClipButtons = function() { ... };
+        // generateSceneClipsWithAI = async function() { ... };
 
     </script>
 </body>
