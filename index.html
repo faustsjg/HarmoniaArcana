@@ -89,7 +89,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250606_1620_COMPLETE_CODE_FIX";
+        const SCRIPT_VERSION = "V20250606_1718_FINAL_TUNING";
         log(`DEBUG: Harmonia Arcana Script ${SCRIPT_VERSION} carregant...`); 
         
         let pipelineImport = null, recognition, isListening = false, accumulatedTranscript = "", analysisInterval;
@@ -185,13 +185,15 @@
                 }
                 Tone.Transport.cancel();
                 this.isPaused = false;
-                document.getElementById('music-status').textContent = "Aturada";
+                const musicStatus = document.getElementById('music-status');
+                if(musicStatus) musicStatus.textContent = "Aturada";
                 this.updateToggleButton();
                 log("Música aturada completament.");
             },
 
             updateToggleButton() {
                 const btn = document.getElementById('stop-music-btn');
+                if(!btn) return;
                 if (this.isPaused) {
                     btn.innerHTML = `<i class="fas fa-play mr-2"></i>Reprendre Música`;
                     btn.classList.remove('bg-red-600', 'hover:bg-red-700');
@@ -267,8 +269,14 @@
                 const result = await classifierPipeline(textToAnalyze, MUSIC_CONTEXTS, { hypothesis_template: "Aquesta situació és sobre {}." });
                 const bestMatch = result.labels[0]; const bestScore = result.scores[0]; log(`Resultat IA -> Etiqueta: ${bestMatch}, Confiança: ${(bestScore * 100).toFixed(1)}%`);
                 updateStatusDisplay(isListening ? "Escoltant..." : "Inactiu", "green");
-                if (bestScore > 0.4) { return bestMatch; }
-                log("Confiança del resultat per sota del llindar (40%). Mantenint context actual."); return currentContext;
+                
+                // PUNT FINAL: Llindar de confiança rebaixat al 35% per a més reactivitat
+                if (bestScore > 0.35) { 
+                    return bestMatch; 
+                }
+
+                log(`Confiança del resultat per sota del llindar (35%). Mantenint context actual: ${currentContext}.`); 
+                return currentContext;
             } catch (error) { logError("Error durant la classificació:", error); return currentContext; }
         }
 
