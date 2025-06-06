@@ -4,22 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harmonia Arcana</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <script src="[https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js](https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js)"></script>
+    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
+    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css)" />
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #111827; color: #f3f4f6; }
         .input-styled { background-color: #374151; border: 1px solid #4b5563; color: #f3f4f6; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; width: 100%; }
         .input-styled:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5); }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .dot-gray { background-color: #6b7280; } .dot-green { background-color: #10b981; }
-        .dot-yellow { background-color: #f59e0b; }
+        .dot-gray { background-color: #6b7280; } .dot-green { background-color: #10b981; } .dot-yellow { background-color: #f59e0b; }
         #custom-message-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1050; display: none; font-size: 0.875rem; border: 1px solid rgba(255,255,255,0.1); }
-        .message-success { background-color: #059669; color: #d1fae5; }
-        .message-error { background-color: #b91c1c; color: #fee2e2; }
-        .message-info { background-color: #1d4ed8; color: #dbeafe; }
+        .message-success { background-color: #059669; color: #d1fae5; } .message-error { background-color: #b91c1c; color: #fee2e2; } .message-info { background-color: #1d4ed8; color: #dbeafe; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 pt-8 sm:p-6">
@@ -32,7 +29,7 @@
             <p class="text-gray-400 mb-6">Per activar la IA, necessites una clau API gratuïta de Google AI Studio.</p>
             <div class="text-left space-y-4 mb-8">
                 <p><strong class="text-purple-300">1.</strong> Fes clic al botó per obtenir la teva clau (s'obrirà una nova pestanya).</p>
-                <a href="https://aistudio.google.com/" target="_blank" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"><i class="fas fa-key mr-2"></i>Obtenir la meva Clau a Google AI Studio</a>
+                <a href="[https://aistudio.google.com/](https://aistudio.google.com/)" target="_blank" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"><i class="fas fa-key mr-2"></i>Obtenir la meva Clau a Google AI Studio</a>
                 <p><strong class="text-purple-300">2.</strong> Un cop la tinguis, enganxa-la al camp de sota i desa-la.</p>
             </div>
             <input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí la teva clau API...">
@@ -51,8 +48,8 @@
                  <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
                     <h2 class="text-xl font-semibold text-purple-300 mb-4">Prepara la Teva Sessió</h2>
                     <div class="mb-6">
-                        <label for="session-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Basa la simfonia en: (opcional)</label>
-                        <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Star Wars, Blade Runner, El Senyor dels Anells...">
+                        <label for="session-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Defineix l'estil musical: (opcional)</label>
+                        <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Fantasia èpica, Blade Runner, terror lovecraftià...">
                     </div>
                     <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3"><i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia</button>
                 </div>
@@ -71,7 +68,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                         <button id="toggle-listening-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm"><i class="fas fa-microphone mr-2"></i>Escoltar</button>
                         <button id="skip-context-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg text-sm" title="Força una anàlisi del text acumulat"><i class="fas fa-sync-alt mr-2"></i>Forçar Anàlisi</button>
-                        <button id="stop-music-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm"><i class="fas fa-pause mr-2"></i>Aturar Música</button>
+                        <button id="stop-music-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm"><i class="fas fa-pause mr-2"></i>Pausa</button>
                     </div>
                     <div class="mb-4 p-3 bg-gray-700 rounded-lg h-20 overflow-y-auto text-xs text-gray-300 border border-gray-600">
                         <p id="transcript-preview">La transcripció en directe apareixerà aquí...</p>
@@ -91,13 +88,25 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250606_2355_UI_FIX_AND_FINAL";
+        const SCRIPT_VERSION = "V20250607_0003_FINAL_STABLE";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
         
         const API_KEY_STORAGE_KEY = 'harmoniaArcanaApiKey';
         let apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+
+        // Funció showCustomMessage RESTAURADA
+        function showCustomMessage(message, type = 'info', duration = 3000) {
+            const box = document.getElementById('custom-message-box');
+            if(!box) return;
+            box.style.display = 'block';
+            box.textContent = message;
+            box.className = `message-${type.toLowerCase()}`;
+            if (duration > 0) {
+                setTimeout(() => { if (box.textContent === message) box.style.display = 'none'; }, duration);
+            }
+        }
 
         function showUI() {
             apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
@@ -113,14 +122,20 @@
         }
 
         function showScreen(screenId) {
-            document.getElementById('initial-setup-screen').classList.add('hidden');
-            document.getElementById('active-session-content').classList.add('hidden');
-            document.getElementById(screenId).classList.remove('hidden');
+            document.getElementById('initial-setup-screen').classList.remove('hidden');
+            document.getElementById('active-session-content').classList.remove('hidden');
+            if (screenId === 'initial-setup-screen') {
+                 document.getElementById('active-session-content').classList.add('hidden');
+            } else {
+                 document.getElementById('initial-setup-screen').classList.add('hidden');
+            }
         }
 
         function updateStatusDisplay(status, color = 'gray') {
             const statusMessage = document.getElementById('status-message');
+            const statusDot = document.getElementById('status-dot');
             if (statusMessage) statusMessage.textContent = status;
+            if (statusDot) statusDot.className = `status-dot dot-${color}`;
         }
 
         const musicManager = {
@@ -138,35 +153,38 @@
                     this.isPaused = false;
                     document.getElementById('music-status').textContent = `Reproduint (${recipe.name})`;
                     this.updateToggleButton();
-                } catch (error) { logError("Error al musicManager.play:", error); }
+                } catch (error) { logError("Error al musicManager.play:", error); showCustomMessage("Error en la recepta musical. Comprova la consola.", "error"); }
             },
             pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton(); } },
             resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton(); } },
-            stop() { if (this.currentMusicLoop) { this.currentMusicLoop.stop(0).dispose(); this.currentMusicLoop = null; } if (Tone.Transport.state !== 'stopped') Tone.Transport.stop(); Tone.Transport.cancel(); this.isPaused = false; this.updateToggleButton(); },
-            updateToggleButton() { const btn = document.getElementById('stop-music-btn'); if(!btn) return; if (this.isPaused) { btn.innerHTML = `<i class="fas fa-play mr-2"></i>Reprendre`; btn.classList.remove('bg-red-600'); btn.classList.add('bg-green-600');} else { btn.innerHTML = `<i class="fas fa-pause mr-2"></i>Pausa`; btn.classList.remove('bg-green-600'); btn.classList.add('bg-red-600');} }
+            stop() { if (this.currentMusicLoop) { this.currentMusicLoop.stop(0).dispose(); this.currentMusicLoop = null; } if (Tone.Transport.state !== 'stopped') Tone.Transport.stop(); Tone.Transport.cancel(); this.isPaused = false; const musicStatus = document.getElementById('music-status'); if(musicStatus) musicStatus.textContent = "Aturada"; this.updateToggleButton(); },
+            updateToggleButton() { const btn = document.getElementById('stop-music-btn'); if(!btn) return; if (this.isPaused) { btn.innerHTML = `<i class="fas fa-play mr-2"></i>Reprendre`; btn.classList.remove('bg-red-600', 'hover:bg-red-700'); btn.classList.add('bg-green-600', 'hover:bg-green-700'); } else { btn.innerHTML = `<i class="fas fa-pause mr-2"></i>Pausa`; btn.classList.remove('bg-green-600', 'hover:bg-green-700'); btn.classList.add('bg-red-600', 'hover:bg-red-700'); } }
         };
 
         async function getMusicRecipeFromAI(text, inspiration) {
             updateStatusDisplay("Consultant IA externa...", "yellow");
             const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            const prompt = `Ets Harmonia, una IA directora musical per a partides de rol. La teva tasca és crear una "recepta musical" en format JSON per ambientar una escena. No responguis res més que el JSON. No utilitzis markdown. INSPIRACIÓ ESTILÍSTICA: "${inspiration || 'Fantasia clàssica'}". DIÀLEG/DESCRIPCIÓ DE L'ESCENA: "${text}". Basant-te en això, crea un objecte JSON amb: "name" (string), "bpm" (número), "key" (string), "noteDuration" (string), "interval" (string), "sequence" (array de notes/acords), i "synth" (objecte amb "volume", i un objecte "oscillator" amb "type").`;
+            const prompt = `Ets Harmonia, una IA directora musical per a partides de rol. La teva tasca és crear una "recepta musical" en format JSON per ambientar una escena. Respon només amb el JSON, sense text addicional ni format markdown. INSPIRACIÓ ESTILÍSTICA: "${inspiration || 'Fantasia clàssica'}". DIÀLEG/DESCRIPCIÓ DE L'ESCENA: "${text}". Basant-te en això, crea un objecte JSON amb: "name" (string), "bpm" (número), "key" (string), "noteDuration" (string en notació de Tone.js com "4n", "8n", "1m"), "interval" (string en notació de Tone.js com "4n"), "sequence" (un array de notes o acords en notació de Tone.js), i "synth" (objecte amb "volume" en decibels -ex: -12-, i un objecte "oscillator" amb "type": "sine", "sawtooth", "triangle" o "square").`;
             try {
                 const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error.message);
-                }
+                if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
                 const responseData = await response.json();
-                const jsonText = responseData.candidates[0].content.parts[0].text;
+                let jsonText = responseData.candidates[0].content.parts[0].text;
                 log("Resposta rebuda de la IA:", jsonText);
+                
+                // Netejador de JSON per eliminar ```json ... ```
+                if (jsonText.startsWith("```json")) {
+                    jsonText = jsonText.substring(7, jsonText.length - 3);
+                }
+
                 return JSON.parse(jsonText);
             } catch (error) {
                 logError("Error en la petició a la IA:", error);
-                showCustomMessage(`Error de l'API: ${error.message}`, 'error', 5000);
+                showCustomMessage(`Error de l'API: ${error.message}`, 'error');
                 return null;
             }
         }
@@ -176,13 +194,15 @@
             if (!SpeechRecognition) { showCustomMessage("El teu navegador no suporta reconeixement de veu.", "error", 0); return; }
             recognition = new SpeechRecognition();
             recognition.lang = 'ca-ES'; recognition.continuous = true; recognition.interimResults = true;
-            recognition.onstart = () => { isListening = true; updateStatusDisplay("Escoltant...", "green"); };
-            recognition.onend = () => { isListening = false; updateStatusDisplay("Inactiu", "gray"); };
-            recognition.onerror = (event) => { logError("Error de reconeixement:", event.error); };
+            const toggleBtn = document.getElementById('toggle-listening-btn');
+
+            recognition.onstart = () => { isListening = true; updateStatusDisplay("Escoltant...", "green"); if(toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone-slash mr-2"></i>Aturar Escolta`; toggleBtn.classList.add('bg-orange-500'); } };
+            recognition.onend = () => { isListening = false; updateStatusDisplay("Inactiu", "gray"); if(toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`; toggleBtn.classList.remove('bg-orange-500'); } log("Reconeixement de veu aturat."); };
+            recognition.onerror = (event) => { logError("Error de reconeixement:", event.error); showCustomMessage(`Error de micro: ${event.error}`, 'error'); };
             recognition.onresult = (event) => { let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) { finalTranscript += event.results[i][0].transcript; } else { document.getElementById('transcript-preview').textContent = accumulatedTranscript + event.results[i][0].transcript; } } if(finalTranscript) { accumulatedTranscript += finalTranscript + '. '; document.getElementById('transcript-preview').textContent = accumulatedTranscript; } };
         }
         
-        function startListening() { if (!recognition) return; if (!isListening) { accumulatedTranscript = ""; recognition.start(); analysisInterval = setInterval(processAccumulatedTranscript, ANALYSIS_INTERVAL_MS); } }
+        function startListening() { if (!recognition) return; if (!isListening) { accumulatedTranscript = ""; document.getElementById('transcript-preview').textContent = "Escoltant..."; recognition.start(); analysisInterval = setInterval(processAccumulatedTranscript, ANALYSIS_INTERVAL_MS); } }
         function stopListening() { if (isListening) { recognition.stop(); clearInterval(analysisInterval); processAccumulatedTranscript(); } }
         async function processAccumulatedTranscript() { if (!accumulatedTranscript.trim()) return; const recipe = await getMusicRecipeFromAI(accumulatedTranscript, activeGameInspiration); if (recipe) musicManager.play(recipe); accumulatedTranscript = ""; }
 
@@ -193,12 +213,8 @@
 
             document.getElementById('save-api-key-btn').addEventListener('click', () => {
                 const key = document.getElementById('api-key-input').value;
-                if (key && key.trim() !== '') {
-                    localStorage.setItem(API_KEY_STORAGE_KEY, key);
-                    apiKey = key;
-                    showCustomMessage("Clau desada correctament!", "success");
-                    showUI();
-                } else { showCustomMessage("Si us plau, introdueix una clau vàlida.", "error"); }
+                if (key && key.trim() !== '') { localStorage.setItem(API_KEY_STORAGE_KEY, key); apiKey = key; showCustomMessage("Clau desada correctament!", "success"); showUI(); } 
+                else { showCustomMessage("Si us plau, introdueix una clau vàlida.", "error"); }
             });
 
             document.getElementById('start-session-btn').addEventListener('click', async () => { 
@@ -206,12 +222,12 @@
                     if (Tone.context.state !== 'running') { await Tone.start(); }
                     activeGameInspiration = document.getElementById('session-inspiration-input').value.trim();
                     document.getElementById('current-inspiration-display').textContent = activeGameInspiration ? `Inspiració: ${activeGameInspiration}` : 'Sense inspiració específica.';
-                    const initialRecipe = await getMusicRecipeFromAI("L'aventura comença en calma", activeGameInspiration || "Calma");
+                    const initialRecipe = await getMusicRecipeFromAI("L'aventura comença en calma", activeGameInspiration || "Fantasia tranquil·la");
                     if (initialRecipe) {
                         musicManager.play(initialRecipe);
                         showScreen('active-session-content');
                     }
-                } catch (error) { logError("Error en iniciar la sessió:", error); }
+                } catch (error) { logError("Error en iniciar la sessió:", error); showCustomMessage('Error iniciant la sessió. Comprova la clau i la consola.', 'error'); }
             });
 
             document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
