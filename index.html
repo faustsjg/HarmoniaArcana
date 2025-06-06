@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
     <style>
-        /* ... (estils idèntics) ... */
         body { font-family: 'Inter', sans-serif; background-color: #111827; color: #f3f4f6; overscroll-behavior: none; }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; transition: background-color 0.3s ease; }
         .dot-gray { background-color: #6b7280; } .dot-green { background-color: #10b981; }
@@ -25,12 +24,60 @@
 <body class="min-h-screen flex flex-col items-center p-4 pt-8 sm:p-6">
 
     <div id="custom-message-box"></div>
+
     <div class="w-full max-w-xl">
         <header class="mb-6 text-left">
-            </header>
+            <h1 class="text-3xl font-bold text-purple-400">Harmonia Arcana</h1>
+            <p class="text-gray-400 text-sm">El teu bard personal per ambientar partides èpiques.</p>
+        </header>
 
         <main id="main-content">
-            </main>
+            <section id="initial-setup-screen" class="space-y-6">
+                 <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
+                    <h2 class="text-xl font-semibold text-purple-300 mb-4">Prepara la Teva Sessió</h2>
+                    <div class="mb-6">
+                        <label for="session-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Inspiració Musical (opcional):</label>
+                        <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Fantasia èpica, Cyberpunk Noir...">
+                    </div>
+                    <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3">
+                        <i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia
+                    </button>
+                </div>
+            </section>
+
+            <section id="active-session-content" class="hidden space-y-6">
+                 <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
+                    <div class="flex items-center justify-between mb-1">
+                        <h2 id="active-session-display-title" class="text-2xl font-semibold text-purple-300">Sessió Activa</h2>
+                        <div class="flex items-center">
+                            <span id="status-dot" class="status-dot dot-gray"></span>
+                            <p id="status-message" class="text-sm text-gray-400">Inactiu</p>
+                        </div>
+                    </div>
+                    <p id="current-inspiration-display" class="text-sm text-purple-200 mb-3 italic"></p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                        <button id="toggle-listening-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">
+                            <i class="fas fa-microphone mr-2"></i>Escoltar
+                        </button>
+                        <button id="skip-context-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg text-sm" title="Força un canvi de context">
+                            <i class="fas fa-sync-alt mr-2"></i>Forçar Anàlisi
+                        </button>
+                        <button id="stop-music-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">
+                            <i class="fas fa-pause mr-2"></i>Aturar Música
+                        </button>
+                    </div>
+                    <div class="mb-4 p-3 bg-gray-700 rounded-lg h-20 overflow-y-auto text-xs text-gray-300 border border-gray-600">
+                        <p id="transcript-preview">La transcripció en directe apareixerà aquí...</p>
+                    </div>
+                    <div class="text-sm text-gray-400 mb-4">
+                        Estat de la música: <span id="music-status" class="font-semibold text-purple-300">Aturada</span>
+                    </div>
+                    <button id="end-session-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2.5 px-5 rounded-lg mt-6">
+                        <i class="fas fa-door-open mr-2"></i>Finalitzar Sessió
+                    </button>
+                </div>
+            </section>
+        </main>
 
         <footer class="mt-10 text-center">
             <p id="version-display" class="text-xs text-gray-600 mt-2"></p>
@@ -42,7 +89,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250606_1614_ON_DEMAND_SYNTH";
+        const SCRIPT_VERSION = "V20250606_1620_COMPLETE_CODE_FIX";
         log(`DEBUG: Harmonia Arcana Script ${SCRIPT_VERSION} carregant...`); 
         
         let pipelineImport = null, recognition, isListening = false, accumulatedTranscript = "", analysisInterval;
@@ -51,13 +98,33 @@
         const MUSIC_CONTEXTS = ["Combat", "Exploration", "Tension", "Social", "Magic", "Stealth", "Calm"];
         let activeGameInspiration = "", classifierPipeline = null, isModelLoading = false;   
         
-        function showCustomMessage(message, type = 'info', duration = 3000) { /* ... (idèntic) ... */ }
-        function showScreen(screenId) { /* ... (idèntic) ... */ }
-        function updateStatusDisplay(status, color = 'gray') { /* ... (idèntic) ... */ }
+        function showCustomMessage(message, type = 'info', duration = 3000) {
+            const box = document.getElementById('custom-message-box');
+            if(!box) return;
+            box.textContent = message;
+            box.className = `message-${type}`;
+            box.style.display = 'block';
+            if (duration > 0) {
+                setTimeout(() => { if (box.textContent === message) box.style.display = 'none'; }, duration);
+            }
+        }
         
-        // PUNT 2: NOU MUSIC MANAGER AMB CREACIÓ SOTA DEMANDA
+        function showScreen(screenId) {
+            document.getElementById('initial-setup-screen').classList.add('hidden');
+            document.getElementById('active-session-content').classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function updateStatusDisplay(status, color = 'gray') {
+            const statusDot = document.getElementById('status-dot');
+            const statusMessage = document.getElementById('status-message');
+            if (!statusDot || !statusMessage) return;
+            statusMessage.textContent = status;
+            statusDot.className = `status-dot dot-${color}`;
+        }
+        
         const musicManager = {
-            synths: {}, // Es guardarà aquí un cop creat
+            synths: {},
             currentMusicLoop: null,
             isPaused: false,
             configs: {
@@ -88,10 +155,53 @@
                 }
             },
             
-            pause() { /* ... (idèntic) ... */ },
-            resume() { /* ... (idèntic) ... */ },
-            stop() { /* ... (idèntic) ... */ },
-            updateToggleButton() { /* ... (idèntic) ... */ },
+            pause() {
+                if (Tone.Transport.state === 'started') {
+                    Tone.Transport.pause();
+                    this.isPaused = true;
+                    document.getElementById('music-status').textContent = `Pausat (${currentContext})`;
+                    log("Música pausada.");
+                    this.updateToggleButton();
+                }
+            },
+
+            resume() {
+                if (Tone.Transport.state === 'paused') {
+                    Tone.Transport.start();
+                    this.isPaused = false;
+                    document.getElementById('music-status').textContent = `Reproduint (${currentContext})`;
+                    log("Música represa.");
+                    this.updateToggleButton();
+                }
+            },
+
+            stop() {
+                if (this.currentMusicLoop) {
+                    this.currentMusicLoop.stop(0).dispose();
+                    this.currentMusicLoop = null;
+                }
+                if (Tone.Transport.state !== 'stopped') {
+                    Tone.Transport.stop();
+                }
+                Tone.Transport.cancel();
+                this.isPaused = false;
+                document.getElementById('music-status').textContent = "Aturada";
+                this.updateToggleButton();
+                log("Música aturada completament.");
+            },
+
+            updateToggleButton() {
+                const btn = document.getElementById('stop-music-btn');
+                if (this.isPaused) {
+                    btn.innerHTML = `<i class="fas fa-play mr-2"></i>Reprendre Música`;
+                    btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                } else {
+                    btn.innerHTML = `<i class="fas fa-pause mr-2"></i>Aturar Música`;
+                    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    btn.classList.add('bg-red-600', 'hover:bg-red-700');
+                }
+            },
 
             play(context) {
                 this.stop();
@@ -100,16 +210,14 @@
 
                 const selectedConfig = this.configs[context] || this.configs["Calm"];
                 
-                // Pas 1: Comprova si el sintetitzador ja existeix.
                 if (!this.synths[context]) {
                     log(`Sintetitzador per a '${context}' no trobat. Creant-lo ara...`);
                     try {
-                        // Pas 2: Si no existeix, el crea utilitzant la seva funció 'creator'.
                         this.synths[context] = selectedConfig.creator();
                         log(`Sintetitzador per a '${context}' creat amb èxit.`);
                     } catch (error) {
                         logError(`Error creant el sintetitzador per a ${context}:`, error);
-                        return; // Atura l'execució si no es pot crear el synth
+                        return;
                     }
                 }
                 
@@ -126,12 +234,43 @@
             }
         };
 
-        // La resta de funcions (setupSpeechRecognition, start/stopListening, etc.) romanen idèntiques
-        async function setupSpeechRecognition() { /* ... */ }
-        function startListening() { /* ... */ }
-        function stopListening() { /* ... */ }
-        async function processAccumulatedTranscript() { /* ... */ }
-        async function analyzeTextForContext(text, inspiration = "") { /* ... */ }
+        async function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { showCustomMessage("El teu navegador no suporta el reconeixement de veu.", "error", 0); document.getElementById('toggle-listening-btn').classList.add('btn-disabled'); return; }
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ca-ES'; recognition.continuous = true; recognition.interimResults = true;
+            recognition.onstart = () => { isListening = true; const btn = document.getElementById('toggle-listening-btn'); btn.innerHTML = `<i class="fas fa-microphone-slash mr-2"></i>Aturar Escolta`; btn.classList.remove('bg-purple-600', 'hover:bg-purple-700'); btn.classList.add('bg-red-600', 'hover:bg-red-700'); updateStatusDisplay("Escoltant...", "green"); };
+            recognition.onend = () => { isListening = false; const btn = document.getElementById('toggle-listening-btn'); btn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`; btn.classList.remove('bg-red-600', 'hover:bg-red-700'); btn.classList.add('bg-purple-600', 'hover:bg-purple-700'); updateStatusDisplay("Inactiu", "gray"); log("Reconeixement de veu aturat."); };
+            recognition.onerror = (event) => { logError("Error en reconeixement de veu:", event.error); let message = "Error en el reconeixement de veu."; if (event.error === 'not-allowed') { message = "L'accés al micròfon ha estat bloquejat. Habilita'l als permisos de la pàgina."; } else if (event.error === 'no-speech') { message = "No s'ha detectat veu. Prova de parlar més fort."; } showCustomMessage(message, "error"); };
+            recognition.onresult = (event) => { let interimTranscript = ''; let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) { finalTranscript += event.results[i][0].transcript; } else { interimTranscript += event.results[i][0].transcript; } } document.getElementById('transcript-preview').textContent = accumulatedTranscript + finalTranscript + interimTranscript; if(finalTranscript) { accumulatedTranscript += finalTranscript + '. '; log("Fragment de transcripció final afegit:", finalTranscript); } };
+        }
+        
+        function startListening() { if (!recognition) { showCustomMessage("El reconeixement de veu no està preparat.", "error"); return; } if (!isListening) { accumulatedTranscript = ""; document.getElementById('transcript-preview').textContent = "Escoltant..."; recognition.start(); analysisInterval = setInterval(processAccumulatedTranscript, ANALYSIS_INTERVAL_MS); } }
+        
+        function stopListening() { if (isListening) { recognition.stop(); clearInterval(analysisInterval); processAccumulatedTranscript(); } }
+        
+        async function processAccumulatedTranscript() { if (!accumulatedTranscript.trim()) { log("No hi ha text acumulat per analitzar."); return; } log("Processant text acumulat:", `"${accumulatedTranscript}"`); const newContext = await analyzeTextForContext(accumulatedTranscript, activeGameInspiration); if (newContext && newContext !== currentContext) { log(`---> Canvi de context detectat! Anterior: ${currentContext}. Nou: ${newContext}. Canviant música.`); musicManager.play(newContext); } else { log(`--- No es canvia el context. Nou detectat: ${newContext}. Actual: ${currentContext}.`); } accumulatedTranscript = ""; }
+        
+        async function analyzeTextForContext(text, inspiration = "") {
+            updateStatusDisplay("Analitzant...", "yellow");
+            if (isModelLoading) { showCustomMessage("El model ja s'està carregant...", "info"); return currentContext; }
+            if (!classifierPipeline) {
+                isModelLoading = true; showCustomMessage("Carregant model d'IA (pot trigar)...", "info", 0);
+                try {
+                    if (!pipelineImport) { const transformersModule = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1'); pipelineImport = transformersModule.pipeline; }
+                    classifierPipeline = await pipelineImport('zero-shot-classification', 'Xenova/mobilebert-uncased-mnli'); showCustomMessage("Model d'IA carregat!", "success");
+                } catch (error) { logError("Error carregant el model de Transformers.js:", error); showCustomMessage("Error crític carregant el model d'IA.", "error", 10000); isModelLoading = false; return currentContext; }
+                isModelLoading = false;
+            }
+            try {
+                const textToAnalyze = inspiration ? `Inspiració: ${inspiration}. Diàleg: ${text}` : text; log(`Enviant a la IA: "${textToAnalyze}"`);
+                const result = await classifierPipeline(textToAnalyze, MUSIC_CONTEXTS, { hypothesis_template: "Aquesta situació és sobre {}." });
+                const bestMatch = result.labels[0]; const bestScore = result.scores[0]; log(`Resultat IA -> Etiqueta: ${bestMatch}, Confiança: ${(bestScore * 100).toFixed(1)}%`);
+                updateStatusDisplay(isListening ? "Escoltant..." : "Inactiu", "green");
+                if (bestScore > 0.4) { return bestMatch; }
+                log("Confiança del resultat per sota del llindar (40%). Mantenint context actual."); return currentContext;
+            } catch (error) { logError("Error durant la classificació:", error); return currentContext; }
+        }
 
         document.addEventListener('DOMContentLoaded', async () => { 
             document.getElementById('version-display').textContent = `Versió: ${SCRIPT_VERSION}`;
@@ -144,16 +283,10 @@
                        await Tone.start();
                        showCustomMessage("Sistema d'àudio activat!", "success");
                     }
-                    
-                    // Ja no cal inicialitzar els synths aquí. Es farà sota demanda.
-                    
                     activeGameInspiration = document.getElementById('session-inspiration-input').value.trim();
                     document.getElementById('current-inspiration-display').textContent = activeGameInspiration ? `Inspiració: ${activeGameInspiration}` : 'Sense inspiració.';
                     showScreen('active-session-content');
-                    
-                    // La primera trucada a play crearà el synth "Calm"
                     musicManager.play("Calm");
-                    
                     if (!classifierPipeline && !isModelLoading) {
                         analyzeTextForContext("iniciant sessió");
                     }
@@ -163,10 +296,10 @@
                 }
             });
 
-            document.getElementById('toggle-listening-btn').addEventListener('click', () => { if (isListening) stopListening(); else startListening(); });
+            document.getElementById('toggle-listening-btn').addEventListener('click', () => { if (isListening) { stopListening(); } else { startListening(); } });
             document.getElementById('skip-context-btn').addEventListener('click', processAccumulatedTranscript);
-            document.getElementById('stop-music-btn').addEventListener('click', () => { if(musicManager.isPaused) musicManager.resume(); else musicManager.pause(); });
-            document.getElementById('end-session-btn').addEventListener('click', () => { if (isListening) stopListening(); musicManager.stop(); showScreen('initial-setup-screen'); showCustomMessage("Sessió finalitzada.", "info"); });
+            document.getElementById('stop-music-btn').addEventListener('click', () => { if(musicManager.isPaused) { musicManager.resume(); } else { musicManager.pause(); } });
+            document.getElementById('end-session-btn').addEventListener('click', () => { if (isListening) { stopListening(); } musicManager.stop(); showScreen('initial-setup-screen'); showCustomMessage("Sessió finalitzada.", "info"); });
         });
     </script>
 </body>
