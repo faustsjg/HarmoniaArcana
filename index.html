@@ -12,30 +12,31 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #111827; color: #f3f4f6; }
         .input-styled { background-color: #374151; border: 1px solid #4b5563; color: #f3f4f6; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; width: 100%; }
-        /* Altres estils... */
+        .input-styled:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5); }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .dot-gray { background-color: #6b7280; } .dot-green { background-color: #10b981; }
+        .dot-yellow { background-color: #f59e0b; }
+        #custom-message-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1050; display: none; font-size: 0.875rem; border: 1px solid rgba(255,255,255,0.1); }
+        .message-success { background-color: #059669; color: #d1fae5; }
+        .message-error { background-color: #b91c1c; color: #fee2e2; }
+        .message-info { background-color: #1d4ed8; color: #dbeafe; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 pt-8 sm:p-6">
 
-    <div id="custom-message-box" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1050; display: none; font-size: 0.875rem; border: 1px solid rgba(255,255,255,0.1);"></div>
+    <div id="custom-message-box"></div>
 
     <div id="api-key-setup-screen" class="w-full max-w-xl hidden">
         <div class="bg-gray-800 p-8 rounded-xl shadow-xl text-center">
             <h2 class="text-2xl font-bold text-purple-300 mb-4">Benvingut a Harmonia Arcana</h2>
             <p class="text-gray-400 mb-6">Per activar la IA, necessites una clau API gratuïta de Google AI Studio.</p>
-            
             <div class="text-left space-y-4 mb-8">
                 <p><strong class="text-purple-300">1.</strong> Fes clic al botó per obtenir la teva clau (s'obrirà una nova pestanya).</p>
-                <a href="https://aistudio.google.com/" target="_blank" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
-                    <i class="fas fa-key mr-2"></i>Obtenir la meva Clau a Google AI Studio
-                </a>
+                <a href="https://aistudio.google.com/" target="_blank" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"><i class="fas fa-key mr-2"></i>Obtenir la meva Clau a Google AI Studio</a>
                 <p><strong class="text-purple-300">2.</strong> Un cop la tinguis, enganxa-la al camp de sota i desa-la.</p>
             </div>
-
             <input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí la teva clau API...">
-            <button id="save-api-key-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg">
-                <i class="fas fa-save mr-2"></i>Desar Clau i Començar
-            </button>
+            <button id="save-api-key-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg"><i class="fas fa-save mr-2"></i>Desar Clau i Començar</button>
         </div>
     </div>
 
@@ -46,20 +47,18 @@
         </header>
 
         <main id="main-content">
-            <section id="initial-setup-screen" class="space-y-6">
+            <section id="initial-setup-screen">
                  <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
                     <h2 class="text-xl font-semibold text-purple-300 mb-4">Prepara la Teva Sessió</h2>
                     <div class="mb-6">
-                        <label for="session-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Inspiració (Pista per la IA):</label>
-                        <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Fantasia èpica, Cyberpunk Noir...">
+                        <label for="session-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Basa la simfonia en: (opcional)</label>
+                        <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Star Wars, Blade Runner, El Senyor dels Anells...">
                     </div>
-                    <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3">
-                        <i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia
-                    </button>
+                    <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3"><i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia</button>
                 </div>
             </section>
 
-            <section id="active-session-content" class="hidden space-y-6">
+            <section id="active-session-content" class="hidden">
                  <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
                     <div class="flex items-center justify-between mb-1">
                         <h2 class="text-2xl font-semibold text-purple-300">Sessió Activa</h2>
@@ -70,15 +69,15 @@
                     </div>
                     <p id="current-inspiration-display" class="text-sm text-purple-200 mb-3 italic"></p>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                        <button id="toggle-listening-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Escoltar</button>
-                        <button id="skip-context-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Forçar Anàlisi</button>
-                        <button id="stop-music-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Aturar Música</button>
+                        <button id="toggle-listening-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm"><i class="fas fa-microphone mr-2"></i>Escoltar</button>
+                        <button id="skip-context-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg text-sm" title="Força una anàlisi del text acumulat"><i class="fas fa-sync-alt mr-2"></i>Forçar Anàlisi</button>
+                        <button id="stop-music-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm"><i class="fas fa-pause mr-2"></i>Aturar Música</button>
                     </div>
                     <div class="mb-4 p-3 bg-gray-700 rounded-lg h-20 overflow-y-auto text-xs text-gray-300 border border-gray-600">
                         <p id="transcript-preview">La transcripció en directe apareixerà aquí...</p>
                     </div>
                     <div class="text-sm text-gray-400 mb-4">Estat de la música: <span id="music-status" class="font-semibold text-purple-300">Aturada</span></div>
-                    <button id="end-session-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2.5 px-5 rounded-lg mt-6">Finalitzar Sessió</button>
+                    <button id="end-session-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2.5 px-5 rounded-lg mt-6"><i class="fas fa-door-open mr-2"></i>Finalitzar Sessió</button>
                 </div>
             </section>
         </main>
@@ -92,35 +91,40 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250606_2045_API_IMPLEMENTATION";
+        const SCRIPT_VERSION = "V20250606_2355_UI_FIX_AND_FINAL";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
         
-        // --- Lògica de l'API Key (NOVA) ---
         const API_KEY_STORAGE_KEY = 'harmoniaArcanaApiKey';
         let apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
 
         function showUI() {
             apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+            const apiKeyScreen = document.getElementById('api-key-setup-screen');
+            const mainApp = document.getElementById('main-app-content');
             if (apiKey) {
-                document.getElementById('api-key-setup-screen').classList.add('hidden');
-                document.getElementById('main-app-content').classList.remove('hidden');
+                apiKeyScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
             } else {
-                document.getElementById('api-key-setup-screen').classList.remove('hidden');
-                document.getElementById('main-app-content').classList.add('hidden');
+                apiKeyScreen.classList.remove('hidden');
+                mainApp.classList.add('hidden');
             }
         }
 
-        // --- Funcions de UI ---
-        function showCustomMessage(message, type = 'info', duration = 3000) { /* ... */ }
-        function showScreen(screenId) { /* ... */ }
-        function updateStatusDisplay(status, color = 'gray') { /* ... */ }
+        function showScreen(screenId) {
+            document.getElementById('initial-setup-screen').classList.add('hidden');
+            document.getElementById('active-session-content').classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        }
 
-        // --- Gestor de Música (Modificat per a Receptes) ---
+        function updateStatusDisplay(status, color = 'gray') {
+            const statusMessage = document.getElementById('status-message');
+            if (statusMessage) statusMessage.textContent = status;
+        }
+
         const musicManager = {
             currentMusicLoop: null, isPaused: false,
-            pause() { /* ... */ }, resume() { /* ... */ }, stop() { /* ... */ }, updateToggleButton() { /* ... */ },
             play(recipe) {
                 this.stop();
                 log(`Reproduint nova recepta musical:`, recipe);
@@ -135,105 +139,84 @@
                     document.getElementById('music-status').textContent = `Reproduint (${recipe.name})`;
                     this.updateToggleButton();
                 } catch (error) { logError("Error al musicManager.play:", error); }
-            }
+            },
+            pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton(); } },
+            resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton(); } },
+            stop() { if (this.currentMusicLoop) { this.currentMusicLoop.stop(0).dispose(); this.currentMusicLoop = null; } if (Tone.Transport.state !== 'stopped') Tone.Transport.stop(); Tone.Transport.cancel(); this.isPaused = false; this.updateToggleButton(); },
+            updateToggleButton() { const btn = document.getElementById('stop-music-btn'); if(!btn) return; if (this.isPaused) { btn.innerHTML = `<i class="fas fa-play mr-2"></i>Reprendre`; btn.classList.remove('bg-red-600'); btn.classList.add('bg-green-600');} else { btn.innerHTML = `<i class="fas fa-pause mr-2"></i>Pausa`; btn.classList.remove('bg-green-600'); btn.classList.add('bg-red-600');} }
         };
 
-        // --- Lògica d'IA amb API de Gemini (NOVA) ---
         async function getMusicRecipeFromAI(text, inspiration) {
             updateStatusDisplay("Consultant IA externa...", "yellow");
             const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            
-            const prompt = `
-                Ets Harmonia, una IA directora musical per a partides de rol.
-                La teva tasca és crear una "recepta musical" en format JSON per ambientar una escena.
-                No responguis res més que el JSON. No utilitzis markdown.
-
-                INSPIRACIÓ ESTILÍSTICA: "${inspiration || 'Fantasia clàssica'}"
-                DIÀLEG O DESCRIPCIÓ DE L'ESCENA: "${text}"
-
-                Basant-te en això, crea un objecte JSON amb les següents propietats:
-                - "name": Un nom descriptiu per a la peça (p.ex., "Tensió al carreró", "Combat èpic").
-                - "bpm": El tempo en beats per minut (número).
-                - "key": La tonalitat (p.ex., "Cm" per Do menor, "G" per Sol major).
-                - "noteDuration": La duració de les notes (p.ex., "8n", "4n").
-                - "interval": L'interval de la seqüència (p.ex., "4n").
-                - "sequence": Un array de notes o acords (arrays de notes). Ex: ["C3", ["E3", "G3"], "F#2"].
-                - "synth": Un objecte amb la configuració per a Tone.js PolySynth: "volume" (número), i un objecte "oscillator" amb "type" ("sine", "sawtooth", "triangle", "square").
-
-                Exemple de resposta per a un combat:
-                {"name": "Batalla imminent", "bpm": 130, "key": "Dm", "noteDuration": "8n", "interval": "8n", "sequence": ["D2", "A2", "D2", "Bb2"], "synth": {"volume": -12, "oscillator": {"type": "sawtooth"}}}
-            `;
-
+            const prompt = `Ets Harmonia, una IA directora musical per a partides de rol. La teva tasca és crear una "recepta musical" en format JSON per ambientar una escena. No responguis res més que el JSON. No utilitzis markdown. INSPIRACIÓ ESTILÍSTICA: "${inspiration || 'Fantasia clàssica'}". DIÀLEG/DESCRIPCIÓ DE L'ESCENA: "${text}". Basant-te en això, crea un objecte JSON amb: "name" (string), "bpm" (número), "key" (string), "noteDuration" (string), "interval" (string), "sequence" (array de notes/acords), i "synth" (objecte amb "volume", i un objecte "oscillator" amb "type").`;
             try {
                 const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-
                 if (!response.ok) {
                     const errorData = await response.json();
-                    logError("Error de l'API de Google:", errorData);
-                    showCustomMessage(`Error de l'API: ${errorData.error.message}`, 'error', 5000);
-                    return null;
+                    throw new Error(errorData.error.message);
                 }
-
                 const responseData = await response.json();
                 const jsonText = responseData.candidates[0].content.parts[0].text;
                 log("Resposta rebuda de la IA:", jsonText);
                 return JSON.parse(jsonText);
-
             } catch (error) {
-                logError("Error greu en la petició a la IA:", error);
-                showCustomMessage("Error de connexió amb la IA. Comprova la consola.", "error");
+                logError("Error en la petició a la IA:", error);
+                showCustomMessage(`Error de l'API: ${error.message}`, 'error', 5000);
                 return null;
             }
         }
 
-        // --- Lògica de Veu i Control ---
-        async function setupSpeechRecognition() { /* ... */ }
-        function startListening() { /* ... */ }
-        function stopListening() { /* ... */ }
-        async function processAccumulatedTranscript() {
-            if (!accumulatedTranscript.trim()) return;
-            const recipe = await getMusicRecipeFromAI(accumulatedTranscript, activeGameInspiration);
-            if (recipe) musicManager.play(recipe);
-            accumulatedTranscript = "";
+        async function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { showCustomMessage("El teu navegador no suporta reconeixement de veu.", "error", 0); return; }
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ca-ES'; recognition.continuous = true; recognition.interimResults = true;
+            recognition.onstart = () => { isListening = true; updateStatusDisplay("Escoltant...", "green"); };
+            recognition.onend = () => { isListening = false; updateStatusDisplay("Inactiu", "gray"); };
+            recognition.onerror = (event) => { logError("Error de reconeixement:", event.error); };
+            recognition.onresult = (event) => { let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) { finalTranscript += event.results[i][0].transcript; } else { document.getElementById('transcript-preview').textContent = accumulatedTranscript + event.results[i][0].transcript; } } if(finalTranscript) { accumulatedTranscript += finalTranscript + '. '; document.getElementById('transcript-preview').textContent = accumulatedTranscript; } };
         }
+        
+        function startListening() { if (!recognition) return; if (!isListening) { accumulatedTranscript = ""; recognition.start(); analysisInterval = setInterval(processAccumulatedTranscript, ANALYSIS_INTERVAL_MS); } }
+        function stopListening() { if (isListening) { recognition.stop(); clearInterval(analysisInterval); processAccumulatedTranscript(); } }
+        async function processAccumulatedTranscript() { if (!accumulatedTranscript.trim()) return; const recipe = await getMusicRecipeFromAI(accumulatedTranscript, activeGameInspiration); if (recipe) musicManager.play(recipe); accumulatedTranscript = ""; }
 
-        // --- Inicialització de l'Aplicació ---
         document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('version-display').textContent = `Versió: ${SCRIPT_VERSION}`;
             showUI();
+            await setupSpeechRecognition();
 
             document.getElementById('save-api-key-btn').addEventListener('click', () => {
                 const key = document.getElementById('api-key-input').value;
                 if (key && key.trim() !== '') {
                     localStorage.setItem(API_KEY_STORAGE_KEY, key);
+                    apiKey = key;
                     showCustomMessage("Clau desada correctament!", "success");
                     showUI();
-                } else {
-                    showCustomMessage("Si us plau, introdueix una clau vàlida.", "error");
-                }
+                } else { showCustomMessage("Si us plau, introdueix una clau vàlida.", "error"); }
             });
-
-            await setupSpeechRecognition(); 
-            showScreen('initial-setup-screen'); 
 
             document.getElementById('start-session-btn').addEventListener('click', async () => { 
                 try {
-                    if (Tone.context.state !== 'running') { await Tone.start(); showCustomMessage("Sistema d'àudio activat!", "success"); }
+                    if (Tone.context.state !== 'running') { await Tone.start(); }
                     activeGameInspiration = document.getElementById('session-inspiration-input').value.trim();
-                    document.getElementById('current-inspiration-display').textContent = activeGameInspiration ? `Inspiració: ${activeGameInspiration}` : 'Sense inspiració.';
-                    showScreen('active-session-content');
-                    const initialRecipe = await getMusicRecipeFromAI("L'aventura comença en calma", "Calma");
-                    if (initialRecipe) musicManager.play(initialRecipe);
+                    document.getElementById('current-inspiration-display').textContent = activeGameInspiration ? `Inspiració: ${activeGameInspiration}` : 'Sense inspiració específica.';
+                    const initialRecipe = await getMusicRecipeFromAI("L'aventura comença en calma", activeGameInspiration || "Calma");
+                    if (initialRecipe) {
+                        musicManager.play(initialRecipe);
+                        showScreen('active-session-content');
+                    }
                 } catch (error) { logError("Error en iniciar la sessió:", error); }
             });
 
-            document.getElementById('toggle-listening-btn').addEventListener('click', () => { if (isListening) stopListening(); else startListening(); });
+            document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
             document.getElementById('skip-context-btn').addEventListener('click', processAccumulatedTranscript);
-            document.getElementById('stop-music-btn').addEventListener('click', () => { if (musicManager.isPaused) musicManager.resume(); else musicManager.pause(); });
+            document.getElementById('stop-music-btn').addEventListener('click', () => { musicManager.isPaused ? musicManager.resume() : musicManager.pause(); });
             document.getElementById('end-session-btn').addEventListener('click', () => { if (isListening) stopListening(); musicManager.stop(); showScreen('initial-setup-screen'); });
         });
     </script>
