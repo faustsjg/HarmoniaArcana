@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harmonia Arcana</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js" integrity="sha512-nUokjAQd/TptUu/bS3Nckc7s5hN7DCOmiA/DbI9ldd4o/BqI/ch02V9y+sCLgI/1kY3rJqIor6W9AJL4YpB6CA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js" integrity="sha512-jduERlz7En1IUZR54bqzpNI64AbffZWR//KJgF71SJ8D8/liKFZ+s1RxmUmB+bhCnIfzebdZsULwOrbVB5f3nQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -15,8 +15,7 @@
         .dot-gray { background-color: #6b7280; } .dot-green { background-color: #10b981; }
         .dot-yellow { background-color: #f59e0b; } .dot-red { background-color: #ef4444; }
         #custom-message-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1050; display: none; font-size: 0.875rem; border: 1px solid rgba(255,255,255,0.1); }
-        .message-success { background-color: #059669; color: #d1fae5; } .message-error { background-color: #b91c1c; color: #fee2e2; }
-        .message-info { background-color: #1d4ed8; color: #dbeafe; }
+        .message-success { background-color: #059669; color: #d1fae5; } .message-error { background-color: #b91c1c; color: #fee2e2; } .message-info { background-color: #1d4ed8; color: #dbeafe; }
         .input-styled { background-color: #374151; border: 1px solid #4b5563; color: #f3f4f6; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; width: 100%; }
         .input-styled:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5); }
         .session-clip-btn { background-color: #4a5568; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; transition: background-color 0.2s; font-size: 0.875rem; margin: 0.25rem; }
@@ -87,24 +86,21 @@
         </main>
 
         <footer class="mt-10 text-center">
-            <p class="text-xs text-gray-500">L'anàlisi de veu i la generació de música són experimentals.</p>
-            <p class="text-xs text-gray-500">Assegura't de permetre l'accés al micròfon i que la pàgina es carregui per HTTPS.</p>
             <p id="version-display" class="text-xs text-gray-600 mt-2"></p>
         </footer>
     </div>
 
     <script type="module"> 
-        // PUNT 5: GESTIÓ DE DEBUG
         const DEBUG = true;
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250606_1430_FULL_IMPLEMENTATION";
+        // VERSIÓ ACTUALITZADA AMB LA CORRECCIÓ
+        const SCRIPT_VERSION = "V20250606_1447_SRI_FIX";
         log(`DEBUG: Harmonia Arcana Script ${SCRIPT_VERSION} carregant...`); 
         
         let pipelineImport = null; 
 
-        // Variables d'estat de l'aplicació
         let recognition; 
         let isListening = false;
         let accumulatedTranscript = "";
@@ -114,12 +110,9 @@
         const MUSIC_CONTEXTS = ["Combat", "Exploration", "Tension", "Social", "Magic", "Stealth", "Calm"];
         let activeGameInspiration = ""; 
         
-        // Variables del model d'IA
         let classifierPipeline = null; 
         let isModelLoading = false;   
-        let currentLoadingMessageId = null; 
-
-        // --- Gestió de missatges i pantalles ---
+        
         function showCustomMessage(message, type = 'info', duration = 3000) {
             const box = document.getElementById('custom-message-box');
             if(!box) return;
@@ -145,13 +138,13 @@
             statusDot.className = `status-dot dot-${color}`;
         }
         
-        // --- PUNT 1 & 2: GESTOR DE MÚSICA HÍBRID ---
         const musicManager = {
             synths: {},
             currentMusicLoop: null,
             baseContexts: ["Calm", "Exploration", "Combat"],
             
             initBaseSynths() {
+                if (Object.keys(this.synths).length > 0) return; // Ja estan inicialitzats
                 log("MusicManager: Pre-carregant sintetitzadors base...");
                 this.synths.Calm = new Tone.PolySynth(Tone.Synth,{oscillator:{type:"sine"},envelope:{attack:2,decay:1,sustain:0.8,release:2},volume:-18}).toDestination();
                 this.synths.Exploration = new Tone.FMSynth({harmonicity:1.5,modulationIndex:5,envelope:{attack:0.5,decay:0.1,sustain:0.8,release:1.5},volume:-15}).toDestination();
@@ -164,7 +157,10 @@
                     this.currentMusicLoop.stop(0).dispose();
                     this.currentMusicLoop = null;
                 }
-                Tone.Transport.stop().cancel();
+                if (Tone.Transport.state === 'started') {
+                    Tone.Transport.stop();
+                }
+                Tone.Transport.cancel();
                 document.getElementById('music-status').textContent = "Aturada";
                 log("Música aturada.");
             },
@@ -174,7 +170,7 @@
                 currentContext = context;
                 log(`Canviant context musical a: ${context}`);
 
-                let synth, loopConfig, bpm;
+                let loopConfig;
 
                 const configs = {
                     "Combat": {
@@ -189,13 +185,13 @@
                         interval: "1n",
                         bpm: 70
                     },
-                    "Tension": { // Generat sobre la marxa
+                    "Tension": { 
                         synth: new Tone.AMSynth({harmonicity:2,envelope:{attack:0.1,decay:1,sustain:0.1,release:1},volume:-18}).toDestination(),
                         loop: (synth, t) => synth.triggerAttackRelease("8n",t),
                         interval: "2n",
                         bpm: 60
                     },
-                    "Magic": { // Generat sobre la marxa
+                    "Magic": {
                         synth: new Tone.FMSynth({harmonicity:3,modulationIndex:10,envelope:{attack:1,decay:0.5,sustain:1,release:2},volume:-14}).toDestination(),
                         loop: (synth, t) => synth.triggerAttackRelease(["A3","C#4","E4","G#4"][Math.floor(t/4) % 4],"2n",t),
                         interval: "1m",
@@ -207,17 +203,10 @@
                         interval: "4m",
                         bpm: 60
                     }
-                    // Altres contextos es poden afegir aquí
                 };
 
                 const selectedConfig = configs[context] || configs["Calm"];
                 
-                if (!selectedConfig.synth) { // Si el synth no estava pre-carregat, el crea
-                    log(`Creant synth per a '${context}' sobre la marxa.`);
-                    // Aquesta part es pot expandir per crear els synths que no són base
-                    selectedConfig.synth = new Tone.PolySynth(Tone.Synth).toDestination(); // Genèric
-                }
-
                 this.currentMusicLoop = new Tone.Loop(t => selectedConfig.loop(selectedConfig.synth, t), selectedConfig.interval).start(0);
                 Tone.Transport.bpm.value = selectedConfig.bpm;
                 Tone.Transport.start();
@@ -227,7 +216,6 @@
             }
         };
 
-        // --- PUNT 3: IMPLEMENTACIÓ DE RECONEIXEMENT DE VEU ---
         async function setupSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -274,7 +262,6 @@
             recognition.onresult = (event) => {
                 let interimTranscript = '';
                 let finalTranscript = '';
-
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         finalTranscript += event.results[i][0].transcript;
@@ -282,9 +269,7 @@
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                
                 document.getElementById('transcript-preview').textContent = accumulatedTranscript + finalTranscript + interimTranscript;
-                
                 if(finalTranscript) {
                     accumulatedTranscript += finalTranscript + '. ';
                     log("Fragment de transcripció final afegit:", finalTranscript);
@@ -298,7 +283,7 @@
                 return;
             }
             if (!isListening) {
-                accumulatedTranscript = ""; // Neteja la transcripció anterior
+                accumulatedTranscript = "";
                 document.getElementById('transcript-preview').textContent = "Escoltant...";
                 recognition.start();
                 analysisInterval = setInterval(processAccumulatedTranscript, ANALYSIS_INTERVAL_MS);
@@ -309,7 +294,7 @@
             if (isListening) {
                 recognition.stop();
                 clearInterval(analysisInterval);
-                processAccumulatedTranscript(); // Processa el que quedi un últim cop
+                processAccumulatedTranscript();
             }
         }
 
@@ -323,17 +308,15 @@
             if (newContext !== currentContext) {
                 musicManager.play(newContext);
             }
-            accumulatedTranscript = ""; // Neteja el text un cop analitzat
+            accumulatedTranscript = "";
         }
         
-        // --- Anàlisi de Context amb IA ---
         async function analyzeTextForContext(text, inspiration = "") {
             updateStatusDisplay("Analitzant...", "yellow");
             if (isModelLoading) {
                 showCustomMessage("El model ja s'està carregant...", "info");
                 return currentContext;
             }
-
             if (!classifierPipeline) { 
                 isModelLoading = true;
                 showCustomMessage("Carregant model d'IA (pot trigar)...", "info", 0);
@@ -352,16 +335,15 @@
                 }
                 isModelLoading = false;
             }
-
             try {
                 const textToAnalyze = inspiration ? `Inspiració: ${inspiration}. Diàleg: ${text}` : text;
                 const result = await classifierPipeline(textToAnalyze, MUSIC_CONTEXTS, { hypothesis_template: "Aquesta situació és sobre {}." });
                 log("Resultat classificació:", result);
                 updateStatusDisplay(isListening ? "Escoltant..." : "Inactiu", "green");
-                if (result.scores[0] > 0.5) { // Llindar de confiança
+                if (result.scores[0] > 0.5) {
                    return result.labels[0];
                 }
-                return currentContext; // Mantenim el context si no hi ha prou confiança
+                return currentContext;
             } catch (error) {
                 logError("Error durant la classificació:", error);
                 showCustomMessage("Error analitzant el context.", "error");
@@ -369,7 +351,6 @@
             }
         }
         
-        // --- Codi d'Inicialització ---
         document.addEventListener('DOMContentLoaded', async () => { 
             document.getElementById('version-display').textContent = `Versió: ${SCRIPT_VERSION}`;
             await setupSpeechRecognition(); 
@@ -377,19 +358,22 @@
 
             const startSessionBtn = document.getElementById('start-session-btn');
             startSessionBtn.addEventListener('click', async () => { 
-                await Tone.start();
-                showCustomMessage("Sistema d'àudio activat!", "success");
-                
-                musicManager.initBaseSynths(); // Pre-carrega els sons
-                activeGameInspiration = document.getElementById('session-inspiration-input').value.trim();
-                document.getElementById('current-inspiration-display').textContent = activeGameInspiration ? `Inspiració: ${activeGameInspiration}` : 'Sense inspiració.';
-                
-                showScreen('active-session-content');
-                musicManager.play("Calm");
-                
-                // Precàrrega del model d'IA en segon pla
-                if (!classifierPipeline && !isModelLoading) {
-                    analyzeTextForContext("iniciant sessió");
+                try {
+                    if (Tone.context.state !== 'running') {
+                       await Tone.start();
+                       showCustomMessage("Sistema d'àudio activat!", "success");
+                    }
+                    musicManager.initBaseSynths();
+                    activeGameInspiration = document.getElementById('session-inspiration-input').value.trim();
+                    document.getElementById('current-inspiration-display').textContent = activeGameInspiration ? `Inspiració: ${activeGameInspiration}` : 'Sense inspiració.';
+                    showScreen('active-session-content');
+                    musicManager.play("Calm");
+                    if (!classifierPipeline && !isModelLoading) {
+                        analyzeTextForContext("iniciant sessió");
+                    }
+                } catch (error) {
+                    logError("Error en iniciar la sessió (potser per Tone.start):", error);
+                    showCustomMessage("No s'ha pogut iniciar l'àudio. Interactua amb la pàgina i torna-ho a provar.", "error");
                 }
             });
 
@@ -404,10 +388,6 @@
             document.getElementById('end-session-btn').addEventListener('click', () => { 
                 if (isListening) stopListening();
                 musicManager.stop();
-                
-                // PUNT 1: PERSISTÈNCIA DEL MODEL IA - Ja no esborrem el pipeline
-                // classifierPipeline = null; // AQUESTA LÍNIA S'HA ELIMINAT
-                
                 showScreen('initial-setup-screen');
                 showCustomMessage("Sessió finalitzada.", "info");
             });
