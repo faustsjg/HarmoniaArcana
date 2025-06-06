@@ -88,7 +88,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250607_0010_LINK_FIX";
+        const SCRIPT_VERSION = "V20250607_0020_STABLE_FINAL";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -101,7 +101,8 @@
             if(!box) return;
             box.style.display = 'block';
             box.textContent = message;
-            box.className = `message-${type.toLowerCase()}`;
+            box.className = '';
+            box.classList.add('message-' + type.toLowerCase());
             if (duration > 0) {
                 setTimeout(() => { if (box.textContent === message) box.style.display = 'none'; }, duration);
             }
@@ -156,8 +157,8 @@
                     this.updateToggleButton();
                 } catch (error) { logError("Error al musicManager.play:", error); showCustomMessage("Error en la recepta musical. Comprova la consola.", "error"); }
             },
-            pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton(); } },
-            resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton(); } },
+            pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton(); document.getElementById('music-status').textContent = `Pausat`;} },
+            resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton(); document.getElementById('music-status').textContent = `Reproduint`;} },
             stop() { if (this.currentMusicLoop) { this.currentMusicLoop.stop(0).dispose(); this.currentMusicLoop = null; } if (Tone.Transport.state !== 'stopped') Tone.Transport.stop(); Tone.Transport.cancel(); this.isPaused = false; const musicStatus = document.getElementById('music-status'); if(musicStatus) musicStatus.textContent = "Aturada"; this.updateToggleButton(); },
             updateToggleButton() { const btn = document.getElementById('stop-music-btn'); if(!btn) return; if (this.isPaused) { btn.innerHTML = `<i class="fas fa-play mr-2"></i>Reprendre`; btn.classList.remove('bg-red-600','hover:bg-red-700'); btn.classList.add('bg-green-600','hover:bg-green-700');} else { btn.innerHTML = `<i class="fas fa-pause mr-2"></i>Pausa`; btn.classList.remove('bg-green-600','hover:bg-green-700'); btn.classList.add('bg-red-600','hover:bg-red-700');} }
         };
@@ -177,11 +178,14 @@
                 let jsonText = responseData.candidates[0].content.parts[0].text;
                 log("Resposta rebuda de la IA:", jsonText);
                 
-                if (jsonText.startsWith("```json")) {
-                    jsonText = jsonText.substring(7, jsonText.length - 3).trim();
+                // SOLUCIÓ DEFINITIVA: Netejador de JSON amb expressió regular
+                const match = jsonText.match(/\{[\s\S]*\}/);
+                if (!match) {
+                    throw new Error("La resposta de la IA no conté un objecte JSON vàlid.");
                 }
+                const cleanedJson = match[0];
+                return JSON.parse(cleanedJson);
 
-                return JSON.parse(jsonText);
             } catch (error) {
                 logError("Error en la petició a la IA:", error);
                 showCustomMessage(`Error de l'API: ${error.message}`, 'error');
@@ -225,6 +229,8 @@
                     if (initialRecipe) {
                         musicManager.play(initialRecipe);
                         showScreen('active-session-content');
+                    } else {
+                        showCustomMessage("No s'ha pogut generar la música inicial. Comprova la clau API i la consola.", "error");
                     }
                 } catch (error) { logError("Error en iniciar la sessió:", error); showCustomMessage('Error iniciant la sessió. Comprova la clau i la consola.', 'error'); }
             });
