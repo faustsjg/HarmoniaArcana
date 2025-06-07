@@ -50,7 +50,7 @@
                     <h2 class="text-xl font-semibold text-purple-300 mb-4">Prepara la Teva Sessió</h2>
                     <div class="mb-6">
                         <label for="session-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Defineix l'estil musical: (opcional)</label>
-                        <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Fantasia èpica, Blade Runner, terror lovecraftià...">
+                        <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Hans Zimmer, Fantasia èpica, Lo-fi per estudiar...">
                     </div>
                     <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3"><i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia</button>
                 </div>
@@ -89,7 +89,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250607_0415_FINAL_DELIVERY";
+        const SCRIPT_VERSION = "V20250607_0900_SELF_THINKING_AI";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -151,10 +151,11 @@
                 if (btn) {
                     btn.disabled = loading;
                     if (loading) {
-                        btn.classList.add('btn-loading');
-                        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Processant...`;
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                        if (btn.id === 'start-session-btn') btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Iniciant...`;
+                        else btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Processant...`;
                     } else {
-                        btn.classList.remove('btn-loading');
+                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
                         if (btn.id === 'start-session-btn') btn.innerHTML = `<i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia`;
                         if (btn.id === 'toggle-listening-btn') btn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`;
                         if (btn.id === 'skip-context-btn') btn.innerHTML = `<i class="fas fa-sync-alt mr-2"></i>Forçar Anàlisi`;
@@ -217,7 +218,29 @@
             setButtonsLoading(true);
             updateStatusDisplay("Consultant IA Orquestral...", "yellow");
             const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            const prompt = `Ets Harmonia, una IA compositora guardonada, experta en crear bandes sonores emotives per a jocs de rol. La teva tasca és crear una partitura musical complexa en format JSON que s'adapti a l'escena. Respon només amb el JSON, sense text addicional ni format markdown. INSPIRACIÓ ESTILÍSTICA GENERAL: "${inspiration || 'Fantasia clàssica'}". DIÀLEG O DESCRIPCIÓ DE L'ESCENA ACTUAL: "${text}". INSTRUCCIONS DETALLADES: 1. Analitza l'estil i l'escena per definir l'ambient (èpic, tens, misteriós, relaxat, etc.). 2. Crea una composició amb múltiples capes que interactuïn entre si. Utilitza una melodia principal, una harmonia de suport, i una línia de baix o rítmica. 3. Basa't en la tonalitat ('key') per crear harmonies consonants i interessants. La teva composició ha de tenir una progressió i un desenvolupament. 4. Utilitza una varietat d'instruments i sons. Per a les cordes, un so ric i ample. Per als metalls, un so brillant i potent. Per a la percussió, que sigui contundent. Genera un objecte JSON amb l'estructura següent: "name" (string), "bpm" (número), "key" (string), "parts" (un array d'objectes instrumentals, mínim 2, idealment 3 o 4). Cada instrument ha de tenir: "instrument" (string), "loopDuration" (string, ex: "2m"), "synth" (objecte de configuració Tone.js, pot ser 'PolySynth' amb 'oscillator' i 'envelope', o 'MembraneSynth' per a percussió. 'volume' en decibels, ex: -12), "sequence" (un array d'events per a Tone.Part, cada event és un objecte amb "time" en notació "mesura:temps:setzena", "note" en notació Tone.js, i "duration" en notació Tone.js), i opcionalment "effects" (un objecte amb "reverb" que té "decay" i "wet").`;
+            
+            // PROMPT DEFINITIU AMB EL "RAONAMENT EN DOS PASSOS"
+            const prompt = `
+                Ets Harmonia, una IA compositora guardonada, experta en crear bandes sonores emotives i dinàmiques per a jocs de rol.
+                La teva tasca és analitzar una situació i compondre una partitura musical complexa en format JSON.
+                Respon SEMPRE només amb el JSON, sense text addicional, explicacions, ni format markdown.
+
+                El teu procés de pensament ha de ser el següent:
+                1.  **ANÀLISI D'ESTIL:** L'usuari ha proporcionat la següent inspiració general: "${inspiration || 'Fantasia clàssica'}". Analitza aquest concepte. Si és "Hans Zimmer", pensa en percussió potent, ostinatos, epicidad. Si és "Lo-fi", pensa en ritmes relaxats, sons suaus, acords de jazz.
+                2.  **ANÀLISI D'ESCENA:** L'acció o diàleg actual a la partida és: "${text}". Analitza el sentiment immediat: és tensió, combat, exploració, diàleg tranquil, màgia?
+                3.  **SÍNTESI I COMPOSICIÓ:** Combina la teva anàlisi de l'estil (1) i de l'escena (2) per crear una composició única. Per exemple, un "combat" a l'estil "Hans Zimmer" ha de sonar molt diferent d'un "combat" a l'estil "Cyberpunk".
+
+                Genera un objecte JSON amb l'estructura següent:
+                - "name": Un nom evocador per a la peça.
+                - "bpm": El tempo (número).
+                - "parts": Un array de 2 a 4 objectes instrumentals. Cada instrument ha de tenir:
+                  - "instrument": Un nom (ex: "cordes_greus", "sintetitzador_arpegi", "percussio_epica").
+                  - "loopDuration": La durada del bucle (ex: "4m").
+                  - "synth": Un objecte de configuració de Tone.js. Pot ser 'PolySynth' (amb 'oscillator' i 'envelope') o 'MembraneSynth'. 'volume' en decibels (ex: -12).
+                  - "sequence": Un array d'events per a Tone.Part. Cada event és un objecte amb "time" (en format "mesura:temps:setzena", ex: "0:2:0"), "note" (nota o acord en notació Tone.js) i "duration" (en notació Tone.js).
+                - "effects": Un objecte opcional amb "reverb" (amb "decay" en segons i "wet" entre 0 i 1).
+            `;
+
             try {
                 const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
