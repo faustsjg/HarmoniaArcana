@@ -86,21 +86,84 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250608_0030_DIAGNOSTIC_MODE";
+        const SCRIPT_VERSION = "V20250608_0035_COMPLETE_DIAGNOSTIC";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
         const API_KEY_STORAGE_KEY = 'harmoniaArcanaApiKey';
         let apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
 
-        function showCustomMessage(message, type = 'info', duration = 3000) { /*...*/ }
-        function showUI() { /*...*/ }
-        function showScreen(screenId) { /*...*/ }
-        function updateStatusDisplay(status, color = 'gray') { /*...*/ }
-        function setButtonsLoading(loading, message = "Processant...") { /*...*/ }
+        function showCustomMessage(message, type = 'info', duration = 3000) {
+            const box = document.getElementById('custom-message-box');
+            if(!box) return;
+            box.style.display = 'block';
+            box.textContent = message;
+            box.className = '';
+            box.classList.add('message-' + type.toLowerCase());
+            if (duration > 0) {
+                setTimeout(() => { if (box.textContent === message) box.style.display = 'none'; }, duration);
+            }
+        }
 
+        function showUI() {
+            apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+            const apiKeyScreen = document.getElementById('api-key-setup-screen');
+            const mainApp = document.getElementById('main-app-content');
+            if (apiKey) {
+                apiKeyScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+            } else {
+                apiKeyScreen.classList.remove('hidden');
+                mainApp.classList.add('hidden');
+            }
+        }
+
+        function showScreen(screenId) {
+            const initialScreen = document.getElementById('initial-setup-screen');
+            const activeScreen = document.getElementById('active-session-content');
+            if (screenId === 'initial-setup-screen') {
+                 initialScreen.classList.remove('hidden');
+                 activeScreen.classList.add('hidden');
+            } else {
+                 initialScreen.classList.add('hidden');
+                 activeScreen.classList.remove('hidden');
+            }
+        }
+
+        function updateStatusDisplay(status, color = 'gray') {
+            const statusMessage = document.getElementById('status-message');
+            const statusDot = document.getElementById('status-dot');
+            if (statusMessage) statusMessage.textContent = status;
+            if (statusDot) statusDot.className = `status-dot dot-${color}`;
+        }
+        
+        function setButtonsLoading(loading, message = "Processant...") {
+            const buttons = [
+                document.getElementById('start-session-btn'),
+                document.getElementById('toggle-listening-btn'),
+                document.getElementById('skip-context-btn')
+            ];
+            buttons.forEach(btn => {
+                if (btn) {
+                    btn.disabled = loading;
+                    if (loading) {
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${message}`;
+                    } else {
+                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        if (btn.id === 'start-session-btn') btn.innerHTML = `<i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia`;
+                        if (btn.id === 'toggle-listening-btn') btn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`;
+                        if (btn.id === 'skip-context-btn') btn.innerHTML = `<i class="fas fa-sync-alt mr-2"></i>Forçar Anàlisi`;
+                    }
+                }
+            });
+        }
+        
         const musicManager = {
-            activeParts: [], activeSamplers: {}, reverb: null, isPaused: false,
+            activeParts: [],
+            activeSamplers: {},
+            reverb: null,
+            isPaused: false,
             instrumentUrls: {
                 piano: { 'C4': 'https://tonejs.github.io/audio/salamander/C4.mp3' },
                 cello: { 'A2': 'https://tonejs.github.io/audio/salamander/A2.mp3' },
@@ -129,7 +192,7 @@
                     log("[DIAGNÒSTIC] Tots els instruments sol·licitats s'han processat.");
                 } catch (error) {
                     logError("[DIAGNÒSTIC] Un o més instruments no s'han pogut carregar.", error);
-                    throw error; // Propaga l'error per aturar l'execució
+                    throw error;
                 }
             },
 
@@ -139,7 +202,7 @@
                 setButtonsLoading(true, "Creant música...");
                 try {
                     const requiredInstruments = [...new Set(recipe.parts.map(part => part.instrument))];
-                    log("[DIAGNòSTIC] Instruments requerits per la recepta:", requiredInstruments);
+                    log("[DIAGNÒSTIC] Instruments requerits per la recepta:", requiredInstruments);
                     await this.loadInstruments(requiredInstruments);
                     
                     if (recipe.effects && recipe.effects.reverb) this.reverb = new Tone.Reverb(recipe.effects.reverb).toDestination();
@@ -159,52 +222,8 @@
                                 log(`[DIAGNÒSTIC] Playback: Time=${time}, Note=${noteToPlay}, Duration=${value.duration}`);
                                 sampler.triggerAttackRelease(noteToPlay, value.duration, time);
                             } catch (playbackError) {
-                                logError(`[DIAGNÒSTIC] ERROR durant el playback de Tone.Part per a ${part.instrument}:`, playbackError, "Valor problemàtic:", value);
+                                logError(`[DIAGNòSTIC] ERROR durant el playback de Tone.Part per a ${part.instrument}:`, playbackError, "Valor problemàtic:", value);
                             }
                         }, part.sequence).start(0);
 
-                        tonePart.loop = true;
-                        tonePart.loopEnd = part.loopDuration || "4m";
-                        this.activeParts.push(tonePart);
-                    });
-                    
-                    log("[DIAGNÒSTIC] Totes les parts creades. Iniciant transport.");
-                    Tone.Transport.bpm.value = recipe.bpm;
-                    Tone.Transport.start();
-                    this.isPaused = false;
-                    document.getElementById('music-status').textContent = `Reproduint (${recipe.name})`;
-                    this.updateToggleButton();
-                } catch (error) { 
-                    logError("[DIAGNÒSTIC] ERROR PRINCIPAL dins de musicManager.play:", error); 
-                    showCustomMessage("Error en la recepta musical. Comproveu la consola.", "error"); 
-                } finally {
-                    setButtonsLoading(false);
-                }
-            },
-            async stop() {
-                 this.activeParts.forEach(part => part.dispose());
-                if (this.reverb) this.reverb.dispose();
-                this.activeParts = []; this.reverb = null;
-                if (Tone.Transport.state !== 'stopped') Tone.Transport.stop();
-                await Tone.Transport.cancel();
-                this.isPaused = false; 
-                const musicStatus = document.getElementById('music-status');
-                if(musicStatus) musicStatus.textContent = "Aturada";
-                this.updateToggleButton();
-            },
-            disposeAll() { this.stop(); for (const key in this.activeSamplers) { this.activeSamplers[key].dispose(); } this.activeSamplers = {}; log("Tots els instruments descarregats."); },
-            pause() { /*...*/ }, resume() { /*...*/ }, updateToggleButton() { /*...*/ }
-        };
-        
-        async function getMusicRecipeFromAI(text, inspiration) { /*...*/ }
-        async function setupSpeechRecognition() { /*...*/ }
-        function startListening() { /*...*/ }
-        function stopListening() { /*...*/ }
-        async function processAccumulatedTranscript() { /*...*/ }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            // ... (Codi complet d'inicialització i listeners)
-        });
-    </script>
-</body>
-</html>
+                        tonePart
