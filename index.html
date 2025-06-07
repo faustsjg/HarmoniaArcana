@@ -89,7 +89,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250607_1350_FINAL_STABLE_CODE";
+        const SCRIPT_VERSION = "V20250607_1430_GRAND_ORCHESTRA";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -152,8 +152,9 @@
                     btn.disabled = loading;
                     if (loading) {
                         btn.classList.add('opacity-50', 'cursor-not-allowed');
-                        if (btn.id === 'start-session-btn') btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Iniciant...`;
-                        else btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${message}`;
+                        let icon = btn.id === 'start-session-btn' ? 'fa-play-circle' : 'fa-microphone';
+                        if (btn.id === 'skip-context-btn') icon = 'fa-sync-alt';
+                        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${message}`;
                     } else {
                         btn.classList.remove('opacity-50', 'cursor-not-allowed');
                         if (btn.id === 'start-session-btn') btn.innerHTML = `<i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia`;
@@ -165,39 +166,84 @@
         }
         
         const musicManager = {
-            activeParts: [], activeEffects: [], isPaused: false,
-            play(recipe) {
-                this.stop();
-                log(`Reproduint nova recepta de disseny de so:`, recipe);
+            activeParts: [],
+            activeSamplers: {},
+            reverb: null,
+            isPaused: false,
+            instrumentUrls: {
+                piano: { 'C4': 'C4.mp3', 'A4': 'A4.mp3', 'G3': 'G3.mp3' },
+                cello: { 'C2': 'C2.mp3', 'A2': 'A2.mp3', 'E2': 'E2.mp3' },
+                violin: { 'C5': 'C5.mp3', 'A4': 'A4.mp3', 'E4': 'E4.mp3' },
+                'french-horn': { 'A2': 'A2.mp3' },
+                'contrabass': { 'A1': 'A1.mp3' },
+                'harp': { 'C5': 'C5.mp3' },
+                'percussio_kick': { 'C1': 'kick-softy.mp3' },
+                'percussio_snare': { 'C1': 'snare-block.mp3' },
+                'percussio_cymbal': { 'C1': 'cymbal-fusion.mp3' },
+                'choir_aah': { 'A4': 'choir-aahs-a4-stretched.mp3' }
+            },
+            
+            async loadInstruments(instrumentNames = []) {
+                const baseUrl = "https://tonejs.github.io/audio/salamander/";
+                const drumUrl = "https://tonejs.github.io/audio/drum-samples/Bongos/";
+                const choirUrl = "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/choir_aahs-mp3/";
+                
+                const uniqueInstrumentNames = [...new Set(instrumentNames)];
+
+                const promises = uniqueInstrumentNames.map(name => {
+                    if (this.activeSamplers[name] || !this.instrumentUrls[name]) {
+                        return Promise.resolve();
+                    }
+                    
+                    return new Promise((resolve, reject) => {
+                        let currentBaseUrl = baseUrl;
+                        if (name.includes('percussio')) currentBaseUrl = drumUrl;
+                        if (name.includes('choir')) currentBaseUrl = choirUrl;
+
+                        log(`Carregant instrument: ${name}`);
+                        const sampler = new Tone.Sampler({
+                            urls: this.instrumentUrls[name],
+                            baseUrl: currentBaseUrl,
+                            onload: () => {
+                                log(`Instrument ${name} carregat.`);
+                                this.activeSamplers[name] = sampler.toDestination();
+                                resolve();
+                            },
+                            onerror: (error) => {
+                                logError(`Error carregant ${name}`, error);
+                                reject(error);
+                            }
+                        });
+                    });
+                });
+                await Promise.all(promises);
+            },
+
+            async play(recipe) {
+                await this.stop();
+                log(`Reproduint nova recepta orquestral:`, recipe);
+                setButtonsLoading(true, "Creant música...");
                 try {
-                    const masterReverb = new Tone.Reverb(recipe.effects?.reverb || { decay: 1.5, wet: 0.2 }).toDestination();
-                    this.activeEffects.push(masterReverb);
+                    const requiredInstruments = recipe.parts.map(part => part.instrument);
+                    await this.loadInstruments(requiredInstruments);
 
+                    if (recipe.effects && recipe.effects.reverb) {
+                        this.reverb = new Tone.Reverb(recipe.effects.reverb).toDestination();
+                    }
                     recipe.parts.forEach(part => {
-                        const partEffects = (part.effects || []).map(effectData => {
-                            if (effectData.type === 'chorus') return new Tone.Chorus(effectData).start();
-                            if (effectData.type === 'distortion') return new Tone.Distortion(effectData);
-                            return null;
-                        }).filter(Boolean);
-                        this.activeEffects.push(...partEffects);
-                        
-                        let synth;
-                        const synthType = part.synth.type || 'Synth';
-                        const synthClass = Tone[synthType] || Tone.Synth;
-                        synth = new synthClass(part.synth);
-
-                        if (partEffects.length > 0) {
-                            synth.chain(...partEffects, masterReverb);
-                        } else {
-                            synth.connect(masterReverb);
+                        const sampler = this.activeSamplers[part.instrument];
+                        if (!sampler) {
+                            logError(`Instrument no carregat: ${part.instrument}. Saltant aquesta part.`);
+                            return;
                         }
-                        this.activeEffects.push(synth);
+                        if (this.reverb) sampler.connect(this.reverb);
 
                         const tonePart = new Tone.Part((time, value) => {
-                            synth.triggerAttackRelease(value.note, value.duration, time);
+                            const noteToPlay = Array.isArray(value.note) ? value.note[0] : value.note;
+                            sampler.triggerAttackRelease(noteToPlay, value.duration, time);
                         }, part.sequence).start(0);
                         tonePart.loop = true;
-                        tonePart.loopEnd = part.loopDuration || "2m";
+                        tonePart.loopEnd = part.loopDuration || "4m";
                         this.activeParts.push(tonePart);
                     });
                     
@@ -206,14 +252,18 @@
                     this.isPaused = false;
                     document.getElementById('music-status').textContent = `Reproduint (${recipe.name})`;
                     this.updateToggleButton();
-                } catch (error) { logError("Error al musicManager.play:", error); showCustomMessage("Error en la recepta musical. Comprova la consola.", "error"); }
+                } catch (error) { logError("Error al musicManager.play:", error); showCustomMessage("Error en la recepta musical. Comprova la consola.", "error"); 
+                } finally {
+                    setButtonsLoading(false);
+                }
             },
-            stop() {
+            
+            async stop() {
                 this.activeParts.forEach(part => part.dispose());
-                this.activeEffects.forEach(effect => effect.dispose());
-                this.activeParts = []; this.activeEffects = [];
+                if (this.reverb) this.reverb.dispose();
+                this.activeParts = []; this.reverb = null;
                 if (Tone.Transport.state !== 'stopped') Tone.Transport.stop();
-                Tone.Transport.cancel();
+                await Tone.Transport.cancel();
                 this.isPaused = false; 
                 const musicStatus = document.getElementById('music-status');
                 if(musicStatus) musicStatus.textContent = "Aturada";
@@ -226,27 +276,20 @@
         
         async function getMusicRecipeFromAI(text, inspiration) {
             setButtonsLoading(true, "Consultant IA...");
-            updateStatusDisplay("Consultant IA Dissenyadora...", "yellow");
+            updateStatusDisplay("Consultant IA Orquestral...", "yellow");
             const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            const prompt = `Ets Harmonia, una IA dissenyadora de so i compositora per a jocs de rol. La teva tasca és crear una partitura i dissenyar els sons dels instruments virtuals en format JSON. Respon obligatòriament en català i només amb el JSON, sense markdown.
-
-                INSPIRACIÓ ESTILÍSTICA: "${inspiration || 'Fantasia èpica'}"
-                ESCENA ACTUAL: "${text}"
-
-                INSTRUCCIONS:
-                1. Dissenya entre 2 i 4 instruments virtuals que s'adeqüin a l'estil i a l'escena.
-                2. Per a cada instrument, defineix una part musical amb una seqüència de notes. Les parts han de complementar-se (melodia, harmonia, baix, ritme).
-                3. La teva resposta JSON ha de tenir:
-                   - "name": Un nom en català per a la peça.
-                   - "bpm": El tempo (número).
-                   - "effects": Un objecte opcional per a efectes globals, ex: {"reverb": {"decay": 2, "wet": 0.4}}.
-                   - "parts": Un array d'objectes instrumentals. Cada objecte ha de contenir:
-                     - "instrument": Un nom descriptiu (ex: "cordes_inquietants").
-                     - "loopDuration": La durada del bucle (ex: "4m").
-                     - "synth": Un objecte de configuració per a un sintetitzador de Tone.js. Propietats importants: "type" ('FMSynth', 'AMSynth', 'MonoSynth', 'MembraneSynth'), "volume" (en dB), "oscillator" (amb "type"), "envelope" (amb "attack", "decay", "sustain", "release").
-                     - "effects": Un array opcional d'efectes per a aquest instrument, ex: [{"type": "chorus", "frequency": 1.5, "depth": 0.7}].
-                     - "sequence": Un array d'events per a Tone.Part (objectes amb "time", "note", "duration").`;
-
+            const prompt = `Ets Harmonia, una IA compositora experta en bandes sonores simfòniques. La teva tasca és crear una partitura complexa i emotiva en format JSON. Respon obligatòriament en català. El camp 'name' ha de ser en català. Respon només amb el JSON, sense markdown.
+                INSPIRACIÓ ESTILÍSTICA: "${inspiration || 'Fantasia clàssica'}".
+                ESCENA ACTUAL: "${text}".
+                
+                INSTRUMENTS DISPONIBLES: "piano", "cello", "violin", "french-horn", "contrabass", "harp", "percussio_kick", "percussio_snare", "percussio_cymbal", "choir_aah".
+                
+                INSTRUCCIONS DE COMPOSICIÓ:
+                1.  Crea una composició amb diverses capes (melodia, harmonia, línia de baix, ritme). Tria entre 3 i 5 instruments de la llista.
+                2.  Genera partitures llargues i desenvolupades. El camp "loopDuration" ha de ser com a mínim "4m" (4 compassos) o "8m".
+                3.  IMPORTANT PER ALS LOOPS: La frase musical ha de resoldre i concloure de manera natural just abans del final del "loopDuration" per garantir una repetició suau i contínua.
+                4.  ORQUESTRACIÓ: Utilitza el "piano" i l'"harp" per a harmonies i arpegis. Utilitza "violin" per a melodies principals. Utilitza "cello" i "contrabass" per a les línies de baix. Utilitza "french-horn" per a crides èpiques. Utilitza "choir_aah" per a crear atmosferes i coixins harmònics. La percussió ha de ser un suport. Per a instruments melòdics (violin, cello, french-horn), prioritza notes individuals, no acords.
+                5.  El JSON ha de contenir: "name" (en català), "bpm", "parts" (un array d'instruments). Cada instrument ha de tenir: "instrument" (nom de la llista), "loopDuration", i "sequence" (un array d'events amb "time", "note", "duration"). Pots afegir un "effects" global amb "reverb".`;
             try {
                 const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
@@ -290,6 +333,7 @@
             });
 
             document.getElementById('start-session-btn').addEventListener('click', async () => { 
+                setButtonsLoading(true, "Carregant...");
                 try {
                     if (Tone.context.state !== 'running') { await Tone.start(); }
                     activeGameInspiration = document.getElementById('session-inspiration-input').value.trim();
@@ -299,15 +343,18 @@
                         await musicManager.play(initialRecipe);
                         showScreen('active-session-content');
                     } else {
-                        showCustomMessage("No s'ha pogut generar la música inicial. Comprova la clau API i la consola.", "error");
+                        showCustomMessage("No s'ha pogut generar la música inicial. Comprova la clau API.", "error");
                     }
-                } catch (error) { logError("Error en iniciar la sessió:", error); showCustomMessage('Error iniciant la sessió. Comprova la clau i la consola.', 'error'); }
+                } catch (error) { logError("Error en iniciar la sessió:", error); showCustomMessage('Error iniciant la sessió. Comprova la clau i la consola.', 'error'); 
+                } finally {
+                    setButtonsLoading(false);
+                }
             });
 
             document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
             document.getElementById('skip-context-btn').addEventListener('click', processAccumulatedTranscript);
             document.getElementById('stop-music-btn').addEventListener('click', () => { musicManager.isPaused ? musicManager.resume() : musicManager.pause(); });
-            document.getElementById('end-session-btn').addEventListener('click', () => { if (isListening) stopListening(); musicManager.stop(); showScreen('initial-setup-screen'); });
+            document.getElementById('end-session-btn').addEventListener('click', () => { if (isListening) stopListening(); musicManager.stop(); musicManager.activeSamplers = {}; showScreen('initial-setup-screen'); });
         });
     </script>
 </body>
