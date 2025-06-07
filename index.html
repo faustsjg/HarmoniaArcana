@@ -89,7 +89,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250607_1430_GRAND_ORCHESTRA";
+        const SCRIPT_VERSION = "V20250607_1654_FINAL_RELIABLE";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -152,8 +152,6 @@
                     btn.disabled = loading;
                     if (loading) {
                         btn.classList.add('opacity-50', 'cursor-not-allowed');
-                        let icon = btn.id === 'start-session-btn' ? 'fa-play-circle' : 'fa-microphone';
-                        if (btn.id === 'skip-context-btn') icon = 'fa-sync-alt';
                         btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${message}`;
                     } else {
                         btn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -171,39 +169,25 @@
             reverb: null,
             isPaused: false,
             instrumentUrls: {
-                piano: { 'C4': 'C4.mp3', 'A4': 'A4.mp3', 'G3': 'G3.mp3' },
-                cello: { 'C2': 'C2.mp3', 'A2': 'A2.mp3', 'E2': 'E2.mp3' },
-                violin: { 'C5': 'C5.mp3', 'A4': 'A4.mp3', 'E4': 'E4.mp3' },
-                'french-horn': { 'A2': 'A2.mp3' },
-                'contrabass': { 'A1': 'A1.mp3' },
-                'harp': { 'C5': 'C5.mp3' },
-                'percussio_kick': { 'C1': 'kick-softy.mp3' },
-                'percussio_snare': { 'C1': 'snare-block.mp3' },
-                'percussio_cymbal': { 'C1': 'cymbal-fusion.mp3' },
-                'choir_aah': { 'A4': 'choir-aahs-a4-stretched.mp3' }
+                piano: { 'C4': 'https://tonejs.github.io/audio/salamander/C4.mp3' },
+                cello: { 'A2': 'https://tonejs.github.io/audio/salamander/A2.mp3' },
+                violin: { 'A4': 'https://tonejs.github.io/audio/salamander/A4.mp3' },
+                'french-horn': { 'C3': 'https://tonejs.github.io/audio/salamander/C3.mp3' },
+                'percussio_kick': { 'C1': 'https://tonejs.github.io/audio/drum-samples/kick-softy.mp3' },
+                'percussio_snare': { 'C1': 'https://tonejs.github.io/audio/drum-samples/snare-block.mp3' },
+                'choir_aah': { 'A4': 'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/choir_aahs-mp3/A4.mp3' }
             },
             
             async loadInstruments(instrumentNames = []) {
-                const baseUrl = "https://tonejs.github.io/audio/salamander/";
-                const drumUrl = "https://tonejs.github.io/audio/drum-samples/Bongos/";
-                const choirUrl = "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/choir_aahs-mp3/";
-                
                 const uniqueInstrumentNames = [...new Set(instrumentNames)];
-
                 const promises = uniqueInstrumentNames.map(name => {
                     if (this.activeSamplers[name] || !this.instrumentUrls[name]) {
                         return Promise.resolve();
                     }
-                    
                     return new Promise((resolve, reject) => {
-                        let currentBaseUrl = baseUrl;
-                        if (name.includes('percussio')) currentBaseUrl = drumUrl;
-                        if (name.includes('choir')) currentBaseUrl = choirUrl;
-
                         log(`Carregant instrument: ${name}`);
                         const sampler = new Tone.Sampler({
                             urls: this.instrumentUrls[name],
-                            baseUrl: currentBaseUrl,
                             onload: () => {
                                 log(`Instrument ${name} carregat.`);
                                 this.activeSamplers[name] = sampler.toDestination();
@@ -224,7 +208,7 @@
                 log(`Reproduint nova recepta orquestral:`, recipe);
                 setButtonsLoading(true, "Creant música...");
                 try {
-                    const requiredInstruments = recipe.parts.map(part => part.instrument);
+                    const requiredInstruments = [...new Set(recipe.parts.map(part => part.instrument))];
                     await this.loadInstruments(requiredInstruments);
 
                     if (recipe.effects && recipe.effects.reverb) {
@@ -237,7 +221,7 @@
                             return;
                         }
                         if (this.reverb) sampler.connect(this.reverb);
-
+                        
                         const tonePart = new Tone.Part((time, value) => {
                             const noteToPlay = Array.isArray(value.note) ? value.note[0] : value.note;
                             sampler.triggerAttackRelease(noteToPlay, value.duration, time);
@@ -252,7 +236,7 @@
                     this.isPaused = false;
                     document.getElementById('music-status').textContent = `Reproduint (${recipe.name})`;
                     this.updateToggleButton();
-                } catch (error) { logError("Error al musicManager.play:", error); showCustomMessage("Error en la recepta musical. Comprova la consola.", "error"); 
+                } catch (error) { logError("Error al musicManager.play:", error); showCustomMessage("Error en la recepta musical. Comproveu la consola.", "error"); 
                 } finally {
                     setButtonsLoading(false);
                 }
@@ -278,18 +262,18 @@
             setButtonsLoading(true, "Consultant IA...");
             updateStatusDisplay("Consultant IA Orquestral...", "yellow");
             const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            const prompt = `Ets Harmonia, una IA compositora experta en bandes sonores simfòniques. La teva tasca és crear una partitura complexa i emotiva en format JSON. Respon obligatòriament en català. El camp 'name' ha de ser en català. Respon només amb el JSON, sense markdown.
+            const prompt = `Ets Harmonia, una IA compositora experta en bandes sonores simfòniques. La teva tasca és crear una partitura complexa i emotiva en format JSON. Respon obligatòriament en català i només amb el JSON, sense markdown.
                 INSPIRACIÓ ESTILÍSTICA: "${inspiration || 'Fantasia clàssica'}".
                 ESCENA ACTUAL: "${text}".
                 
-                INSTRUMENTS DISPONIBLES: "piano", "cello", "violin", "french-horn", "contrabass", "harp", "percussio_kick", "percussio_snare", "percussio_cymbal", "choir_aah".
+                INSTRUMENTS DISPONIBLES: "piano", "cello", "violin", "french-horn", "percussio_kick", "percussio_snare", "choir_aah".
                 
                 INSTRUCCIONS DE COMPOSICIÓ:
-                1.  Crea una composició amb diverses capes (melodia, harmonia, línia de baix, ritme). Tria entre 3 i 5 instruments de la llista.
-                2.  Genera partitures llargues i desenvolupades. El camp "loopDuration" ha de ser com a mínim "4m" (4 compassos) o "8m".
-                3.  IMPORTANT PER ALS LOOPS: La frase musical ha de resoldre i concloure de manera natural just abans del final del "loopDuration" per garantir una repetició suau i contínua.
-                4.  ORQUESTRACIÓ: Utilitza el "piano" i l'"harp" per a harmonies i arpegis. Utilitza "violin" per a melodies principals. Utilitza "cello" i "contrabass" per a les línies de baix. Utilitza "french-horn" per a crides èpiques. Utilitza "choir_aah" per a crear atmosferes i coixins harmònics. La percussió ha de ser un suport. Per a instruments melòdics (violin, cello, french-horn), prioritza notes individuals, no acords.
-                5.  El JSON ha de contenir: "name" (en català), "bpm", "parts" (un array d'instruments). Cada instrument ha de tenir: "instrument" (nom de la llista), "loopDuration", i "sequence" (un array d'events amb "time", "note", "duration"). Pots afegir un "effects" global amb "reverb".`;
+                1.  Crea una composició amb diverses capes. Tria entre 3 i 5 instruments de la llista.
+                2.  Genera partitures llargues, amb "loopDuration" de "4m" o "8m".
+                3.  IMPORTANT PER ALS LOOPS: La frase musical ha de resoldre i concloure de manera natural abans del final del "loopDuration" per garantir una repetició suau.
+                4.  ORQUESTRACIÓ: Utilitza el "piano" per a harmonies. Utilitza "violin" i "french-horn" per a melodies. Utilitza "cello" per a les línies de baix. Utilitza "choir_aah" per a crear atmosferes. Prioritza notes individuals per a instruments melòdics.
+                5.  El JSON ha de contenir: "name" (en català), "bpm", "parts" (un array d'instruments). Cada instrument ha de tenir: "instrument" (nom de la llista), "loopDuration", i "sequence" (un array d'events amb "time", "note", "duration").`;
             try {
                 const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
@@ -333,7 +317,7 @@
             });
 
             document.getElementById('start-session-btn').addEventListener('click', async () => { 
-                setButtonsLoading(true, "Carregant...");
+                setButtonsLoading(true, "Iniciant...");
                 try {
                     if (Tone.context.state !== 'running') { await Tone.start(); }
                     activeGameInspiration = document.getElementById('session-inspiration-input').value.trim();
