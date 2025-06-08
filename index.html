@@ -89,13 +89,83 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250608_1400_IMPROVED";
+        const SCRIPT_VERSION = "V20250608_1837_WAKELOCK";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
         
         const API_KEY_STORAGE_KEY = 'harmoniaArcanaApiKey';
         let apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+        
+        // NOU MÒDUL: Screen Wake Lock per evitar que la pantalla s'apagui.
+        const screenWakeLockManager = {
+            wakeLockSentinel: null,
+            videoElement: null,
+
+            async request() {
+                if ('wakeLock' in navigator) {
+                    try {
+                        this.wakeLockSentinel = await navigator.wakeLock.request('screen');
+                        this.wakeLockSentinel.addEventListener('release', () => {
+                            log('El bloqueig de pantalla ha estat alliberat.');
+                            this.wakeLockSentinel = null;
+                        });
+                        log('Bloqueig de pantalla activat via API.');
+                        return true;
+                    } catch (err) {
+                        logError(`No s'ha pogut activar el bloqueig via API: ${err.name}, ${err.message}. Utilitzant pla B.`);
+                        return this._requestWithVideo();
+                    }
+                } else {
+                     log('Wake Lock API no suportada. Utilitzant pla B (vídeo).');
+                     return this._requestWithVideo();
+                }
+            },
+            
+            _requestWithVideo() {
+                if (this.videoElement) return true; // Ja està actiu
+                this.videoElement = document.createElement('video');
+                this.videoElement.style.position = 'absolute';
+                this.videoElement.style.opacity = '0';
+                this.videoElement.setAttribute('playsinline', '');
+                this.videoElement.setAttribute('muted', '');
+                this.videoElement.setAttribute('loop', '');
+                // Vídeo d'1x1 pixel en base64 per no dependre de fitxers externs
+                this.videoElement.src = "data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAyhianRkAAAAAm1kYXQAAAGzABAHAAEAAAMhYeNaAAQAAAZv//8AAAAuR2dZgA==";
+                
+                const playPromise = this.videoElement.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        document.body.appendChild(this.videoElement);
+                        log('Bloqueig de pantalla activat via vídeo silenciós.');
+                    }).catch(error => {
+                        logError('No s\'ha pogut reproduir el vídeo per al bloqueig de pantalla.', error);
+                    });
+                }
+                return true;
+            },
+
+            async release() {
+                if (this.wakeLockSentinel) {
+                    await this.wakeLockSentinel.release();
+                    this.wakeLockSentinel = null;
+                    log('Bloqueig de pantalla (API) alliberat.');
+                }
+                if (this.videoElement) {
+                    this.videoElement.pause();
+                    document.body.removeChild(this.videoElement);
+                    this.videoElement = null;
+                     log('Bloqueig de pantalla (vídeo) alliberat.');
+                }
+            },
+            
+            handleVisibilityChange() {
+                if (this.wakeLockSentinel && document.visibilityState === 'visible') {
+                    log('La pàgina és visible de nou, demanant el bloqueig de pantalla.');
+                    this.request();
+                }
+            }
+        };
 
         function showCustomMessage(message, type = 'info', duration = 3000) {
             const box = document.getElementById('custom-message-box');
@@ -323,7 +393,7 @@
                 const fatalErrors = ['not-allowed', 'service-not-allowed'];
                 if (fatalErrors.includes(event.error)) {
                     isListening = false;
-                    recognitionManuallyStopped = true; // Aturem del tot
+                    recognitionManuallyStopped = true;
                     updateStatusDisplay("Error de micro", "red");
                      if(toggleBtn) {
                         toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`;
@@ -358,6 +428,9 @@
             showUI();
             await setupSpeechRecognition();
             
+            // CANVI: Afegim l'escolta de canvis de visibilitat per al Wake Lock
+            document.addEventListener('visibilitychange', () => screenWakeLockManager.handleVisibilityChange());
+            
             document.getElementById('save-api-key-btn').addEventListener('click', () => {
                 const key = document.getElementById('api-key-input').value;
                 if (key && key.trim() !== '') { localStorage.setItem(API_KEY_STORAGE_KEY, key); apiKey = key; showCustomMessage("Clau desada correctament!", "success"); showUI(); } 
@@ -368,6 +441,10 @@
                 try {
                     setButtonsLoading(true, "Iniciant...");
                     if (Tone.context.state !== 'running') { await Tone.start(); }
+
+                    // CANVI: Demanem el bloqueig de pantalla en iniciar la sessió
+                    await screenWakeLockManager.request();
+
                     activeGameInspiration = document.getElementById('session-inspiration-input').value.trim();
                     document.getElementById('current-inspiration-display').textContent = activeGameInspiration ? `Inspiració: ${activeGameInspiration}` : 'Sense inspiració específica.';
                     const initialRecipe = await getMusicRecipeFromAI("Una fanfàrria heroica per a l'inici d'una gran aventura", activeGameInspiration || "Fantasia èpica");
@@ -376,8 +453,12 @@
                         showScreen('active-session-content');
                     } else {
                         showCustomMessage("No s'ha pogut generar la música inicial. Comprova la clau API.", "error");
+                        await screenWakeLockManager.release(); // Alliberem si la sessió no comença
                     }
-                } catch (error) { logError("Error en iniciar la sessió:", error); showCustomMessage('Error iniciant la sessió. Comprova la clau i la consola.', 'error'); 
+                } catch (error) { 
+                    logError("Error en iniciar la sessió:", error); 
+                    showCustomMessage('Error iniciant la sessió. Comprova la clau i la consola.', 'error'); 
+                    await screenWakeLockManager.release(); // Alliberem si hi ha error
                 } finally {
                     setButtonsLoading(false);
                 }
@@ -386,7 +467,16 @@
             document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
             document.getElementById('skip-context-btn').addEventListener('click', processAccumulatedTranscript);
             document.getElementById('stop-music-btn').addEventListener('click', () => { musicManager.isPaused ? musicManager.resume() : musicManager.pause(); });
-            document.getElementById('end-session-btn').addEventListener('click', () => { if (isListening) stopListening(); musicManager.disposeAll(); showScreen('initial-setup-screen'); });
+            
+            document.getElementById('end-session-btn').addEventListener('click', async () => { 
+                if (isListening) stopListening(); 
+                musicManager.disposeAll(); 
+                
+                // CANVI: Alliberem el bloqueig de pantalla en finalitzar la sessió
+                await screenWakeLockManager.release();
+                
+                showScreen('initial-setup-screen'); 
+            });
         });
     </script>
 </body>
