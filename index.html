@@ -75,15 +75,16 @@
                         <p id="transcript-preview">La transcripció en directe apareixerà aquí...</p>
                     </div>
                     <div class="text-sm text-gray-400">Estat de la música: <span id="music-status" class="font-semibold text-purple-300">Aturada</span></div>
-                    <div class="text-sm text-gray-400 mt-1">Instruments actius: <span id="instrument-list" class="font-semibold text-purple-300">Cap</span></div>
                     
                     <div class="mt-6">
                         <h3 class="text-sm font-medium text-gray-300 mb-2">Efectes Sonors</h3>
-                        <div id="soundboard" class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        <div id="soundboard" class="grid grid-cols-3 gap-2">
                             <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/sword-clash.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Espasa</button>
                             <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/monster-roar.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Rugit</button>
                             <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/magic-spell.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Màgia</button>
                             <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/door-creak.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Porta</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/arrow-shot.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Fletxa</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/coins.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Monedes</button>
                         </div>
                     </div>
 
@@ -101,7 +102,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250609_0015_FEATURES"; // VERSIÓ ACTUALITZADA
+        const SCRIPT_VERSION = "V20250609_0025_UI_TWEAKS"; // VERSIÓ ACTUALITZADA
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -134,7 +135,7 @@
             },
             
             _requestWithVideo() {
-                if (this.videoElement) return true; // Ja està actiu
+                if (this.videoElement) return true;
                 this.videoElement = document.createElement('video');
                 this.videoElement.style.position = 'absolute';
                 this.videoElement.style.opacity = '0';
@@ -246,7 +247,7 @@
         const musicManager = {
             activeParts: [],
             activeSamplers: {},
-            activePlayers: {}, // NOU: Cache per als efectes de so
+            activePlayers: {},
             reverb: null,
             isPaused: false,
             instrumentUrls: {
@@ -298,13 +299,6 @@
                     const requiredInstruments = [...new Set(recipe.parts.map(part => part.instrument))];
                     await this.loadInstruments(requiredInstruments);
                     
-                    // NOVA FUNCIONALITAT: Llista d'instruments actius
-                    const instrumentListEl = document.getElementById('instrument-list');
-                    if (instrumentListEl) {
-                        const instrumentNames = recipe.parts.map(part => part.instrument.replace(/_/g, ' '));
-                        instrumentListEl.textContent = instrumentNames.join(', ') || 'Cap';
-                    }
-
                     if (recipe.effects && recipe.effects.reverb) {
                         this.reverb = new Tone.Reverb(recipe.effects.reverb).toDestination();
                     }
@@ -325,7 +319,6 @@
                         this.activeParts.push(tonePart);
                     });
                     
-                    // OPTIMITZACIÓ: Transició de BPM suau
                     Tone.Transport.bpm.rampTo(recipe.bpm, 2); 
                     Tone.Transport.start();
                     this.isPaused = false;
@@ -346,15 +339,9 @@
                 this.isPaused = false; 
                 const musicStatus = document.getElementById('music-status');
                 if(musicStatus) musicStatus.textContent = "Aturada";
-
-                // NOVA FUNCIONALITAT: Neteja la llista d'instruments
-                const instrumentListEl = document.getElementById('instrument-list');
-                if (instrumentListEl) instrumentListEl.textContent = 'Cap';
-
                 this.updateToggleButton();
             },
 
-            // NOVA FUNCIONALITAT: Reproductor d'efectes de so
             playSoundEffect(url) {
                 if (this.activePlayers[url] && this.activePlayers[url].loaded) {
                     this.activePlayers[url].start();
@@ -379,7 +366,6 @@
             setButtonsLoading(true, "Composant...");
             updateStatusDisplay("Consultant IA Orquestral...", "yellow");
             const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            // OPTIMITZACIÓ: Prompt millorat
             const prompt = `Ets Harmonia, una IA compositora experta en bandes sonores simfòniques. La teva tasca és crear una partitura complexa i emotiva en format JSON. Respon obligatòriament en català i només amb el JSON, sense markdown.
                 INSPIRACIÓ ESTILÍSTICA: "${inspiration || 'Fantasia clàssica'}".
                 ESCENA ACTUAL: "${text}".
@@ -483,7 +469,6 @@
                     setButtonsLoading(true, "Iniciant...");
                     if (Tone.context.state !== 'running') { await Tone.start(); }
 
-                    // OPTIMITZACIÓ: Precàrrega d'instruments en segon pla
                     musicManager.loadInstruments(['piano', 'violin', 'cello']);
 
                     await screenWakeLockManager.request();
@@ -507,7 +492,6 @@
                 }
             });
 
-            // Listener del Soundboard (event delegation)
             document.getElementById('soundboard').addEventListener('click', (event) => {
                 const target = event.target.closest('button');
                 if (target && target.dataset.sound) {
