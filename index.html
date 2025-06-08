@@ -74,7 +74,19 @@
                     <div class="mb-4 p-3 bg-gray-700 rounded-lg h-20 overflow-y-auto text-xs text-gray-300 border border-gray-600">
                         <p id="transcript-preview">La transcripció en directe apareixerà aquí...</p>
                     </div>
-                    <div class="text-sm text-gray-400 mb-4">Estat de la música: <span id="music-status" class="font-semibold text-purple-300">Aturada</span></div>
+                    <div class="text-sm text-gray-400">Estat de la música: <span id="music-status" class="font-semibold text-purple-300">Aturada</span></div>
+                    <div class="text-sm text-gray-400 mt-1">Instruments actius: <span id="instrument-list" class="font-semibold text-purple-300">Cap</span></div>
+                    
+                    <div class="mt-6">
+                        <h3 class="text-sm font-medium text-gray-300 mb-2">Efectes Sonors</h3>
+                        <div id="soundboard" class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/sword-clash.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Espasa</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/monster-roar.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Rugit</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/magic-spell.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Màgia</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/door-creak.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Porta</button>
+                        </div>
+                    </div>
+
                     <button id="end-session-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2.5 px-5 rounded-lg mt-6"><i class="fas fa-door-open mr-2"></i>Finalitzar Sessió</button>
                 </div>
             </section>
@@ -89,7 +101,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250608_1837_WAKELOCK";
+        const SCRIPT_VERSION = "V20250609_0015_FEATURES"; // VERSIÓ ACTUALITZADA
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -97,7 +109,6 @@
         const API_KEY_STORAGE_KEY = 'harmoniaArcanaApiKey';
         let apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
         
-        // NOU MÒDUL: Screen Wake Lock per evitar que la pantalla s'apagui.
         const screenWakeLockManager = {
             wakeLockSentinel: null,
             videoElement: null,
@@ -117,8 +128,8 @@
                         return this._requestWithVideo();
                     }
                 } else {
-                     log('Wake Lock API no suportada. Utilitzant pla B (vídeo).');
-                     return this._requestWithVideo();
+                    log('Wake Lock API no suportada. Utilitzant pla B (vídeo).');
+                    return this._requestWithVideo();
                 }
             },
             
@@ -130,7 +141,6 @@
                 this.videoElement.setAttribute('playsinline', '');
                 this.videoElement.setAttribute('muted', '');
                 this.videoElement.setAttribute('loop', '');
-                // Vídeo d'1x1 pixel en base64 per no dependre de fitxers externs
                 this.videoElement.src = "data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAyhianRkAAAAAm1kYXQAAAGzABAHAAEAAAMhYeNaAAQAAAZv//8AAAAuR2dZgA==";
                 
                 const playPromise = this.videoElement.play();
@@ -155,7 +165,7 @@
                     this.videoElement.pause();
                     document.body.removeChild(this.videoElement);
                     this.videoElement = null;
-                     log('Bloqueig de pantalla (vídeo) alliberat.');
+                    log('Bloqueig de pantalla (vídeo) alliberat.');
                 }
             },
             
@@ -236,6 +246,7 @@
         const musicManager = {
             activeParts: [],
             activeSamplers: {},
+            activePlayers: {}, // NOU: Cache per als efectes de so
             reverb: null,
             isPaused: false,
             instrumentUrls: {
@@ -287,6 +298,13 @@
                     const requiredInstruments = [...new Set(recipe.parts.map(part => part.instrument))];
                     await this.loadInstruments(requiredInstruments);
                     
+                    // NOVA FUNCIONALITAT: Llista d'instruments actius
+                    const instrumentListEl = document.getElementById('instrument-list');
+                    if (instrumentListEl) {
+                        const instrumentNames = recipe.parts.map(part => part.instrument.replace(/_/g, ' '));
+                        instrumentListEl.textContent = instrumentNames.join(', ') || 'Cap';
+                    }
+
                     if (recipe.effects && recipe.effects.reverb) {
                         this.reverb = new Tone.Reverb(recipe.effects.reverb).toDestination();
                     }
@@ -307,7 +325,8 @@
                         this.activeParts.push(tonePart);
                     });
                     
-                    Tone.Transport.bpm.value = recipe.bpm;
+                    // OPTIMITZACIÓ: Transició de BPM suau
+                    Tone.Transport.bpm.rampTo(recipe.bpm, 2); 
                     Tone.Transport.start();
                     this.isPaused = false;
                     document.getElementById('music-status').textContent = `Reproduint (${recipe.name})`;
@@ -327,9 +346,30 @@
                 this.isPaused = false; 
                 const musicStatus = document.getElementById('music-status');
                 if(musicStatus) musicStatus.textContent = "Aturada";
+
+                // NOVA FUNCIONALITAT: Neteja la llista d'instruments
+                const instrumentListEl = document.getElementById('instrument-list');
+                if (instrumentListEl) instrumentListEl.textContent = 'Cap';
+
                 this.updateToggleButton();
             },
-            disposeAll() { this.stop(); for (const key in this.activeSamplers) { this.activeSamplers[key].dispose(); } this.activeSamplers = {}; log("Tots els instruments descarregats."); },
+
+            // NOVA FUNCIONALITAT: Reproductor d'efectes de so
+            playSoundEffect(url) {
+                if (this.activePlayers[url] && this.activePlayers[url].loaded) {
+                    this.activePlayers[url].start();
+                } else {
+                    const player = new Tone.Player(url).toDestination();
+                    player.autostart = true;
+                    player.onload = () => {
+                        log(`Efecte de so ${url} carregat i reproduït.`);
+                        this.activePlayers[url] = player;
+                    };
+                    player.onerror = (err) => logError(`Error carregant l'efecte ${url}`, err);
+                }
+            },
+
+            disposeAll() { this.stop(); for (const key in this.activeSamplers) { this.activeSamplers[key].dispose(); } this.activeSamplers = {}; for (const key in this.activePlayers) { this.activePlayers[key].dispose(); } this.activePlayers = {}; log("Tots els instruments i efectes descarregats."); },
             pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton();} },
             resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton();} },
             updateToggleButton() { const btn = document.getElementById('stop-music-btn'); if(!btn) return; if (this.isPaused) { btn.innerHTML = `<i class="fas fa-play mr-2"></i>Reprendre`; btn.classList.remove('bg-red-600','hover:bg-red-700'); btn.classList.add('bg-green-600','hover:bg-green-700');} else { btn.innerHTML = `<i class="fas fa-pause mr-2"></i>Pausa`; btn.classList.remove('bg-green-600','hover:bg-green-700'); btn.classList.add('bg-red-600','hover:bg-red-700');} }
@@ -339,6 +379,7 @@
             setButtonsLoading(true, "Composant...");
             updateStatusDisplay("Consultant IA Orquestral...", "yellow");
             const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            // OPTIMITZACIÓ: Prompt millorat
             const prompt = `Ets Harmonia, una IA compositora experta en bandes sonores simfòniques. La teva tasca és crear una partitura complexa i emotiva en format JSON. Respon obligatòriament en català i només amb el JSON, sense markdown.
                 INSPIRACIÓ ESTILÍSTICA: "${inspiration || 'Fantasia clàssica'}".
                 ESCENA ACTUAL: "${text}".
@@ -348,9 +389,10 @@
                 INSTRUCCIONS DE COMPOSICIÓ:
                 1.  Crea una composició amb diverses capes. Tria entre 3 i 5 instruments de la llista.
                 2.  Genera partitures llargues, amb "loopDuration" de "8m".
-                3.  IMPORTANT PER ALS LOOPS: La frase musical ha de resoldre i concloure de manera natural just abans del final del "loopDuration" per garantir una repetició suau i contínua.
-                4.  ORQUESTRACIÓ: Utilitza el "piano" i l'"harp" per a harmonies i arpegis. Utilitza "violin" per a melodies principals. Utilitza "cello" i "contrabass" per a les línies de baix. Utilitza "french-horn" per a crides èpiques. Utilitza "choir_aah" per a crear atmosferes. Prioritza notes individuals per a instruments melòdics com el violí o el cello per evitar errors.
-                5.  El JSON ha de contenir: "name" (en català), "bpm", "parts" (un array d'instruments). Cada instrument ha de tenir: "instrument" (nom de la llista), "loopDuration", i "sequence" (un array d'events amb "time", "note", "duration").`;
+                3.  La frase musical ha de resoldre i concloure de manera natural just abans del final del "loopDuration" per garantir una repetició suau i contínua.
+                4.  Per coherència, intenta reutilitzar o variar lleugerament motius melòdics d'escenes anteriors si l'ambient no canvia dràsticament.
+                5.  ORQUESTRACIÓ: Utilitza el "piano" i l'"harp" per a harmonies i arpegis. Utilitza "violin" per a melodies principals. Utilitza "cello" i "contrabass" per a les línies de baix. Utilitza "french-horn" per a crides èpiques. Utilitza "choir_aah" per a crear atmosferes. Prioritza notes individuals per a instruments melòdics com el violí o el cello per evitar errors.
+                6.  El JSON ha de contenir: "name" (en català), "bpm", "parts" (un array d'instruments). Cada instrument ha de tenir: "instrument" (nom de la llista), "loopDuration", i "sequence" (un array d'events amb "time", "note", "duration").`;
             try {
                 const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
@@ -396,8 +438,8 @@
                     recognitionManuallyStopped = true;
                     updateStatusDisplay("Error de micro", "red");
                      if(toggleBtn) {
-                        toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`;
-                        toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                         toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`;
+                         toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
                     }
                 }
             };
@@ -428,7 +470,6 @@
             showUI();
             await setupSpeechRecognition();
             
-            // CANVI: Afegim l'escolta de canvis de visibilitat per al Wake Lock
             document.addEventListener('visibilitychange', () => screenWakeLockManager.handleVisibilityChange());
             
             document.getElementById('save-api-key-btn').addEventListener('click', () => {
@@ -442,7 +483,9 @@
                     setButtonsLoading(true, "Iniciant...");
                     if (Tone.context.state !== 'running') { await Tone.start(); }
 
-                    // CANVI: Demanem el bloqueig de pantalla en iniciar la sessió
+                    // OPTIMITZACIÓ: Precàrrega d'instruments en segon pla
+                    musicManager.loadInstruments(['piano', 'violin', 'cello']);
+
                     await screenWakeLockManager.request();
 
                     activeGameInspiration = document.getElementById('session-inspiration-input').value.trim();
@@ -453,14 +496,22 @@
                         showScreen('active-session-content');
                     } else {
                         showCustomMessage("No s'ha pogut generar la música inicial. Comprova la clau API.", "error");
-                        await screenWakeLockManager.release(); // Alliberem si la sessió no comença
+                        await screenWakeLockManager.release();
                     }
                 } catch (error) { 
                     logError("Error en iniciar la sessió:", error); 
                     showCustomMessage('Error iniciant la sessió. Comprova la clau i la consola.', 'error'); 
-                    await screenWakeLockManager.release(); // Alliberem si hi ha error
+                    await screenWakeLockManager.release();
                 } finally {
                     setButtonsLoading(false);
+                }
+            });
+
+            // Listener del Soundboard (event delegation)
+            document.getElementById('soundboard').addEventListener('click', (event) => {
+                const target = event.target.closest('button');
+                if (target && target.dataset.sound) {
+                    musicManager.playSoundEffect(target.dataset.sound);
                 }
             });
 
@@ -472,7 +523,6 @@
                 if (isListening) stopListening(); 
                 musicManager.disposeAll(); 
                 
-                // CANVI: Alliberem el bloqueig de pantalla en finalitzar la sessió
                 await screenWakeLockManager.release();
                 
                 showScreen('initial-setup-screen'); 
