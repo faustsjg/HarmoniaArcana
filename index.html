@@ -14,7 +14,7 @@
         .input-styled { background-color: #374151; border: 1px solid #4b5563; color: #f3f4f6; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; width: 100%; }
         .input-styled:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5); }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .dot-gray { background-color: #6b7280; } .dot-green { background-color: #10b981; } .dot-yellow { background-color: #f59e0b; }
+        .dot-gray { background-color: #6b7280; } .dot-green { background-color: #10b981; } .dot-yellow { background-color: #f59e0b; } .dot-red { background-color: #ef4444; }
         #custom-message-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1050; display: none; font-size: 0.875rem; border: 1px solid rgba(255,255,255,0.1); }
         .message-success { background-color: #059669; color: #d1fae5; } .message-error { background-color: #b91c1c; color: #fee2e2; } .message-info { background-color: #1d4ed8; color: #dbeafe; }
         .btn-loading { opacity: 0.6; cursor: not-allowed; }
@@ -89,7 +89,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250608_1125_GUARANTEED_COMPLETE";
+        const SCRIPT_VERSION = "V20250608_1400_IMPROVED";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -285,11 +285,21 @@
                 const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
                 const responseData = await response.json();
+                
                 let jsonText = responseData.candidates[0].content.parts[0].text;
                 log("Resposta rebuda de la IA:", jsonText);
-                const match = jsonText.match(/\{[\s\S]*\}/);
-                if (!match) throw new Error("La resposta de la IA no conté un objecte JSON vàlid.");
-                return JSON.parse(match[0]);
+                
+                const cleanedText = jsonText.replace(/^```json\s*|```$/g, '').trim();
+
+                try {
+                    return JSON.parse(cleanedText);
+                } catch (e) {
+                    log("El parseig directe ha fallat, buscant l'objecte JSON amb regex...", e);
+                    const match = cleanedText.match(/\{[\s\S]*\}/);
+                    if (!match) throw new Error("La resposta de la IA no conté un objecte JSON vàlid.");
+                    return JSON.parse(match[0]);
+                }
+
             } catch (error) { logError("Error en la petició a la IA:", error); showCustomMessage(`Error de l'API: ${error.message}`, 'error'); return null; 
             } finally {
                 setButtonsLoading(false);
@@ -305,13 +315,43 @@
             const transcriptPreview = document.getElementById('transcript-preview');
             recognition.onstart = () => { isListening = true; recognitionManuallyStopped = false; updateStatusDisplay("Escoltant...", "green"); if(toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone-slash mr-2"></i>Aturar Escolta`; toggleBtn.classList.add('bg-orange-500', 'hover:bg-orange-600'); } };
             recognition.onend = () => { if (!recognitionManuallyStopped) { log("El reconeixement de veu ha finalitzat, reiniciant automàticament..."); try { recognition.start(); } catch(e) { logError("Error reiniciant el reconeixement", e)} } else { isListening = false; updateStatusDisplay("Inactiu", "gray"); if(toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); } if (transcriptPreview) { transcriptPreview.textContent = "La transcripció en directe apareixerà aquí...";} log("Reconeixement aturat manualment."); } };
-            recognition.onerror = (event) => { logError("Error de reconeixement:", event.error); showCustomMessage(`Error de micro: ${event.error}`, 'error'); };
+            
+            recognition.onerror = (event) => {
+                logError("Error de reconeixement:", event.error);
+                showCustomMessage(`Error de micro: ${event.error}`, 'error');
+                
+                const fatalErrors = ['not-allowed', 'service-not-allowed'];
+                if (fatalErrors.includes(event.error)) {
+                    isListening = false;
+                    recognitionManuallyStopped = true; // Aturem del tot
+                    updateStatusDisplay("Error de micro", "red");
+                     if(toggleBtn) {
+                        toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`;
+                        toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                    }
+                }
+            };
+
             recognition.onresult = (event) => { let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) { finalTranscript += event.results[i][0].transcript; } else { transcriptPreview.textContent = accumulatedTranscript + event.results[i][0].transcript; } } if(finalTranscript) { accumulatedTranscript += finalTranscript.trim() + '. '; transcriptPreview.textContent = accumulatedTranscript; } };
         }
         
         function startListening() { if (!recognition) return; if (!isListening) { accumulatedTranscript = ""; document.getElementById('transcript-preview').textContent = "Escoltant..."; recognitionManuallyStopped = false; try { recognition.start(); } catch(e){ logError("No s'ha pogut iniciar l'escolta", e)} analysisInterval = setInterval(processAccumulatedTranscript, ANALYSIS_INTERVAL_MS); } }
         function stopListening() { if (isListening) { recognitionManuallyStopped = true; clearInterval(analysisInterval); recognition.stop(); processAccumulatedTranscript(); } }
-        async function processAccumulatedTranscript() { if (!accumulatedTranscript.trim()) return; const recipe = await getMusicRecipeFromAI(accumulatedTranscript, activeGameInspiration); if (recipe) await musicManager.play(recipe); accumulatedTranscript = ""; }
+        
+        async function processAccumulatedTranscript() {
+            const textToProcess = accumulatedTranscript.trim();
+            if (!textToProcess) {
+                return;
+            }
+            
+            accumulatedTranscript = "";
+            log(`Processant text: "${textToProcess}"`);
+
+            const recipe = await getMusicRecipeFromAI(textToProcess, activeGameInspiration);
+            if (recipe) {
+                await musicManager.play(recipe);
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('version-display').textContent = `Versió: ${SCRIPT_VERSION}`;
