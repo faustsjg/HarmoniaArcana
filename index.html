@@ -89,7 +89,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250608_0115_ULTIMATE_FINAL";
+        const SCRIPT_VERSION = "V20250608_1115_FINAL_MASTERPIECE";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -169,26 +169,17 @@
             reverb: null,
             isPaused: false,
             instrumentUrls: {
-                piano: { 'C4': 'C4.mp3', 'A3': 'A3.mp3' },
-                cello: { 'A2': 'A2.mp3', 'C2': 'C2.mp3' },
-                violin: { 'A4': 'A4.mp3', 'C4': 'C4.mp3' },
+                piano: { 'C4': 'C4.mp3', 'A3': 'A3.mp3', 'E3': 'E3.mp3' },
+                cello: { 'A2': 'A2.mp3', 'C2': 'C2.mp3', 'E2': 'E2.mp3' },
+                violin: { 'A4': 'A4.mp3', 'C4': 'C4.mp3', 'G4': 'G4.mp3' },
                 'french-horn': { 'A2': 'A2.mp3', 'C3': 'C3.mp3' },
                 contrabass: { 'A1': 'A1.mp3', 'C2': 'C2.mp3' },
                 harp: { 'C5': 'C5.mp3' },
-                organ: { 'C4': 'C4.mp3' },
                 'guitar-acoustic': { 'G3': 'G3.mp3' },
-                'guitar-electric': {'C4': 'C4.mp3'},
-                'bass-electric': {'C2': 'C2.mp3'},
-                flute: {'C5': 'C5.mp3'},
-                clarinet: {'A3': 'A3.mp3'},
-                trombone: {'A2': 'A2.mp3'},
-                trumpet: {'C4': 'C4.mp3'},
-                'strings': {'A4': 'A4.mp3'},
-                'pizzicato': {'C4': 'C4.mp3'},
                 'choir_aah': { 'A4': 'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/choir_aahs-mp3/A4.mp3' },
                 'percussio_kick': { 'C1': 'https://tonejs.github.io/audio/drum-samples/kick-softy.mp3' },
                 'percussio_snare': { 'C1': 'https://tonejs.github.io/audio/drum-samples/snare-block.mp3' },
-                'percussio_cymbal': { 'C1': 'https://tonejs.github.io/audio/drum-samples/cymbal-fusion.mp3' },
+                'percussio_cymbal': { 'C1': 'https://tonejs.github.io/audio/drum-samples/cymbal-fusion.mp3' }
             },
             
             async loadInstruments(instrumentNames = []) {
@@ -226,7 +217,7 @@
                     setButtonsLoading(true, "Carregant Orquestra...");
                     const requiredInstruments = [...new Set(recipe.parts.map(part => part.instrument))];
                     await this.loadInstruments(requiredInstruments);
-
+                    
                     if (recipe.effects && recipe.effects.reverb) {
                         this.reverb = new Tone.Reverb(recipe.effects.reverb).toDestination();
                     }
@@ -243,7 +234,7 @@
                             sampler.triggerAttackRelease(noteToPlay, value.duration, time);
                         }, part.sequence).start(0);
                         tonePart.loop = true;
-                        tonePart.loopEnd = part.loopDuration || "4m";
+                        tonePart.loopEnd = part.loopDuration || "8m";
                         this.activeParts.push(tonePart);
                     });
                     
@@ -279,18 +270,23 @@
             setButtonsLoading(true, "Composant...");
             updateStatusDisplay("Consultant IA Orquestral...", "yellow");
             const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            const prompt = `Ets Harmonia, una IA compositora experta en bandes sonores simfòniques. La teva tasca és crear una partitura complexa i emotiva en format JSON. Respon obligatòriament en català. El camp 'name' ha de ser en català. Respon només amb el JSON, sense markdown.
-                INSPIRACIÓ ESTILÍSTICA: "${inspiration || 'Fantasia clàssica'}".
-                ESCENA ACTUAL: "${text}".
-                
+            const prompt = `Ets Harmonia, una IA compositora guanyadora d'un Oscar, especialitzada en bandes sonores per a grans pel·lícules de rol. La teva feina és crear la música per a una escena, assegurant que cada peça se senti cinematogràfica, emotiva i perfectament integrada amb l'acció. Respon obligatòriament en català i només amb el JSON, sense markdown.
+
+                EL TEU PROCÉS CREATIU:
+                1.  **ANÀLISI D'ESTIL (PENSAMENT INTERN):** L'usuari ha proporcionat la inspiració general: "${inspiration || 'Fantasia clàssica'}". Analitza aquest concepte. Si és 'Hans Zimmer', pensa en percussió potent, ostinatos, epicidad. Si és 'Lo-fi', pensa en ritmes relaxats i sons suaus. Si és 'Star Wars', pensa en John Williams, amb fanfàrries de metall i temes heroics.
+                2.  **ANÀLISI DE L'ESCENA (PENSAMENT INTERN):** L'acció o diàleg actual a la partida és: "${text}". Analitza el sentiment immediat: és combat, tensió, exploració, diàleg tranquil, màgia?
+                3.  **SÍNTESI I COMPOSICIÓ (ACCIÓ FINAL):** Combina la teva anàlisi de l'estil (1) i de l'escena (2) per compondre una partitura única i detallada.
+
                 INSTRUMENTS DISPONIBLES: "piano", "cello", "violin", "french-horn", "contrabass", "harp", "organ", "guitar-acoustic", "choir_aah", "percussio_kick", "percussio_snare", "percussio_cymbal".
-                
-                INSTRUCCIONS DE COMPOSICIÓ:
-                1.  Crea una composició amb múltiples capes. Tria entre 3 i 6 instruments de la llista.
-                2.  Genera partitures llargues, amb "loopDuration" de "4m" o "8m".
-                3.  IMPORTANT PER ALS LOOPS: La frase musical ha de resoldre i concloure de manera natural just abans del final del "loopDuration" per garantir una repetició suau i contínua.
-                4.  ORQUESTRACIÓ: Utilitza el "piano", "guitar-acoustic" i l'"harp" per a harmonies i arpegis. Utilitza "violin" per a melodies principals. Utilitza "cello" i "contrabass" per a les línies de baix. Utilitza "french-horn" i "organ" per a notes llargues i solemnes. Utilitza "choir_aah" per a crear atmosferes. Prioritza notes individuals per a instruments melòdics com el violí o el cello per evitar errors.
-                5.  El JSON ha de contenir: "name" (en català), "bpm", "parts" (un array d'instruments). Cada instrument ha de tenir: "instrument" (nom de la llista), "loopDuration", i "sequence" (un array d'events amb "time", "note", "duration").`;
+
+                Basant-te en la teva SÍNTESI, genera el JSON amb l'estructura següent:
+                - "name": Un nom evocador i en català.
+                - "bpm": El tempo adequat.
+                - "parts": Un array de 3 a 5 instruments de la llista. Cada instrument ha de tenir:
+                  - "instrument": El nom exacte de la llista.
+                  - "loopDuration": Durada llarga, mínim "8m". La música ha de resoldre's bé abans del final per a un loop suau.
+                  - "sequence": Un array d'events per a Tone.Part (objectes amb "time", "note", "duration"). Prioritza notes individuals per a instruments melòdics.
+                - "effects": Opcional, un objecte amb "reverb".`;
             try {
                 const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
@@ -312,36 +308,13 @@
             recognition = new SpeechRecognition();
             recognition.lang = 'ca-ES'; recognition.continuous = true; recognition.interimResults = true;
             const toggleBtn = document.getElementById('toggle-listening-btn');
-            recognition.onstart = () => { isListening = true; recognitionManuallyStopped = false; updateStatusDisplay("Escoltant...", "green"); if(toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone-slash mr-2"></i>Aturar Escolta`; toggleBtn.classList.add('bg-orange-500', 'hover:bg-orange-600'); } };
-            recognition.onend = () => { if (!recognitionManuallyStopped) { log("El reconeixement de veu ha finalitzat, reiniciant automàticament..."); try { recognition.start(); } catch(e) { logError("Error reiniciant el reconeixement", e)} } else { isListening = false; updateStatusDisplay("Inactiu", "gray"); if(toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); } log("Reconeixement de veu aturat manualment."); } };
+            const transcriptPreview = document.getElementById('transcript-preview');
+            recognition.onstart = () => { isListening = true; if(toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone-slash mr-2"></i>Aturar Escolta`; toggleBtn.classList.add('bg-orange-500', 'hover:bg-orange-600'); } };
+            recognition.onend = () => { if (!recognitionManuallyStopped) { log("Reconeixement reiniciant..."); try { recognition.start(); } catch(e) { logError("Error reiniciant", e)} } else { isListening = false; if(toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); } if (transcriptPreview) { transcriptPreview.textContent = "La transcripció en directe apareixerà aquí...";} log("Reconeixement aturat manualment."); } };
             recognition.onerror = (event) => { logError("Error de reconeixement:", event.error); showCustomMessage(`Error de micro: ${event.error}`, 'error'); };
-            recognition.onresult = (event) => { let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) { finalTranscript += event.results[i][0].transcript; } else { document.getElementById('transcript-preview').textContent = accumulatedTranscript + event.results[i][0].transcript; } } if(finalTranscript) { accumulatedTranscript += finalTranscript.trim() + '. '; document.getElementById('transcript-preview').textContent = accumulatedTranscript; } };
+            recognition.onresult = (event) => { let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) { finalTranscript += event.results[i][0].transcript; } else { transcriptPreview.textContent = accumulatedTranscript + event.results[i][0].transcript; } } if(finalTranscript) { accumulatedTranscript += finalTranscript.trim() + '. '; transcriptPreview.textContent = accumulatedTranscript; } };
         }
         
         function startListening() { if (!recognition) return; if (!isListening) { accumulatedTranscript = ""; document.getElementById('transcript-preview').textContent = "Escoltant..."; recognitionManuallyStopped = false; try { recognition.start(); } catch(e){ logError("No s'ha pogut iniciar l'escolta", e)} analysisInterval = setInterval(processAccumulatedTranscript, ANALYSIS_INTERVAL_MS); } }
         function stopListening() { if (isListening) { recognitionManuallyStopped = true; clearInterval(analysisInterval); recognition.stop(); processAccumulatedTranscript(); } }
-        async function processAccumulatedTranscript() { if (!accumulatedTranscript.trim()) return; const recipe = await getMusicRecipeFromAI(accumulatedTranscript, activeGameInspiration); if (recipe) await musicManager.play(recipe); accumulatedTranscript = ""; }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            document.getElementById('version-display').textContent = `Versió: ${SCRIPT_VERSION}`;
-            showUI();
-            await setupSpeechRecognition();
-            
-            document.getElementById('save-api-key-btn').addEventListener('click', () => {
-                const key = document.getElementById('api-key-input').value;
-                if (key && key.trim() !== '') { localStorage.setItem(API_KEY_STORAGE_KEY, key); apiKey = key; showCustomMessage("Clau desada correctament!", "success"); showUI(); } 
-                else { showCustomMessage("Si us plau, introdueix una clau vàlida.", "error"); }
-            });
-
-            document.getElementById('start-session-btn').addEventListener('click', async () => { 
-                setButtonsLoading(true, "Iniciant...");
-                try {
-                    if (Tone.context.state !== 'running') { await Tone.start(); }
-                    activeGameInspiration = document.getElementById('session-inspiration-input').value.trim();
-                    document.getElementById('current-inspiration-display').textContent = activeGameInspiration ? `Inspiració: ${activeGameInspiration}` : 'Sense inspiració específica.';
-                    const initialRecipe = await getMusicRecipeFromAI("Una fanfàrria heroica per a l'inici d'una gran aventura", activeGameInspiration || "Fantasia èpica");
-                    if (initialRecipe) {
-                        await musicManager.play(initialRecipe);
-                        showScreen('active-session-content');
-                    } else {
-                        showCustomMessage("No s'ha pogut generar la música
+        async function processAccumulatedTranscript() { if (!accumulatedTranscript.trim()) return; const recipe = await getMusicRecipeFromAI(accumulatedTranscript
