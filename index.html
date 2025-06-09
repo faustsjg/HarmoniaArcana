@@ -18,6 +18,16 @@
         #custom-message-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1050; display: none; font-size: 0.875rem; border: 1px solid rgba(255,255,255,0.1); }
         .message-success { background-color: #059669; color: #d1fae5; } .message-error { background-color: #b91c1c; color: #fee2e2; } .message-info { background-color: #1d4ed8; color: #dbeafe; }
         .btn-loading { opacity: 0.6; cursor: not-allowed; }
+
+        /* NOVES CLASSES PER A L'ANIMACIÓ DELS BOTONS DE SO */
+        .btn-sound {
+            transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+        }
+        .btn-sound-active {
+            transform: scale(0.95);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            filter: brightness(0.8);
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 pt-8 sm:p-6">
@@ -79,12 +89,12 @@
                     <div class="mt-6">
                         <h3 class="text-sm font-medium text-gray-300 mb-2">Efectes Sonors</h3>
                         <div id="soundboard" class="grid grid-cols-3 gap-2">
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/sword-clash.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Espasa</button>
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/monster-roar.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Rugit</button>
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/magic-spell.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Màgia</button>
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/door-creak.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Porta</button>
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/arrow-shot.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Fletxa</button>
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/coins.mp3" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Monedes</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/sword-clash.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Espasa</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/monster-roar.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Rugit</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/magic-spell.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Màgia</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/door-creak.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Porta</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/arrow-shot.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Fletxa</button>
+                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/coins.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Monedes</button>
                         </div>
                     </div>
 
@@ -102,7 +112,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250609_0025_UI_TWEAKS"; // VERSIÓ ACTUALITZADA
+        const SCRIPT_VERSION = "V20250609_0045_SOUND_FX_ANIM"; // VERSIÓ ACTUALITZADA
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -247,7 +257,6 @@
         const musicManager = {
             activeParts: [],
             activeSamplers: {},
-            activePlayers: {},
             reverb: null,
             isPaused: false,
             instrumentUrls: {
@@ -342,21 +351,29 @@
                 this.updateToggleButton();
             },
 
-            playSoundEffect(url) {
-                if (this.activePlayers[url] && this.activePlayers[url].loaded) {
-                    this.activePlayers[url].start();
-                } else {
-                    const player = new Tone.Player(url).toDestination();
-                    player.autostart = true;
-                    player.onload = () => {
-                        log(`Efecte de so ${url} carregat i reproduït.`);
-                        this.activePlayers[url] = player;
-                    };
-                    player.onerror = (err) => logError(`Error carregant l'efecte ${url}`, err);
-                }
+            // FUNCIÓ DE SO MODIFICADA PER A L'ANIMACIÓ
+            playSoundEffect(buttonElement) {
+                if (!buttonElement || !buttonElement.dataset.sound) return;
+                
+                const soundUrl = buttonElement.dataset.sound;
+                buttonElement.classList.add('btn-sound-active');
+
+                const player = new Tone.Player({
+                    url: soundUrl,
+                    autostart: true,
+                    onstop: () => {
+                        buttonElement.classList.remove('btn-sound-active');
+                        player.dispose(); // Allibera memòria
+                    }
+                }).toDestination();
+                
+                player.onerror = (err) => {
+                    logError(`Error carregant l'efecte ${soundUrl}`, err);
+                    buttonElement.classList.remove('btn-sound-active'); // Restaura el botó si hi ha error
+                };
             },
 
-            disposeAll() { this.stop(); for (const key in this.activeSamplers) { this.activeSamplers[key].dispose(); } this.activeSamplers = {}; for (const key in this.activePlayers) { this.activePlayers[key].dispose(); } this.activePlayers = {}; log("Tots els instruments i efectes descarregats."); },
+            disposeAll() { this.stop(); for (const key in this.activeSamplers) { this.activeSamplers[key].dispose(); } this.activeSamplers = {}; log("Tots els instruments descarregats."); },
             pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton();} },
             resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton();} },
             updateToggleButton() { const btn = document.getElementById('stop-music-btn'); if(!btn) return; if (this.isPaused) { btn.innerHTML = `<i class="fas fa-play mr-2"></i>Reprendre`; btn.classList.remove('bg-red-600','hover:bg-red-700'); btn.classList.add('bg-green-600','hover:bg-green-700');} else { btn.innerHTML = `<i class="fas fa-pause mr-2"></i>Pausa`; btn.classList.remove('bg-green-600','hover:bg-green-700'); btn.classList.add('bg-red-600','hover:bg-red-700');} }
@@ -492,10 +509,11 @@
                 }
             });
 
+            // LISTENER MODIFICAT PER A L'ANIMACIÓ
             document.getElementById('soundboard').addEventListener('click', (event) => {
-                const target = event.target.closest('button');
-                if (target && target.dataset.sound) {
-                    musicManager.playSoundEffect(target.dataset.sound);
+                const target = event.target.closest('button.btn-sound');
+                if (target) {
+                    musicManager.playSoundEffect(target);
                 }
             });
 
