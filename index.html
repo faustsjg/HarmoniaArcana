@@ -29,21 +29,26 @@
 
     <div id="api-key-setup-screen" class="w-full max-w-xl hidden">
         <div class="bg-gray-800 p-8 rounded-xl shadow-xl">
-            <h2 class="text-2xl font-bold text-purple-300 mb-2">Benvingut a Harmonia Arcana</h2>
-            <p class="text-gray-400 mb-6">Aquesta eina utilitza la IA de Llama 3 a través de Hugging Face. Per començar, necessites un Access Token gratuït.</p>
+            <h2 class="text-2xl font-bold text-purple-300 mb-2">Activa el teu Bard Digital</h2>
+            <p class="text-gray-400 mb-6 text-center">
+                Harmonia Arcana dona vida a les teves històries amb una banda sonora generada per IA en temps real.
+                <br>Utilitzem un potent model de **codi obert (Llama 3)**, la qual cosa ens permet oferir aquesta experiència de manera **100% gratuïta**.
+            </p>
             
-            <div class="text-left space-y-3 mb-6 bg-gray-900 p-4 rounded-lg border border-gray-700">
-                <p><strong class="text-purple-300">Pas 1: Crea un Compte a Hugging Face</strong><br>
-                <span class="text-sm text-gray-400">Si encara no en tens un, registra't. És gratuït.</span><br>
-                <a href="https://huggingface.co/join" target="_blank" class="link-styled text-sm">» Anar a la pàgina de registre de Hugging Face</a></p>
+            <div class="text-left space-y-4 mb-6 bg-gray-900 p-4 rounded-lg border border-gray-700">
+                <h3 class="text-lg font-semibold text-purple-200 text-center mb-2">Configuració Única (1 Minut)</h3>
                 
-                <p><strong class="text-purple-300">Pas 2: Accepta els Termes del Model Llama 3</strong><br>
-                <span class="text-sm text-gray-400">És un requisit obligatori. Visita la pàgina del model i accepta les condicions per a poder-lo utilitzar.</span><br>
-                <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct" target="_blank" class="link-styled text-sm">» Anar a la pàgina de Llama 3 per acceptar els termes</a></p>
+                <p><strong class="text-purple-300">1. Registra't a Hugging Face</strong><br>
+                <span class="text-sm text-gray-400">És la plataforma que ens dona accés gratuït al model d'IA. El registre és ràpid i només es fa un cop.</span><br>
+                <a href="https://huggingface.co/join" target="_blank" class="link-styled text-sm">» Anar a la pàgina de registre</a></p>
                 
-                <p><strong class="text-purple-300">Pas 3: Genera el teu Access Token</strong><br>
-                <span class="text-sm text-gray-400">A la teva configuració, crea un nou token amb rol "write".</span><br>
-                <a href="https://huggingface.co/settings/tokens" target="_blank" class="link-styled text-sm">» Anar a la pàgina per generar tokens</a></p>
+                <p><strong class="text-purple-300">2. Activa l'Accés al Model Llama 3</strong><br>
+                <span class="text-sm text-gray-400">Per poder utilitzar Llama 3, has de visitar la seva pàgina i acceptar les seves condicions d'ús. És un pas de seguretat obligatori.</span><br>
+                <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct" target="_blank" class="link-styled text-sm">» Anar a la pàgina de Llama 3 per acceptar termes</a></p>
+                
+                <p><strong class="text-purple-300">3. Aconsegueix la teva Clau (Access Token)</strong><br>
+                <span class="text-sm text-gray-400">Aquesta és la teva clau personal i gratuïta. Crea'n una amb el rol <span class="font-semibold text-yellow-300">"write"</span>, copia-la i tracta-la com una contrasenya.</span><br>
+                <a href="https://huggingface.co/settings/tokens" target="_blank" class="link-styled text-sm">» Anar a la teva pàgina de tokens</a></p>
             </div>
             
             <input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí el teu Access Token de Hugging Face (comença per 'hf_')...">
@@ -115,9 +120,10 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_0145_HUGGINGFACE_MIGRATION";
+        const SCRIPT_VERSION = "V20250612_2338_UI_POLISH";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
+        let activeGameInspiration = "";
         
         const API_KEY_STORAGE_KEY = 'harmoniaArcanaApiKey_HuggingFace';
         let apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
@@ -274,8 +280,7 @@
             async stop() {
                 this.activeParts.forEach(part => part.dispose());
                 this.activeEffects.forEach(effect => effect.dispose());
-                this.activeParts = [];
-                this.activeEffects = [];
+                this.activeParts = []; this.activeEffects = [];
                 if (Tone.Transport.state !== 'stopped') Tone.Transport.stop();
                 await Tone.Transport.cancel(0);
                 this.isPaused = false;
@@ -301,8 +306,7 @@
 
         function validateAndCleanRecipe(recipe) {
             if (!recipe || typeof recipe !== 'object' || !Array.isArray(recipe.parts)) {
-                logError("Recepta invàlida: L'estructura base és incorrecta.", recipe);
-                return null;
+                logError("Recepta invàlida: L'estructura base és incorrecta.", recipe); return null;
             }
             try {
                 const validParts = recipe.parts.filter(part => {
@@ -467,7 +471,7 @@ La resposta ha de ser un únic objecte JSON que contingui "name", "bpm", i "part
                     await screenWakeLockManager.request();
                     
                     const rawInspiration = document.getElementById('session-inspiration-input').value.trim() || "Fantasia èpica";
-                    activeGameInspiration = rawInspiration; // Guardem la inspiració principal
+                    activeGameInspiration = rawInspiration; 
                     document.getElementById('current-inspiration-display').textContent = `Inspiració: ${rawInspiration}`;
                     
                     let initialRecipe = await getMusicRecipeFromAI(rawInspiration, "Una peça musical introductòria que marqui el to de l'aventura.");
