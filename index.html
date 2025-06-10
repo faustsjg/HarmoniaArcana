@@ -102,7 +102,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_1815_COMPLETE_CODE_FIX";
+        const SCRIPT_VERSION = "V20250611_0045_PRO_MODEL_UPGRADE";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -257,7 +257,6 @@
                     return new Promise((resolve, reject) => {
                         const firstNote = Object.keys(this.instrumentUrls[name])[0];
                         const firstUrl = this.instrumentUrls[name][firstNote];
-                        
                         let baseUrl = TONEJS_DEFAULT_INSTRUMENTS.includes(name) ? "https://tonejs.github.io/audio/salamander/" : "";
 
                         const sampler = new Tone.Sampler({
@@ -427,6 +426,9 @@
             }
         }
         
+        // ✅ ÚNICA LÍNIA MODIFICADA: APUNTEM A GEMINI PRO
+        const getApiEndpoint = () => `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+
         async function createDetailedPromptFromInspiration(inspiration) {
             log(`Cridant a l'Analista Musical per a la inspiració: "${inspiration}"`);
             setButtonsLoading(true, "Analitzant estil...");
@@ -437,9 +439,8 @@
 Instruments disponibles per a la compositora: ${availableInstruments}.
 
 Ara, genera el paràgraf d'instruccions detallat per a la inspiració: "${inspiration}". Respon només amb el paràgraf d'instruccions, sense afegir cap salutació ni comiat.`;
-            const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             try {
-                const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: analystPrompt }] }] }) });
+                const response = await fetch(getApiEndpoint(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: analystPrompt }] }] }) });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
                 const responseData = await response.json();
                 const detailedPrompt = responseData.candidates[0].content.parts[0].text.trim();
@@ -473,9 +474,8 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
 5.  Efectes Opcionals: A nivell de part, pots afegir una clau "effects" (un array d'objectes).
     Exemple d'efecte: "effects": [{"type": "delay", "time": "8n", "feedback": 0.3}].
 6.  Estructura Final: El JSON final ha de contenir "name" (nom creatiu en català), "bpm", i "parts".`;
-            const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             try {
-                const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: composerPrompt }] }] }) });
+                const response = await fetch(getApiEndpoint(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: composerPrompt }] }] }) });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
                 const responseData = await response.json();
                 let jsonText = responseData.candidates[0].content.parts[0].text;
