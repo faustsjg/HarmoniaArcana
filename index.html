@@ -102,10 +102,10 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_2338_CODE_CLEANUP";
+        const SCRIPT_VERSION = "V20250612_2200_HYBRID_MODEL";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
-        let activeGameInspiration = "";
+        let activeStyleGuide = "";
         
         const API_KEY_STORAGE_KEY = 'harmoniaArcanaApiKey';
         let apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
@@ -113,16 +113,12 @@
         let TONEJS_DEFAULT_INSTRUMENTS = [];
 
         const screenWakeLockManager = {
-            wakeLockSentinel: null,
-            videoElement: null,
+            wakeLockSentinel: null, videoElement: null,
             async request() {
                 if ('wakeLock' in navigator) {
                     try {
                         this.wakeLockSentinel = await navigator.wakeLock.request('screen');
-                        this.wakeLockSentinel.addEventListener('release', () => {
-                            log('El bloqueig de pantalla ha estat alliberat.');
-                            this.wakeLockSentinel = null;
-                        });
+                        this.wakeLockSentinel.addEventListener('release', () => { log('El bloqueig de pantalla ha estat alliberat.'); this.wakeLockSentinel = null; });
                         log('Bloqueig de pantalla activat via API.');
                         return true;
                     } catch (err) {
@@ -145,34 +141,15 @@
                 this.videoElement.src = "data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAyhianRkAAAAAm1kYXQAAAGzABAHAAEAAAMhYeNaAAQAAAZv//8AAAAuR2dZgA==";
                 const playPromise = this.videoElement.play();
                 if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        document.body.appendChild(this.videoElement);
-                        log('Bloqueig de pantalla activat via vídeo silenciós.');
-                    }).catch(error => {
-                        logError('No s\'ha pogut reproduir el vídeo per al bloqueig de pantalla.', error);
-                    });
+                    playPromise.then(() => { document.body.appendChild(this.videoElement); log('Bloqueig de pantalla activat via vídeo silenciós.'); }).catch(error => { logError('No s\'ha pogut reproduir el vídeo per al bloqueig de pantalla.', error); });
                 }
                 return true;
             },
             async release() {
-                if (this.wakeLockSentinel) {
-                    await this.wakeLockSentinel.release();
-                    this.wakeLockSentinel = null;
-                    log('Bloqueig de pantalla (API) alliberat.');
-                }
-                if (this.videoElement) {
-                    this.videoElement.pause();
-                    document.body.removeChild(this.videoElement);
-                    this.videoElement = null;
-                    log('Bloqueig de pantalla (vídeo) alliberat.');
-                }
+                if (this.wakeLockSentinel) { await this.wakeLockSentinel.release(); this.wakeLockSentinel = null; log('Bloqueig de pantalla (API) alliberat.'); }
+                if (this.videoElement) { this.videoElement.pause(); document.body.removeChild(this.videoElement); this.videoElement = null; log('Bloqueig de pantalla (vídeo) alliberat.'); }
             },
-            handleVisibilityChange() {
-                if (this.wakeLockSentinel && document.visibilityState === 'visible') {
-                    log('La pàgina és visible de nou, demanant el bloqueig de pantalla.');
-                    this.request();
-                }
-            }
+            handleVisibilityChange() { if (this.wakeLockSentinel && document.visibilityState === 'visible') { log('La pàgina és visible de nou, demanant el bloqueig de pantalla.'); this.request(); } }
         };
 
         function showCustomMessage(message, type = 'info', duration = 3000) {
@@ -242,41 +219,24 @@
         }
         
         const musicManager = {
-            activeParts: [],
-            activeSamplers: {},
-            activeEffects: [],
-            isPaused: false,
-            instrumentUrls: {}, 
-
+            activeParts: [], activeSamplers: {}, activeEffects: [], isPaused: false, instrumentUrls: {},
             async loadInstruments(instrumentNames = []) {
                 const uniqueInstrumentNames = [...new Set(instrumentNames.map(name => name.replace(/-/g, '_')))];
                 const promises = uniqueInstrumentNames.map(name => {
-                    if (this.activeSamplers[name] || !this.instrumentUrls[name]) {
-                        return Promise.resolve();
-                    }
+                    if (this.activeSamplers[name] || !this.instrumentUrls[name]) return Promise.resolve();
                     return new Promise((resolve, reject) => {
                         const firstNote = Object.keys(this.instrumentUrls[name])[0];
                         const firstUrl = this.instrumentUrls[name][firstNote];
                         let baseUrl = TONEJS_DEFAULT_INSTRUMENTS.includes(name) ? "https://tonejs.github.io/audio/salamander/" : "";
-
                         const sampler = new Tone.Sampler({
-                            urls: this.instrumentUrls[name],
-                            baseUrl: baseUrl,
-                            onload: () => {
-                                log(`Instrument ${name} carregat.`);
-                                this.activeSamplers[name] = sampler.toDestination();
-                                resolve();
-                            },
-                            onerror: (error) => {
-                                logError(`Error carregant ${name}`, error);
-                                reject(new Error(`No s'ha pogut carregar l'instrument: ${name}`));
-                            }
+                            urls: this.instrumentUrls[name], baseUrl: baseUrl,
+                            onload: () => { log(`Instrument ${name} carregat.`); this.activeSamplers[name] = sampler.toDestination(); resolve(); },
+                            onerror: (error) => { logError(`Error carregant ${name}`, error); reject(new Error(`No s'ha pogut carregar l'instrument: ${name}`)); }
                         });
                     });
                 });
                 await Promise.allSettled(promises);
             },
-
             async play(recipe) {
                 await this.stop();
                 log(`Reproduint nova recepta orquestral:`, recipe);
@@ -284,14 +244,9 @@
                     setButtonsLoading(true, "Carregant Orquestra...");
                     const requiredInstruments = [...new Set(recipe.parts.map(part => part.instrument))];
                     await this.loadInstruments(requiredInstruments);
-
                     recipe.parts.forEach(part => {
                         const sampler = this.activeSamplers[part.instrument];
-                        if (!sampler) {
-                            logError(`Instrument no carregat: ${part.instrument}. Saltant aquesta part.`);
-                            return;
-                        }
-
+                        if (!sampler) { logError(`Instrument no carregat: ${part.instrument}. Saltant aquesta part.`); return; }
                         let soundSource = sampler;
                         if (part.effects && Array.isArray(part.effects)) {
                             part.effects.forEach(effectInfo => {
@@ -302,19 +257,14 @@
                                 }
                             });
                         }
-                        if (soundSource === sampler) {
-                            soundSource.toDestination();
-                        }
-                        
+                        if (soundSource === sampler) soundSource.toDestination();
                         const tonePart = new Tone.Part((time, value) => {
                             if (Array.isArray(value.note) && value.arpeggiate) {
                                 const notes = value.note;
                                 const totalDurationSeconds = Tone.Time(value.duration).toSeconds();
                                 let arpeggioNotes = notes;
-
                                 if (value.arpeggiate === "down") arpeggioNotes = [...notes].reverse();
                                 else if (value.arpeggiate === "upDown") arpeggioNotes = notes.concat([...notes].slice(0, -1).reverse());
-                                
                                 const noteDuration = totalDurationSeconds / arpeggioNotes.length;
                                 arpeggioNotes.forEach((note, index) => {
                                     const offset = index * noteDuration;
@@ -325,18 +275,15 @@
                                 sampler.triggerAttackRelease(noteToPlay, value.duration, time, value.velocity || 0.8);
                             }
                         }, part.sequence).start(0);
-
                         tonePart.loop = true;
                         tonePart.loopEnd = part.loopDuration || "8m";
                         this.activeParts.push(tonePart);
                     });
-
                     Tone.Transport.bpm.rampTo(recipe.bpm, 2);
                     Tone.Transport.start();
                     this.isPaused = false;
                     document.getElementById('music-status').textContent = `Reproduint (${recipe.name})`;
                     this.updateToggleButton();
-
                 } catch (error) {
                     logError("Error al musicManager.play:", error);
                     showCustomMessage("Error en la recepta musical. Comproveu la consola.", "error");
@@ -344,7 +291,6 @@
                     setButtonsLoading(false);
                 }
             },
-            
             async stop() {
                 this.activeParts.forEach(part => part.dispose());
                 this.activeEffects.forEach(effect => effect.dispose());
@@ -357,43 +303,20 @@
                 if (musicStatus) musicStatus.textContent = "Aturada";
                 this.updateToggleButton();
             },
-
             playSoundEffect(buttonElement) {
                 if (!buttonElement || !buttonElement.dataset.sound) return;
                 const soundUrl = buttonElement.dataset.sound;
                 buttonElement.classList.add('btn-sound-active');
                 const player = new Tone.Player({
-                    url: soundUrl,
-                    autostart: true,
-                    onstop: () => {
-                        buttonElement.classList.remove('btn-sound-active');
-                        player.dispose();
-                    },
-                    onerror: (err) => {
-                        logError(`Error carregant l'efecte ${soundUrl}:`, err);
-                        showCustomMessage(`No s'ha pogut carregar el so. Verifica la URL.`, 'error');
-                        buttonElement.classList.remove('btn-sound-active');
-                        player.dispose();
-                    }
+                    url: soundUrl, autostart: true,
+                    onstop: () => { buttonElement.classList.remove('btn-sound-active'); player.dispose(); },
+                    onerror: (err) => { logError(`Error carregant l'efecte ${soundUrl}:`, err); showCustomMessage(`No s'ha pogut carregar el so. Verifica la URL.`, 'error'); buttonElement.classList.remove('btn-sound-active'); player.dispose(); }
                 }).toDestination();
             },
-
             disposeAll() { this.stop(); for (const key in this.activeSamplers) { this.activeSamplers[key].dispose(); } this.activeSamplers = {}; log("Tots els instruments descarregats."); },
-            pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton();} },
-            resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton();} },
-            updateToggleButton() { 
-                const btn = document.getElementById('stop-music-btn'); 
-                if (!btn) return; 
-                if (this.isPaused) { 
-                    btn.textContent = 'Reprendre'; 
-                    btn.classList.remove('bg-red-600','hover:bg-red-700'); 
-                    btn.classList.add('bg-green-600','hover:bg-green-700');
-                } else { 
-                    btn.textContent = 'Pausa';
-                    btn.classList.remove('bg-green-600','hover:bg-green-700');
-                    btn.classList.add('bg-red-600','hover:bg-red-700');
-                } 
-            }
+            pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton(); } },
+            resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton(); } },
+            updateToggleButton() { const btn = document.getElementById('stop-music-btn'); if (!btn) return; if (this.isPaused) { btn.textContent = 'Reprendre'; btn.classList.remove('bg-red-600', 'hover:bg-red-700'); btn.classList.add('bg-green-600', 'hover:bg-green-700'); } else { btn.textContent = 'Pausa'; btn.classList.remove('bg-green-600', 'hover:bg-green-700'); btn.classList.add('bg-red-600', 'hover:bg-red-700'); } }
         };
 
         function validateAndCleanRecipe(recipe) {
@@ -404,32 +327,18 @@
             try {
                 const validParts = recipe.parts.filter(part => {
                     const instrumentName = part.instrument.replace(/-/g, '_');
-                    if (!instrumentName || !musicManager.instrumentUrls[instrumentName]) {
-                        logError(`Part descartada: instrument invàlid o no trobat '${instrumentName}'.`);
-                        return false;
-                    }
+                    if (!instrumentName || !musicManager.instrumentUrls[instrumentName]) { logError(`Part descartada: instrument invàlid o no trobat '${instrumentName}'.`); return false; }
                     part.instrument = instrumentName;
-                    if (!Array.isArray(part.sequence)) {
-                        logError(`Part descartada per a '${part.instrument}': la seqüència no és un array.`, part.sequence);
-                        return false;
-                    }
+                    if (!Array.isArray(part.sequence)) { logError(`Part descartada per a '${part.instrument}': la seqüència no és un array.`, part.sequence); return false; }
                     part.sequence = part.sequence.filter(event => {
                         const hasRequiredKeys = event.hasOwnProperty('time') && event.hasOwnProperty('note') && event.hasOwnProperty('duration');
-                        if (!hasRequiredKeys) {
-                           logError(`Event descartat per a '${part.instrument}': falten claus essencials.`, event);
-                           return false;
-                        }
-                        if (event.hasOwnProperty('velocity') && typeof event.velocity !== 'number') {
-                           event.velocity = Math.max(0.1, Math.min(1.0, parseFloat(event.velocity))) || 0.8;
-                        }
+                        if (!hasRequiredKeys) { logError(`Event descartat per a '${part.instrument}': falten claus essencials.`, event); return false; }
+                        if (event.hasOwnProperty('velocity') && typeof event.velocity !== 'number') { event.velocity = Math.max(0.1, Math.min(1.0, parseFloat(event.velocity))) || 0.8; }
                         return true;
                     });
                     return part.sequence.length > 0;
                 });
-                if (validParts.length === 0) {
-                    logError("Recepta invàlida: Cap de les parts era vàlida després de la neteja.");
-                    return null;
-                }
+                if (validParts.length === 0) { logError("Recepta invàlida: Cap de les parts era vàlida després de la neteja."); return null; }
                 recipe.parts = validParts;
                 return recipe;
             } catch (error) {
@@ -440,82 +349,60 @@
         
         async function callGoogleAI(prompt, model) {
             const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-            const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error.message);
-            }
-            const responseData = await response.json();
-            return responseData.candidates[0].content.parts[0].text.trim();
-        }
-
-        async function shouldChangeMusic(transcript, currentInspiration) {
-            log("Consultant al Guardià si cal canvi de música...");
-            const gatekeeperPrompt = `Ets un assistent director de partides de rol. La música de fons actual intenta evocar un ambient de "${currentInspiration}". La darrera conversa ha estat: "${transcript}". Hi ha un canvi evident d'escena o emoció (de calma a combat, de diàleg a perill, de celebració a tragèdia) que justifiqui un canvi dràstic de música? Respon només amb la paraula SI o NO.`;
             try {
-                const decision = await callGoogleAI(gatekeeperPrompt, 'gemini-1.5-flash-latest');
-                log(`Decisió del Guardià: ${decision}`);
-                return decision.toUpperCase().includes('SI') ? 'SI' : 'NO';
+                const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message);
+                }
+                const responseData = await response.json();
+                return responseData.candidates[0].content.parts[0].text.trim();
             } catch (error) {
-                logError("Error amb el Guardià:", error);
-                return 'NO';
+                logError(`Error cridant al model ${model}:`, error);
+                showCustomMessage(`Error de l'API (${model}): ${error.message}`, 'error');
+                throw error; // Rellancem l'error per a que la funció que crida el gestioni
             }
         }
 
-        async function createDetailedPromptFromInspiration(inspiration) {
-            log(`Cridant a l'Analista Musical per a la inspiració: "${inspiration}"`);
-            setButtonsLoading(true, "Analitzant estil...");
-            updateStatusDisplay("Analitzant estil musical...", "yellow");
+        async function generateInitialMusicAndStyleGuide(inspiration) {
+            log(`Cridant al Mestre Compositor per a la inspiració: "${inspiration}"`);
+            setButtonsLoading(true, "Creant tema principal...");
+            updateStatusDisplay("Composant tema...", "yellow");
             const availableInstruments = Object.keys(musicManager.instrumentUrls).join(', ');
-            const analystPrompt = `Ets un expert musicòleg. La teva tasca és analitzar la inspiració de l'usuari ("${inspiration}") i generar un paràgraf d'instruccions per a una IA compositora. Les teves instruccions han de descriure l'estil, l'emoció, la instrumentació, el tempo, i les harmonies. IMPORTANT: Suggereix l'ús de dinàmiques variades (velocity), textures rítmiques com arpegis, i efectes espacials com l'eco (delay).
+            const masterPrompt = `Ets un Mestre Compositor i Musicòleg. La teva tasca és doble:
+1.  **TASCA 1 (ANÀLISI):** Analitza en profunditat la inspiració de l'usuari: "${inspiration}". Pensa en l'estil, instrumentació, tempo, harmonies i emocions clau.
+2.  **TASCA 2 (COMPOSICIÓ):** Basant-te en la teva pròpia anàlisi, compon una peça musical LLARGA i amb DESENVOLUPAMENT (mínim 8 compassos, amb seccions A i B) en format JSON.
+3.  **TASCA 3 (EXTRACCIÓ):** Al JSON final, inclou una clau "style_description" amb el text de l'anàlisi que has fet a la Tasca 1.
 
-Instruments disponibles per a la compositora: ${availableInstruments}.
+REGLA D'OR: Utilitza ÚNICA I EXCLUSIVAMENT els noms d'instrument de la llista.
+LLISTA ESTRICTA D'INSTRUMENTS: "${availableInstruments}".
+REQUISITS CRÍTICS DEL FORMAT JSON: La resposta ha de ser un únic objecte JSON que contingui "name", "bpm", "style_description", i "parts". Cada element de "parts" ha de seguir totes les regles (sequence com a array, events amb time/note/duration, etc.).`;
 
-Ara, genera el paràgraf d'instruccions detallat per a la inspiració: "${inspiration}". Respon només amb el paràgraf d'instruccions, sense afegir cap salutació ni comiat.`;
             try {
-                const detailedPrompt = await callGoogleAI(analystPrompt, 'gemini-1.5-pro-latest');
-                log(`Prompt detallat rebut de l'Analista: "${detailedPrompt}"`);
-                return detailedPrompt;
-            } catch (error) {
-                logError("Error amb l'Analista Musical:", error);
-                showCustomMessage("La IA analista no ha respost. S'intentarà amb la inspiració bàsica.", "error");
-                return inspiration;
-            }
-        }
-        
-        async function getMusicRecipeFromAI(detailedPrompt, sceneText) {
-            setButtonsLoading(true, "Composant...");
-            updateStatusDisplay("Consultant IA Compositora...", "yellow");
-            const availableInstruments = Object.keys(musicManager.instrumentUrls).join(', ');
-            const composerPrompt = `Ets Harmonia, una IA compositora experta. Has de crear una partitura complexa en format JSON seguint aquestes instruccions estilístiques que t'ha donat un musicòleg expert:
-INSTRUCCIONS D'ESTIL: "${detailedPrompt}"
-ESCENA ACTUAL: "${sceneText}". Adapta la composició a aquesta escena mantenint l'estil general.
-
-REGLA D'OR: Utilitza ÚNICA I EXCLUSIVAMENT els noms d'instrument de la següent llista. No inventis noms com 'strings' o 'brass'. Si vols un so de cordes, has de triar un instrument específic com 'violin' o 'pizzicato_strings'.
-LLISTA ESTRICTA D'INSTRUMENTS DISPONIBLES: "${availableInstruments}".
-
-REQUISITS CRÍTICS DEL FORMAT JSON:
-1.  Desenvolupament Musical OBLIGATORI: La composició ha de tenir una durada musical real d'almenys 4 compassos (measures) i ha de mostrar una evolució. No generis només un o dos segons de música. Crea una peça amb una secció A i una secció B per assegurar la varietat.
-2.  Format de Seqüència: El camp "sequence" HA DE SER un array d'objectes.
-3.  Format d'Event: Cada objecte dins de "sequence" HA DE TENIR OBLIGATÒRIAMENT les claus "time", "note", i "duration".
-4.  Paràmetres Opcionals: Pots afegir una clau opcional "velocity" (número de 0.1 a 1.0) i/o una clau "arpeggiate" ("up", "down", "upDown") si la "note" és un array.
-    Exemple d'event: {"time": "0:1:2", "note": "C#4", "duration": "8n", "velocity": 0.9}.
-    Exemple d'arpegi: {"time": "0:2:0", "note": ["C4", "E4", "G4"], "duration": "4n", "arpeggiate": "up"}.
-5.  Efectes Opcionals: A nivell de part, pots afegir una clau "effects" (un array d'objectes).
-    Exemple d'efecte: "effects": [{"type": "delay", "time": "8n", "feedback": 0.3}].
-6.  Estructura Final: El JSON final ha de contenir "name" (nom creatiu en català), "bpm", i "parts".`;
-            try {
-                const jsonText = await callGoogleAI(composerPrompt, 'gemini-1.5-pro-latest');
-                log("Resposta rebuda de la IA:", jsonText);
+                const jsonText = await callGoogleAI(masterPrompt, 'gemini-1.5-pro-latest');
                 const match = jsonText.match(/\{[\s\S]*\}/);
-                if (!match) throw new Error("La resposta de la IA no conté un objecte JSON vàlid.");
+                if (!match) throw new Error("La IA no ha retornat un JSON vàlid.");
                 return JSON.parse(match[0]);
             } catch (error) {
-                logError("Error en la petició a la IA o en el parseig:", error);
-                showCustomMessage(`Error de l'API: ${error.message}`, 'error');
                 return null;
-            } finally {
-                setButtonsLoading(false);
+            }
+        }
+
+        async function generateVariation(styleGuide, transcript) {
+            log("Cridant a l'improvisador per a generar una variació...");
+            updateStatusDisplay("Adaptant música...", "yellow");
+            const availableInstruments = Object.keys(musicManager.instrumentUrls).join(', ');
+            const variationPrompt = `Ets un músic de sessió que improvisa. La guia d'estil de la cançó actual és: "${styleGuide}". L'acció més recent a la partida és: "${transcript}".
+Genera una VARIACIÓ MUSICAL CURTA (1 o 2 compassos) que s'adapti a l'acció però mantenint l'estil principal. La teva resposta ha de ser un format JSON amb una clau "parts", seguint les mateixes regles que el compositor principal.`;
+
+            try {
+                const jsonText = await callGoogleAI(variationPrompt, 'gemini-1.5-flash-latest');
+                const match = jsonText.match(/\{[\s\S]*\}/);
+                if (!match) throw new Error("La IA no ha retornat un JSON vàlid per a la variació.");
+                return JSON.parse(match[0]);
+            } catch (error) {
+                logError("Error generant la variació:", error);
+                return null; // Si la variació falla, no aturem la música actual
             }
         }
 
@@ -529,7 +416,7 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
             const toggleBtn = document.getElementById('toggle-listening-btn');
             const transcriptPreview = document.getElementById('transcript-preview');
             recognition.onstart = () => { isListening = true; recognitionManuallyStopped = false; updateStatusDisplay("Escoltant...", "green"); if (toggleBtn) { toggleBtn.textContent = 'Aturar Escolta'; toggleBtn.classList.add('bg-orange-500', 'hover:bg-orange-600'); } };
-            recognition.onend = () => { if (!recognitionManuallyStopped) { log("El reconeixement de veu ha finalitzat, reiniciant automàticament..."); try { recognition.start(); } catch (e) { logError("Error reiniciant el reconeixement", e) } } else { isListening = false; updateStatusDisplay("Inactiu", "gray"); if (toggleBtn) { toggleBtn.textContent = 'Escoltar'; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); } if (transcriptPreview) { transcriptPreview.textContent = "La transcripció en directe apareixerà aquí..."; } log("Reconeixement aturat manualment."); } };
+            recognition.onend = () => { if (!recognitionManuallyStopped) { log("El reconeixement de veu ha finalitzat, reiniciant..."); try { recognition.start(); } catch (e) { logError("Error reiniciant el reconeixement", e) } } else { isListening = false; updateStatusDisplay("Inactiu", "gray"); if (toggleBtn) { toggleBtn.textContent = 'Escoltar'; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); } if (transcriptPreview) { transcriptPreview.textContent = "La transcripció en directe apareixerà aquí..."; } log("Reconeixement aturat manualment."); } };
             recognition.onerror = (event) => {
                 logError("Error de reconeixement:", event.error);
                 showCustomMessage(`Error de micro: ${event.error}`, 'error');
@@ -538,10 +425,7 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
                     isListening = false;
                     recognitionManuallyStopped = true;
                     updateStatusDisplay("Error de micro", "red");
-                    if (toggleBtn) {
-                        toggleBtn.textContent = 'Escoltar';
-                        toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
-                    }
+                    if (toggleBtn) { toggleBtn.textContent = 'Escoltar'; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); }
                 }
             };
             recognition.onresult = (event) => { let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) { finalTranscript += event.results[i][0].transcript; } else { transcriptPreview.textContent = accumulatedTranscript + event.results[i][0].transcript; } } if (finalTranscript) { accumulatedTranscript += finalTranscript.trim() + '. '; transcriptPreview.textContent = accumulatedTranscript; } };
@@ -552,41 +436,25 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
 
         async function processAccumulatedTranscript() {
             const textToProcess = accumulatedTranscript.trim();
-            if (textToProcess.length < 20) return; 
-            
+            if (textToProcess.length < 20) return;
             accumulatedTranscript = "";
-            log(`Processant text per al Guardià: "${textToProcess}"`);
-            
-            const decision = await shouldChangeMusic(textToProcess, activeGameInspiration);
-
-            if (decision === 'SI') {
-                showCustomMessage("Canvi d'escena detectat! Generant nova música...", "info");
-                log("El Guardià ha autoritzat un canvi. Cridant a l'Analista i al Compositor...");
-                
-                const newInspiration = textToProcess.slice(-200); // Pren els últims 200 caràcters com a nova inspiració
-                const detailedPrompt = await createDetailedPromptFromInspiration(newInspiration);
-                activeGameInspiration = detailedPrompt;
-
-                let recipe = await getMusicRecipeFromAI(detailedPrompt, textToProcess);
-                if (recipe) {
-                    const validRecipe = validateAndCleanRecipe(recipe);
-                    if (validRecipe) {
-                        await musicManager.play(validRecipe);
-                    } else {
-                        showCustomMessage("La IA ha generat una recepta musical invàlida.", "error");
-                    }
+            log(`Processant text per a variació: "${textToProcess}"`);
+            const variationRecipe = await generateVariation(activeStyleGuide, textToProcess);
+            if (variationRecipe) {
+                const validRecipe = validateAndCleanRecipe(variationRecipe);
+                if (validRecipe) {
+                    // Per a una variació, no aturem la música, la modifiquem. Això és complex.
+                    // De moment, per simplificar, la reemplacem. En el futur podríem fer-ho més subtil.
+                    log("Reemplaçant música actual amb la nova variació.");
+                    await musicManager.play(validRecipe);
                 }
-            } else {
-                log("El Guardià ha decidit no canviar la música. Es manté l'ambient actual.");
             }
         }
 
         async function loadInstrumentData() {
             try {
                 const response = await fetch('assets/instruments.json');
-                if (!response.ok) {
-                    throw new Error(`Error de xarxa: ${response.statusText}`);
-                }
+                if (!response.ok) throw new Error(`Error de xarxa: ${response.statusText}`);
                 const data = await response.json();
                 musicManager.instrumentUrls = data.INSTRUMENTS;
                 TONEJS_DEFAULT_INSTRUMENTS = data.TONEJS_DEFAULT_INSTRUMENTS;
@@ -627,22 +495,24 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
                     setButtonsLoading(true, "Iniciant...");
                     if (Tone.context.state !== 'running') { await Tone.start(); }
                     await screenWakeLockManager.request();
+                    
                     const rawInspiration = document.getElementById('session-inspiration-input').value.trim() || "Fantasia èpica";
                     document.getElementById('current-inspiration-display').textContent = `Inspiració: ${rawInspiration}`;
-                    const detailedPrompt = await createDetailedPromptFromInspiration(rawInspiration);
-                    activeGameInspiration = detailedPrompt;
-                    let initialRecipe = await getMusicRecipeFromAI(detailedPrompt, "Una peça musical introductòria que marqui el to de l'aventura.");
-                    if (initialRecipe) {
-                        const validRecipe = validateAndCleanRecipe(initialRecipe);
+                    
+                    const initialResponse = await generateInitialMusicAndStyleGuide(rawInspiration);
+                    
+                    if (initialResponse && initialResponse.style_description) {
+                        activeStyleGuide = initialResponse.style_description;
+                        const validRecipe = validateAndCleanRecipe(initialResponse);
                         if (validRecipe) {
                             await musicManager.play(validRecipe);
                             showScreen('active-session-content');
                         } else {
-                           showCustomMessage("No s'ha pogut generar la música inicial. La IA ha retornat un format invàlid.", "error");
+                           showCustomMessage("La IA ha generat una música inicial invàlida.", "error");
                            await screenWakeLockManager.release();
                         }
                     } else {
-                        showCustomMessage("No s'ha pogut generar la música inicial. Comprova la clau API.", "error");
+                        showCustomMessage("No s'ha pogut generar la música inicial. Comprova la clau API i els límits de quota.", "error");
                         await screenWakeLockManager.release();
                     }
                 } catch (error) {
@@ -656,9 +526,7 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
 
             document.getElementById('soundboard').addEventListener('click', (event) => {
                 const target = event.target.closest('button.btn-sound');
-                if (target) {
-                    musicManager.playSoundEffect(target);
-                }
+                if (target) { musicManager.playSoundEffect(target); }
             });
 
             document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
