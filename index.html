@@ -102,7 +102,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_1800_EXTERNAL_INSTRUMENTS";
+        const SCRIPT_VERSION = "V20250612_1815_COMPLETE_CODE_FIX";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -110,32 +110,144 @@
         const API_KEY_STORAGE_KEY = 'harmoniaArcanaApiKey';
         let apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
         
-        // Aquesta variable ara es carregarà des del fitxer extern
         let TONEJS_DEFAULT_INSTRUMENTS = [];
 
         const screenWakeLockManager = {
             wakeLockSentinel: null,
             videoElement: null,
-            async request() { /* ... codi sense canvis ... */ },
-            _requestWithVideo() { /* ... codi sense canvis ... */ },
-            async release() { /* ... codi sense canvis ... */ },
-            handleVisibilityChange() { /* ... codi sense canvis ... */ }
+            async request() {
+                if ('wakeLock' in navigator) {
+                    try {
+                        this.wakeLockSentinel = await navigator.wakeLock.request('screen');
+                        this.wakeLockSentinel.addEventListener('release', () => {
+                            log('El bloqueig de pantalla ha estat alliberat.');
+                            this.wakeLockSentinel = null;
+                        });
+                        log('Bloqueig de pantalla activat via API.');
+                        return true;
+                    } catch (err) {
+                        logError(`No s'ha pogut activar el bloqueig via API: ${err.name}, ${err.message}. Utilitzant pla B.`);
+                        return this._requestWithVideo();
+                    }
+                } else {
+                    log('Wake Lock API no suportada. Utilitzant pla B (vídeo).');
+                    return this._requestWithVideo();
+                }
+            },
+            _requestWithVideo() {
+                if (this.videoElement) return true;
+                this.videoElement = document.createElement('video');
+                this.videoElement.style.position = 'absolute';
+                this.videoElement.style.opacity = '0';
+                this.videoElement.setAttribute('playsinline', '');
+                this.videoElement.setAttribute('muted', '');
+                this.videoElement.setAttribute('loop', '');
+                this.videoElement.src = "data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAyhianRkAAAAAm1kYXQAAAGzABAHAAEAAAMhYeNaAAQAAAZv//8AAAAuR2dZgA==";
+                const playPromise = this.videoElement.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        document.body.appendChild(this.videoElement);
+                        log('Bloqueig de pantalla activat via vídeo silenciós.');
+                    }).catch(error => {
+                        logError('No s\'ha pogut reproduir el vídeo per al bloqueig de pantalla.', error);
+                    });
+                }
+                return true;
+            },
+            async release() {
+                if (this.wakeLockSentinel) {
+                    await this.wakeLockSentinel.release();
+                    this.wakeLockSentinel = null;
+                    log('Bloqueig de pantalla (API) alliberat.');
+                }
+                if (this.videoElement) {
+                    this.videoElement.pause();
+                    document.body.removeChild(this.videoElement);
+                    this.videoElement = null;
+                    log('Bloqueig de pantalla (vídeo) alliberat.');
+                }
+            },
+            handleVisibilityChange() {
+                if (this.wakeLockSentinel && document.visibilityState === 'visible') {
+                    log('La pàgina és visible de nou, demanant el bloqueig de pantalla.');
+                    this.request();
+                }
+            }
         };
 
-        function showCustomMessage(message, type = 'info', duration = 3000) { /* ... codi sense canvis ... */ }
-        function showUI() { /* ... codi sense canvis ... */ }
-        function showScreen(screenId) { /* ... codi sense canvis ... */ }
-        function updateStatusDisplay(status, color = 'gray') { /* ... codi sense canvis ... */ }
-        function setButtonsLoading(loading, message = "Processant...") { /* ... codi sense canvis ... */ }
+        function showCustomMessage(message, type = 'info', duration = 3000) {
+            const box = document.getElementById('custom-message-box');
+            if (!box) return;
+            box.style.display = 'block';
+            box.textContent = message;
+            box.className = '';
+            box.classList.add('message-' + type.toLowerCase());
+            if (duration > 0) {
+                setTimeout(() => { if (box.textContent === message) box.style.display = 'none'; }, duration);
+            }
+        }
+
+        function showUI() {
+            apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+            const apiKeyScreen = document.getElementById('api-key-setup-screen');
+            const mainApp = document.getElementById('main-app-content');
+            if (apiKey) {
+                apiKeyScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+            } else {
+                apiKeyScreen.classList.remove('hidden');
+                mainApp.classList.add('hidden');
+            }
+        }
+
+        function showScreen(screenId) {
+            const initialScreen = document.getElementById('initial-setup-screen');
+            const activeScreen = document.getElementById('active-session-content');
+            if (screenId === 'initial-setup-screen') {
+                initialScreen.classList.remove('hidden');
+                activeScreen.classList.add('hidden');
+            } else {
+                initialScreen.classList.add('hidden');
+                activeScreen.classList.remove('hidden');
+            }
+        }
+
+        function updateStatusDisplay(status, color = 'gray') {
+            const statusMessage = document.getElementById('status-message');
+            const statusDot = document.getElementById('status-dot');
+            if (statusMessage) statusMessage.textContent = status;
+            if (statusDot) statusDot.className = `status-dot dot-${color}`;
+        }
+
+        function setButtonsLoading(loading, message = "Processant...") {
+            const buttons = [
+                document.getElementById('start-session-btn'),
+                document.getElementById('toggle-listening-btn'),
+                document.getElementById('skip-context-btn')
+            ];
+            buttons.forEach(btn => {
+                if (btn) {
+                    btn.disabled = loading;
+                    if (loading) {
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${message}`;
+                    } else {
+                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        if (btn.id === 'start-session-btn') btn.innerHTML = `<i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia`;
+                        if (btn.id === 'toggle-listening-btn') btn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`;
+                        if (btn.id === 'skip-context-btn') btn.innerHTML = `<i class="fas fa-sync-alt mr-2"></i>Forçar Anàlisi`;
+                    }
+                }
+            });
+        }
         
-        // ✅ musicManager ara comença amb la llista d'instruments buida
         const musicManager = {
             activeParts: [],
             activeSamplers: {},
             activeEffects: [],
             isPaused: false,
-            instrumentUrls: {}, // Es carregarà dinàmicament
-            
+            instrumentUrls: {}, 
+
             async loadInstruments(instrumentNames = []) {
                 const uniqueInstrumentNames = [...new Set(instrumentNames.map(name => name.replace(/-/g, '_')))];
                 const promises = uniqueInstrumentNames.map(name => {
@@ -146,7 +258,6 @@
                         const firstNote = Object.keys(this.instrumentUrls[name])[0];
                         const firstUrl = this.instrumentUrls[name][firstNote];
                         
-                        // ✅ Lògica de càrrega corregida i simplificada gràcies al fitxer extern
                         let baseUrl = TONEJS_DEFAULT_INSTRUMENTS.includes(name) ? "https://tonejs.github.io/audio/salamander/" : "";
 
                         const sampler = new Tone.Sampler({
@@ -164,36 +275,279 @@
                         });
                     });
                 });
-                // Envolta amb un Promise.allSettled per evitar que un instrument fallit aturi la càrrega dels altres
                 await Promise.allSettled(promises);
             },
 
-            async play(recipe) { /* ... codi sense canvis ... */ },
-            async stop() { /* ... codi sense canvis ... */ },
-            playSoundEffect(buttonElement) { /* ... codi sense canvis ... */ },
-            disposeAll() { /* ... codi sense canvis ... */ },
-            pause() { /* ... codi sense canvis ... */ },
-            resume() { /* ... codi sense canvis ... */ },
-            updateToggleButton() { /* ... codi sense canvis ... */ }
+            async play(recipe) {
+                await this.stop();
+                log(`Reproduint nova recepta orquestral:`, recipe);
+                try {
+                    setButtonsLoading(true, "Carregant Orquestra...");
+                    const requiredInstruments = [...new Set(recipe.parts.map(part => part.instrument))];
+                    await this.loadInstruments(requiredInstruments);
+
+                    recipe.parts.forEach(part => {
+                        const sampler = this.activeSamplers[part.instrument];
+                        if (!sampler) {
+                            logError(`Instrument no carregat: ${part.instrument}. Saltant aquesta part.`);
+                            return;
+                        }
+
+                        let soundSource = sampler;
+                        if (part.effects && Array.isArray(part.effects)) {
+                            part.effects.forEach(effectInfo => {
+                                if (effectInfo.type === 'delay') {
+                                    const delay = new Tone.FeedbackDelay(effectInfo.time || "8n", effectInfo.feedback || 0.5).toDestination();
+                                    soundSource.connect(delay);
+                                    this.activeEffects.push(delay);
+                                }
+                            });
+                        }
+                        if (soundSource === sampler) {
+                            soundSource.toDestination();
+                        }
+                        
+                        const tonePart = new Tone.Part((time, value) => {
+                            if (Array.isArray(value.note) && value.arpeggiate) {
+                                const notes = value.note;
+                                const totalDurationSeconds = Tone.Time(value.duration).toSeconds();
+                                let arpeggioNotes = notes;
+
+                                if (value.arpeggiate === "down") arpeggioNotes = [...notes].reverse();
+                                else if (value.arpeggiate === "upDown") arpeggioNotes = notes.concat([...notes].slice(0, -1).reverse());
+                                
+                                const noteDuration = totalDurationSeconds / arpeggioNotes.length;
+                                arpeggioNotes.forEach((note, index) => {
+                                    const offset = index * noteDuration;
+                                    sampler.triggerAttackRelease(note, noteDuration, time + offset, value.velocity || 0.8);
+                                });
+                            } else {
+                                const noteToPlay = Array.isArray(value.note) ? value.note[0] : value.note;
+                                sampler.triggerAttackRelease(noteToPlay, value.duration, time, value.velocity || 0.8);
+                            }
+                        }, part.sequence).start(0);
+
+                        tonePart.loop = true;
+                        tonePart.loopEnd = part.loopDuration || "8m";
+                        this.activeParts.push(tonePart);
+                    });
+
+                    Tone.Transport.bpm.rampTo(recipe.bpm, 2);
+                    Tone.Transport.start();
+                    this.isPaused = false;
+                    document.getElementById('music-status').textContent = `Reproduint (${recipe.name})`;
+                    this.updateToggleButton();
+
+                } catch (error) {
+                    logError("Error al musicManager.play:", error);
+                    showCustomMessage("Error en la recepta musical. Comproveu la consola.", "error");
+                } finally {
+                    setButtonsLoading(false);
+                }
+            },
+            
+            async stop() {
+                this.activeParts.forEach(part => part.dispose());
+                this.activeEffects.forEach(effect => effect.dispose());
+                this.activeParts = [];
+                this.activeEffects = [];
+                if (Tone.Transport.state !== 'stopped') Tone.Transport.stop();
+                await Tone.Transport.cancel(0);
+                this.isPaused = false;
+                const musicStatus = document.getElementById('music-status');
+                if (musicStatus) musicStatus.textContent = "Aturada";
+                this.updateToggleButton();
+            },
+
+            playSoundEffect(buttonElement) {
+                if (!buttonElement || !buttonElement.dataset.sound) return;
+                const soundUrl = buttonElement.dataset.sound;
+                buttonElement.classList.add('btn-sound-active');
+                const player = new Tone.Player({
+                    url: soundUrl,
+                    autostart: true,
+                    onstop: () => {
+                        buttonElement.classList.remove('btn-sound-active');
+                        player.dispose();
+                    },
+                    onerror: (err) => {
+                        logError(`Error carregant l'efecte ${soundUrl}:`, err);
+                        showCustomMessage(`No s'ha pogut carregar el so. Verifica la URL.`, 'error');
+                        buttonElement.classList.remove('btn-sound-active');
+                        player.dispose();
+                    }
+                }).toDestination();
+            },
+
+            disposeAll() { this.stop(); for (const key in this.activeSamplers) { this.activeSamplers[key].dispose(); } this.activeSamplers = {}; log("Tots els instruments descarregats."); },
+            pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton(); } },
+            resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton(); } },
+            updateToggleButton() { const btn = document.getElementById('stop-music-btn'); if (!btn) return; if (this.isPaused) { btn.innerHTML = `<i class="fas fa-play mr-2"></i>Reprendre`; btn.classList.remove('bg-red-600', 'hover:bg-red-700'); btn.classList.add('bg-green-600', 'hover:bg-green-700'); } else { btn.innerHTML = `<i class="fas fa-pause mr-2"></i>Pausa`; btn.classList.remove('bg-green-600', 'hover:bg-green-700'); btn.classList.add('bg-red-600', 'hover:bg-red-700'); } }
         };
 
-        function validateAndCleanRecipe(recipe) { /* ... codi sense canvis ... */ }
-        async function createDetailedPromptFromInspiration(inspiration) { /* ... codi sense canvis ... */ }
-        async function getMusicRecipeFromAI(detailedPrompt, sceneText) { /* ... codi sense canvis ... */ }
-        async function setupSpeechRecognition() { /* ... codi sense canvis ... */ }
-        function startListening() { /* ... codi sense canvis ... */ }
-        function stopListening() { /* ... codi sense canvis ... */ }
-        async function processAccumulatedTranscript() { /* ... codi sense canvis ... */ }
+        function validateAndCleanRecipe(recipe) {
+            if (!recipe || typeof recipe !== 'object' || !Array.isArray(recipe.parts)) {
+                logError("Recepta invàlida: L'estructura base és incorrecta.", recipe);
+                return null;
+            }
+            try {
+                const validParts = recipe.parts.filter(part => {
+                    const instrumentName = part.instrument.replace(/-/g, '_');
+                    if (!instrumentName || !musicManager.instrumentUrls[instrumentName]) {
+                        logError(`Part descartada: instrument invàlid o no trobat '${instrumentName}'.`);
+                        return false;
+                    }
+                    part.instrument = instrumentName;
+                    if (!Array.isArray(part.sequence)) {
+                        logError(`Part descartada per a '${part.instrument}': la seqüència no és un array.`, part.sequence);
+                        return false;
+                    }
+                    part.sequence = part.sequence.filter(event => {
+                        const hasRequiredKeys = event.hasOwnProperty('time') && event.hasOwnProperty('note') && event.hasOwnProperty('duration');
+                        if (!hasRequiredKeys) {
+                           logError(`Event descartat per a '${part.instrument}': falten claus essencials.`, event);
+                           return false;
+                        }
+                        if (event.hasOwnProperty('velocity') && typeof event.velocity !== 'number') {
+                           event.velocity = Math.max(0.1, Math.min(1.0, parseFloat(event.velocity))) || 0.8;
+                        }
+                        return true;
+                    });
+                    return part.sequence.length > 0;
+                });
+                if (validParts.length === 0) {
+                    logError("Recepta invàlida: Cap de les parts era vàlida després de la neteja.");
+                    return null;
+                }
+                recipe.parts = validParts;
+                return recipe;
+            } catch (error) {
+                logError("Error catastròfic durant la validació de la recepta:", error);
+                return null;
+            }
+        }
+        
+        async function createDetailedPromptFromInspiration(inspiration) {
+            log(`Cridant a l'Analista Musical per a la inspiració: "${inspiration}"`);
+            setButtonsLoading(true, "Analitzant estil...");
+            updateStatusDisplay("Analitzant estil musical...", "yellow");
+            const availableInstruments = Object.keys(musicManager.instrumentUrls).join(', ');
+            const analystPrompt = `Ets un expert musicòleg. La teva tasca és analitzar la inspiració de l'usuari ("${inspiration}") i generar un paràgraf d'instruccions per a una IA compositora. Les teves instruccions han de descriure l'estil, l'emoció, la instrumentació, el tempo, i les harmonies. IMPORTANT: Suggereix l'ús de dinàmiques variades (velocity), textures rítmiques com arpegis, i efectes espacials com l'eco (delay).
 
-        // ✅=======================================================✅
-        // ✅ NOVA FUNCIÓ PER CARREGAR LES DADES DELS INSTRUMENTS
-        // ✅=======================================================✅
+Instruments disponibles per a la compositora: ${availableInstruments}.
+
+Ara, genera el paràgraf d'instruccions detallat per a la inspiració: "${inspiration}". Respon només amb el paràgraf d'instruccions, sense afegir cap salutació ni comiat.`;
+            const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            try {
+                const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: analystPrompt }] }] }) });
+                if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
+                const responseData = await response.json();
+                const detailedPrompt = responseData.candidates[0].content.parts[0].text.trim();
+                log(`Prompt detallat rebut de l'Analista: "${detailedPrompt}"`);
+                return detailedPrompt;
+            } catch (error) {
+                logError("Error amb l'Analista Musical:", error);
+                showCustomMessage("La IA analista no ha respost. S'intentarà amb la inspiració bàsica.", "error");
+                return inspiration;
+            }
+        }
+        
+        async function getMusicRecipeFromAI(detailedPrompt, sceneText) {
+            setButtonsLoading(true, "Composant...");
+            updateStatusDisplay("Consultant IA Compositora...", "yellow");
+            const availableInstruments = Object.keys(musicManager.instrumentUrls).join(', ');
+            const composerPrompt = `Ets Harmonia, una IA compositora experta. Has de crear una partitura complexa en format JSON seguint aquestes instruccions estilístiques que t'ha donat un musicòleg expert:
+INSTRUCCIONS D'ESTIL: "${detailedPrompt}"
+ESCENA ACTUAL: "${sceneText}". Adapta la composició a aquesta escena mantenint l'estil general.
+
+REGLA D'OR: Utilitza ÚNICA I EXCLUSIVAMENT els noms d'instrument de la següent llista. No inventis noms com 'strings' o 'brass'. Si vols un so de cordes, has de triar un instrument específic com 'violin' o 'pizzicato_strings'.
+LLISTA ESTRICTA D'INSTRUMENTS DISPONIBLES: "${availableInstruments}".
+
+REQUISITS CRÍTICS DEL FORMAT JSON:
+1.  Desenvolupament Musical OBLIGATORI: La composició ha de tenir una durada musical real d'almenys 4 compassos (measures) i ha de mostrar una evolució. No generis només un o dos segons de música. Crea una peça amb una secció A i una secció B per assegurar la varietat.
+2.  Format de Seqüència: El camp "sequence" HA DE SER un array d'objectes.
+3.  Format d'Event: Cada objecte dins de "sequence" HA DE TENIR OBLIGATÒRIAMENT les claus "time", "note", i "duration".
+4.  Paràmetres Opcionals: Pots afegir una clau opcional "velocity" (número de 0.1 a 1.0) i/o una clau "arpeggiate" ("up", "down", "upDown") si la "note" és un array.
+    Exemple d'event: {"time": "0:1:2", "note": "C#4", "duration": "8n", "velocity": 0.9}.
+    Exemple d'arpegi: {"time": "0:2:0", "note": ["C4", "E4", "G4"], "duration": "4n", "arpeggiate": "up"}.
+5.  Efectes Opcionals: A nivell de part, pots afegir una clau "effects" (un array d'objectes).
+    Exemple d'efecte: "effects": [{"type": "delay", "time": "8n", "feedback": 0.3}].
+6.  Estructura Final: El JSON final ha de contenir "name" (nom creatiu en català), "bpm", i "parts".`;
+            const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            try {
+                const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: composerPrompt }] }] }) });
+                if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
+                const responseData = await response.json();
+                let jsonText = responseData.candidates[0].content.parts[0].text;
+                log("Resposta rebuda de la IA:", jsonText);
+                const match = jsonText.match(/\{[\s\S]*\}/);
+                if (!match) {
+                    throw new Error("La resposta de la IA no conté un objecte JSON vàlid.");
+                }
+                return JSON.parse(match[0]);
+            } catch (error) {
+                logError("Error en la petició a la IA o en el parseig:", error);
+                showCustomMessage(`Error de l'API: ${error.message}`, 'error');
+                return null;
+            } finally {
+                setButtonsLoading(false);
+            }
+        }
+
+        async function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { showCustomMessage("El teu navegador no suporta reconeixement de veu.", "error", 0); return; }
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ca-ES';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            const toggleBtn = document.getElementById('toggle-listening-btn');
+            const transcriptPreview = document.getElementById('transcript-preview');
+            recognition.onstart = () => { isListening = true; recognitionManuallyStopped = false; updateStatusDisplay("Escoltant...", "green"); if (toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone-slash mr-2"></i>Aturar Escolta`; toggleBtn.classList.add('bg-orange-500', 'hover:bg-orange-600'); } };
+            recognition.onend = () => { if (!recognitionManuallyStopped) { log("El reconeixement de veu ha finalitzat, reiniciant automàticament..."); try { recognition.start(); } catch (e) { logError("Error reiniciant el reconeixement", e) } } else { isListening = false; updateStatusDisplay("Inactiu", "gray"); if (toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); } if (transcriptPreview) { transcriptPreview.textContent = "La transcripció en directe apareixerà aquí..."; } log("Reconeixement aturat manualment."); } };
+            recognition.onerror = (event) => {
+                logError("Error de reconeixement:", event.error);
+                showCustomMessage(`Error de micro: ${event.error}`, 'error');
+                const fatalErrors = ['not-allowed', 'service-not-allowed'];
+                if (fatalErrors.includes(event.error)) {
+                    isListening = false;
+                    recognitionManuallyStopped = true;
+                    updateStatusDisplay("Error de micro", "red");
+                    if (toggleBtn) {
+                        toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`;
+                        toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                    }
+                }
+            };
+            recognition.onresult = (event) => { let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) { finalTranscript += event.results[i][0].transcript; } else { transcriptPreview.textContent = accumulatedTranscript + event.results[i][0].transcript; } } if (finalTranscript) { accumulatedTranscript += finalTranscript.trim() + '. '; transcriptPreview.textContent = accumulatedTranscript; } };
+        }
+
+        function startListening() { if (!recognition) return; if (!isListening) { accumulatedTranscript = ""; document.getElementById('transcript-preview').textContent = "Escoltant..."; recognitionManuallyStopped = false; try { recognition.start(); } catch (e) { logError("No s'ha pogut iniciar l'escolta", e) } analysisInterval = setInterval(processAccumulatedTranscript, ANALYSIS_INTERVAL_MS); } }
+        function stopListening() { if (isListening) { recognitionManuallyStopped = true; clearInterval(analysisInterval); recognition.stop(); processAccumulatedTranscript(); } }
+
+        async function processAccumulatedTranscript() {
+            const textToProcess = accumulatedTranscript.trim();
+            if (!textToProcess) {
+                return;
+            }
+            accumulatedTranscript = "";
+            log(`Processant text: "${textToProcess}"`);
+            let recipe = await getMusicRecipeFromAI(activeGameInspiration, textToProcess);
+            if (recipe) {
+                const validRecipe = validateAndCleanRecipe(recipe);
+                if (validRecipe) {
+                    await musicManager.play(validRecipe);
+                } else {
+                    showCustomMessage("La IA ha generat una recepta musical invàlida. Si us plau, intenta-ho de nou.", "error");
+                }
+            }
+        }
+
         async function loadInstrumentData() {
             try {
-                // IMPORTANT: La ruta ha de ser correcta dins del teu repositori
                 const response = await fetch('assets/instruments.json');
                 if (!response.ok) {
-                    throw new Error(`Error de xarxa en carregar instruments.json: ${response.statusText}`);
+                    throw new Error(`Error de xarxa: ${response.statusText}`);
                 }
                 const data = await response.json();
                 musicManager.instrumentUrls = data.INSTRUMENTS;
@@ -207,34 +561,75 @@
             }
         }
 
-
         document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('version-display').textContent = `Versió: ${SCRIPT_VERSION}`;
             
-            // ✅ PRIMER CARREGUEM LES DADES DELS INSTRUMENTS
             const instrumentsLoaded = await loadInstrumentData();
-
-            // Si els instruments no es carreguen, no continuem amb la inicialització de l'app
             if (!instrumentsLoaded) {
-                // Desactivem el botó d'inici per seguretat
                 document.getElementById('start-session-btn').disabled = true;
                 document.getElementById('start-session-btn').classList.add('opacity-50', 'cursor-not-allowed');
                 return;
             }
 
-            // La resta de la inicialització només s'executa si les dades s'han carregat
             showUI();
             await setupSpeechRecognition();
             
             document.addEventListener('visibilitychange', () => screenWakeLockManager.handleVisibilityChange());
             
-            document.getElementById('save-api-key-btn').addEventListener('click', () => { /* ... */ });
-            document.getElementById('start-session-btn').addEventListener('click', async () => { /* ... */ });
-            document.getElementById('soundboard').addEventListener('click', (event) => { /* ... */ });
-            document.getElementById('toggle-listening-btn').addEventListener('click', () => { /* ... */ });
+            document.getElementById('save-api-key-btn').addEventListener('click', () => {
+                const key = document.getElementById('api-key-input').value;
+                if (key && key.trim() !== '') { localStorage.setItem(API_KEY_STORAGE_KEY, key); apiKey = key; showCustomMessage("Clau desada correctament!", "success"); showUI(); } else { showCustomMessage("Si us plau, introdueix una clau vàlida.", "error"); }
+            });
+
+            document.getElementById('start-session-btn').addEventListener('click', async () => {
+                try {
+                    setButtonsLoading(true, "Iniciant...");
+                    if (Tone.context.state !== 'running') { await Tone.start(); }
+                    await screenWakeLockManager.request();
+                    const rawInspiration = document.getElementById('session-inspiration-input').value.trim() || "Fantasia èpica";
+                    document.getElementById('current-inspiration-display').textContent = `Inspiració: ${rawInspiration}`;
+                    const detailedPrompt = await createDetailedPromptFromInspiration(rawInspiration);
+                    activeGameInspiration = detailedPrompt;
+                    let initialRecipe = await getMusicRecipeFromAI(detailedPrompt, "Una peça musical introductòria que marqui el to de l'aventura.");
+                    if (initialRecipe) {
+                        const validRecipe = validateAndCleanRecipe(initialRecipe);
+                        if (validRecipe) {
+                            await musicManager.play(validRecipe);
+                            showScreen('active-session-content');
+                        } else {
+                           showCustomMessage("No s'ha pogut generar la música inicial. La IA ha retornat un format invàlid.", "error");
+                           await screenWakeLockManager.release();
+                        }
+                    } else {
+                        showCustomMessage("No s'ha pogut generar la música inicial. Comprova la clau API.", "error");
+                        await screenWakeLockManager.release();
+                    }
+                } catch (error) {
+                    logError("Error en iniciar la sessió:", error);
+                    showCustomMessage('Error iniciant la sessió. Comprova la clau i la consola.', 'error');
+                    await screenWakeLockManager.release();
+                } finally {
+                    setButtonsLoading(false);
+                }
+            });
+
+            document.getElementById('soundboard').addEventListener('click', (event) => {
+                const target = event.target.closest('button.btn-sound');
+                if (target) {
+                    musicManager.playSoundEffect(target);
+                }
+            });
+
+            document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
             document.getElementById('skip-context-btn').addEventListener('click', processAccumulatedTranscript);
-            document.getElementById('stop-music-btn').addEventListener('click', () => { /* ... */ });
-            document.getElementById('end-session-btn').addEventListener('click', async () => { /* ... */ });
+            document.getElementById('stop-music-btn').addEventListener('click', () => { musicManager.isPaused ? musicManager.resume() : musicManager.pause(); });
+            
+            document.getElementById('end-session-btn').addEventListener('click', async () => {
+                if (isListening) stopListening();
+                musicManager.disposeAll();
+                await screenWakeLockManager.release();
+                showScreen('initial-setup-screen');
+            });
         });
     </script>
 </body>
