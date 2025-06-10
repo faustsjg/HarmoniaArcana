@@ -102,7 +102,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250611_2230_ARPEGGIO_FX";
+        const SCRIPT_VERSION = "V20250611_2330_COMPOSITION_FIX";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -308,7 +308,7 @@
             },
             
             async loadInstruments(instrumentNames = []) {
-                const uniqueInstrumentNames = [...new Set(instrumentNames)];
+                const uniqueInstrumentNames = [...new Set(instrumentNames.map(name => name.replace(/-/g, '_')))];
                 const promises = uniqueInstrumentNames.map(name => {
                     if (this.activeSamplers[name] || !this.instrumentUrls[name]) {
                         return Promise.resolve();
@@ -361,7 +361,7 @@
                                 }
                             });
                         }
-                        if (soundSource === sampler) { // Connect direct only if no effects were added
+                        if (soundSource === sampler) {
                             soundSource.toDestination();
                         }
                         
@@ -369,14 +369,14 @@
                             if (Array.isArray(value.note) && value.arpeggiate) {
                                 const notes = value.note;
                                 const totalDurationSeconds = Tone.Time(value.duration).toSeconds();
-                                const noteDuration = totalDurationSeconds / notes.length;
                                 let arpeggioNotes = notes;
 
                                 if (value.arpeggiate === "down") arpeggioNotes = [...notes].reverse();
                                 else if (value.arpeggiate === "upDown") arpeggioNotes = notes.concat([...notes].slice(0, -1).reverse());
                                 
+                                const noteDuration = totalDurationSeconds / arpeggioNotes.length;
                                 arpeggioNotes.forEach((note, index) => {
-                                    const offset = index * (totalDurationSeconds / arpeggioNotes.length);
+                                    const offset = index * noteDuration;
                                     sampler.triggerAttackRelease(note, noteDuration, time + offset, value.velocity || 0.8);
                                 });
                             } else {
@@ -464,11 +464,12 @@
                         const hasRequiredKeys = event.hasOwnProperty('time') && event.hasOwnProperty('note') && event.hasOwnProperty('duration');
                         if (!hasRequiredKeys) {
                            logError(`Event descartat per a '${part.instrument}': falten claus essencials.`, event);
+                           return false;
                         }
                         if (event.hasOwnProperty('velocity') && typeof event.velocity !== 'number') {
                            event.velocity = Math.max(0.1, Math.min(1.0, parseFloat(event.velocity))) || 0.8;
                         }
-                        return hasRequiredKeys;
+                        return true;
                     });
                     return part.sequence.length > 0;
                 });
@@ -513,20 +514,22 @@ Ara, genera el paràgraf d'instruccions detallat per a la inspiració: "${inspir
             setButtonsLoading(true, "Composant...");
             updateStatusDisplay("Consultant IA Compositora...", "yellow");
             const availableInstruments = Object.keys(musicManager.instrumentUrls).join(', ');
-            const composerPrompt = `Ets Harmonia, una IA compositora experta. Has de crear una partitura en format JSON seguint aquestes instruccions d'estil:
+            const composerPrompt = `Ets Harmonia, una IA compositora experta. Has de crear una partitura complexa en format JSON seguint aquestes instruccions estilístiques que t'ha donat un musicòleg expert:
 INSTRUCCIONS D'ESTIL: "${detailedPrompt}"
 ESCENA ACTUAL: "${sceneText}". Adapta la composició a aquesta escena mantenint l'estil general.
-INSTRUMENTS DISPONIBLES: "${availableInstruments}".
+
+LLISTA ESTRICTA D'INSTRUMENTS DISPONIBLES (NOMÉS POTS UTILITZAR AQUESTS NOMS): "${availableInstruments}".
 
 REQUISITS CRÍTICS DEL FORMAT JSON:
-1.  El camp "sequence" HA DE SER un array d'objectes.
-2.  Cada objecte dins de "sequence" HA DE TENIR "time", "note", i "duration".
-3.  Pot tenir una clau opcional "velocity" (número de 0.1 a 1.0) per a la intensitat.
-4.  ARPEGIS: Per crear un arpegi, la clau "note" ha de ser un array de notes (ex: ["C4", "E4", "G4"]) i has d'afegir la clau "arpeggiate" amb un valor de text: "up", "down", o "upDown".
-    Exemple d'arpegi: {"time": "0:1:0", "note": ["C4", "E4", "G4"], "duration": "2n", "velocity": 0.7, "arpeggiate": "up"}.
-5.  EFECTES: A nivell de part (al mateix nivell que "instrument"), pots afegir una clau opcional "effects", que és un array d'objectes. Per a un eco, utilitza: {"type": "delay", "time": "8n", "feedback": 0.5}.
-    Exemple de part amb efecte: {"instrument": "flute", "effects": [{"type": "delay", "time": "4n", "feedback": 0.3}], "sequence": [...]}.
-6.  El JSON final ha de contenir "name", "bpm", i "parts".`;
+1.  **Desenvolupament Musical OBLIGATORI:** La composició ha de tenir una durada musical real d'almenys 4 compassos (measures) i ha de mostrar una evolució. No generis només un o dos segons de música. Crea una peça amb una secció A i una secció B per assegurar la varietat.
+2.  **Format de Seqüència:** El camp "sequence" HA DE SER un array d'objectes.
+3.  **Format d'Event:** Cada objecte dins de "sequence" HA DE TENIR OBLIGATÒRIAMENT les claus "time", "note", i "duration".
+4.  **Paràmetres Opcionals:** Pots afegir una clau opcional "velocity" (número de 0.1 a 1.0) i/o una clau "arpeggiate" ("up", "down", "upDown") si la "note" és un array.
+    Exemple d'event: {"time": "0:1:2", "note": "C#4", "duration": "8n", "velocity": 0.9}.
+    Exemple d'arpegi: {"time": "0:2:0", "note": ["C4", "E4", "G4"], "duration": "4n", "arpeggiate": "up"}.
+5.  **Efectes Opcionals:** A nivell de part, pots afegir una clau "effects" (un array d'objectes).
+    Exemple d'efecte: "effects": [{"type": "delay", "time": "8n", "feedback": 0.3}].
+6.  **Estructura Final:** El JSON final ha de contenir "name" (nom creatiu en català), "bpm", i "parts".`;
             const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             try {
                 const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: composerPrompt }] }] }) });
@@ -615,7 +618,7 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
                     document.getElementById('current-inspiration-display').textContent = `Inspiració: ${rawInspiration}`;
                     const detailedPrompt = await createDetailedPromptFromInspiration(rawInspiration);
                     activeGameInspiration = detailedPrompt;
-                    let initialRecipe = await getMusicRecipeFromAI(detailedPrompt, "Una fanfàrria heroica per a l'inici d'una gran aventura");
+                    let initialRecipe = await getMusicRecipeFromAI(detailedPrompt, "Una peça musical introductòria que marqui el to de l'aventura.");
                     if (initialRecipe) {
                         const validRecipe = validateAndCleanRecipe(initialRecipe);
                         if (validRecipe) {
