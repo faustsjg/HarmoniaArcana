@@ -32,11 +32,11 @@
             <p class="text-gray-400 mb-6">Per activar la IA, necessites una clau API gratuïta de Google AI Studio.</p>
             <div class="text-left space-y-4 mb-8">
                 <p><strong class="text-purple-300">1.</strong> Fes clic al botó per obtenir la teva clau.</p>
-                <a href="https://aistudio.google.com/" target="_blank" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"><i class="fas fa-key mr-2"></i>Obtenir Clau a Google AI Studio</a>
+                <a href="https://aistudio.google.com/" target="_blank" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Obtenir Clau a Google AI Studio</a>
                 <p><strong class="text-purple-300">2.</strong> Enganxa-la al camp de sota i desa-la.</p>
             </div>
             <input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí la teva clau API...">
-            <button id="save-api-key-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg"><i class="fas fa-save mr-2"></i>Desar Clau i Començar</button>
+            <button id="save-api-key-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg">Desar Clau i Començar</button>
         </div>
     </div>
 
@@ -54,7 +54,7 @@
                         <label for="session-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Escriu una inspiració (opcional)</label>
                         <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Hans Zimmer, Fantasia èpica, Lo-fi per estudiar...">
                     </div>
-                    <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3"><i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia</button>
+                    <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3">Inicia la Simfonia</button>
                 </div>
             </section>
 
@@ -69,9 +69,9 @@
                     </div>
                     <p id="current-inspiration-display" class="text-sm text-purple-200 mb-3 italic"></p>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                        <button id="toggle-listening-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm"><i class="fas fa-microphone mr-2"></i>Escoltar</button>
-                        <button id="skip-context-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg text-sm" title="Força una anàlisi del text acumulat"><i class="fas fa-sync-alt mr-2"></i>Forçar Anàlisi</button>
-                        <button id="stop-music-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm"><i class="fas fa-pause mr-2"></i>Pausa</button>
+                        <button id="toggle-listening-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Escoltar</button>
+                        <button id="skip-context-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg text-sm" title="Força una anàlisi del text acumulat">Forçar Anàlisi</button>
+                        <button id="stop-music-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Pausa</button>
                     </div>
                     <div class="mb-4 p-3 bg-gray-700 rounded-lg h-20 overflow-y-auto text-xs text-gray-300 border border-gray-600">
                         <p id="transcript-preview">La transcripció en directe apareixerà aquí...</p>
@@ -88,7 +88,7 @@
                             <button data-sound="https://faustsjg.github.io/HarmoniaArcana/assets/sounds/misil.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Míssil</button>
                         </div>
                     </div>
-                    <button id="end-session-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2.5 px-5 rounded-lg mt-6"><i class="fas fa-door-open mr-2"></i>Finalitzar Sessió</button>
+                    <button id="end-session-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2.5 px-5 rounded-lg mt-6">Finalitzar Sessió</button>
                 </div>
             </section>
         </main>
@@ -102,9 +102,9 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250611_0045_PRO_MODEL_UPGRADE";
+        const SCRIPT_VERSION = "V20250612_2338_CODE_CLEANUP";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
-        const ANALYSIS_INTERVAL_MS = 10000;
+        const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
         
         const API_KEY_STORAGE_KEY = 'harmoniaArcanaApiKey';
@@ -230,12 +230,12 @@
                     btn.disabled = loading;
                     if (loading) {
                         btn.classList.add('opacity-50', 'cursor-not-allowed');
-                        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${message}`;
+                        btn.textContent = message;
                     } else {
                         btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                        if (btn.id === 'start-session-btn') btn.innerHTML = `<i class="fas fa-play-circle mr-2"></i>Inicia la Simfonia`;
-                        if (btn.id === 'toggle-listening-btn') btn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`;
-                        if (btn.id === 'skip-context-btn') btn.innerHTML = `<i class="fas fa-sync-alt mr-2"></i>Forçar Anàlisi`;
+                        if (btn.id === 'start-session-btn') btn.textContent = 'Inicia la Simfonia';
+                        if (btn.id === 'toggle-listening-btn') btn.textContent = 'Escoltar';
+                        if (btn.id === 'skip-context-btn') btn.textContent = 'Forçar Anàlisi';
                     }
                 }
             });
@@ -379,9 +379,21 @@
             },
 
             disposeAll() { this.stop(); for (const key in this.activeSamplers) { this.activeSamplers[key].dispose(); } this.activeSamplers = {}; log("Tots els instruments descarregats."); },
-            pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton(); } },
-            resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton(); } },
-            updateToggleButton() { const btn = document.getElementById('stop-music-btn'); if (!btn) return; if (this.isPaused) { btn.innerHTML = `<i class="fas fa-play mr-2"></i>Reprendre`; btn.classList.remove('bg-red-600', 'hover:bg-red-700'); btn.classList.add('bg-green-600', 'hover:bg-green-700'); } else { btn.innerHTML = `<i class="fas fa-pause mr-2"></i>Pausa`; btn.classList.remove('bg-green-600', 'hover:bg-green-700'); btn.classList.add('bg-red-600', 'hover:bg-red-700'); } }
+            pause() { if (Tone.Transport.state === 'started') { Tone.Transport.pause(); this.isPaused = true; this.updateToggleButton();} },
+            resume() { if (Tone.Transport.state === 'paused') { Tone.Transport.start(); this.isPaused = false; this.updateToggleButton();} },
+            updateToggleButton() { 
+                const btn = document.getElementById('stop-music-btn'); 
+                if (!btn) return; 
+                if (this.isPaused) { 
+                    btn.textContent = 'Reprendre'; 
+                    btn.classList.remove('bg-red-600','hover:bg-red-700'); 
+                    btn.classList.add('bg-green-600','hover:bg-green-700');
+                } else { 
+                    btn.textContent = 'Pausa';
+                    btn.classList.remove('bg-green-600','hover:bg-green-700');
+                    btn.classList.add('bg-red-600','hover:bg-red-700');
+                } 
+            }
         };
 
         function validateAndCleanRecipe(recipe) {
@@ -426,8 +438,29 @@
             }
         }
         
-        // ✅ ÚNICA LÍNIA MODIFICADA: APUNTEM A GEMINI PRO
-        const getApiEndpoint = () => `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+        async function callGoogleAI(prompt, model) {
+            const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const response = await fetch(API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error.message);
+            }
+            const responseData = await response.json();
+            return responseData.candidates[0].content.parts[0].text.trim();
+        }
+
+        async function shouldChangeMusic(transcript, currentInspiration) {
+            log("Consultant al Guardià si cal canvi de música...");
+            const gatekeeperPrompt = `Ets un assistent director de partides de rol. La música de fons actual intenta evocar un ambient de "${currentInspiration}". La darrera conversa ha estat: "${transcript}". Hi ha un canvi evident d'escena o emoció (de calma a combat, de diàleg a perill, de celebració a tragèdia) que justifiqui un canvi dràstic de música? Respon només amb la paraula SI o NO.`;
+            try {
+                const decision = await callGoogleAI(gatekeeperPrompt, 'gemini-1.5-flash-latest');
+                log(`Decisió del Guardià: ${decision}`);
+                return decision.toUpperCase().includes('SI') ? 'SI' : 'NO';
+            } catch (error) {
+                logError("Error amb el Guardià:", error);
+                return 'NO';
+            }
+        }
 
         async function createDetailedPromptFromInspiration(inspiration) {
             log(`Cridant a l'Analista Musical per a la inspiració: "${inspiration}"`);
@@ -440,10 +473,7 @@ Instruments disponibles per a la compositora: ${availableInstruments}.
 
 Ara, genera el paràgraf d'instruccions detallat per a la inspiració: "${inspiration}". Respon només amb el paràgraf d'instruccions, sense afegir cap salutació ni comiat.`;
             try {
-                const response = await fetch(getApiEndpoint(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: analystPrompt }] }] }) });
-                if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
-                const responseData = await response.json();
-                const detailedPrompt = responseData.candidates[0].content.parts[0].text.trim();
+                const detailedPrompt = await callGoogleAI(analystPrompt, 'gemini-1.5-pro-latest');
                 log(`Prompt detallat rebut de l'Analista: "${detailedPrompt}"`);
                 return detailedPrompt;
             } catch (error) {
@@ -475,15 +505,10 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
     Exemple d'efecte: "effects": [{"type": "delay", "time": "8n", "feedback": 0.3}].
 6.  Estructura Final: El JSON final ha de contenir "name" (nom creatiu en català), "bpm", i "parts".`;
             try {
-                const response = await fetch(getApiEndpoint(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: composerPrompt }] }] }) });
-                if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
-                const responseData = await response.json();
-                let jsonText = responseData.candidates[0].content.parts[0].text;
+                const jsonText = await callGoogleAI(composerPrompt, 'gemini-1.5-pro-latest');
                 log("Resposta rebuda de la IA:", jsonText);
                 const match = jsonText.match(/\{[\s\S]*\}/);
-                if (!match) {
-                    throw new Error("La resposta de la IA no conté un objecte JSON vàlid.");
-                }
+                if (!match) throw new Error("La resposta de la IA no conté un objecte JSON vàlid.");
                 return JSON.parse(match[0]);
             } catch (error) {
                 logError("Error en la petició a la IA o en el parseig:", error);
@@ -503,8 +528,8 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
             recognition.interimResults = true;
             const toggleBtn = document.getElementById('toggle-listening-btn');
             const transcriptPreview = document.getElementById('transcript-preview');
-            recognition.onstart = () => { isListening = true; recognitionManuallyStopped = false; updateStatusDisplay("Escoltant...", "green"); if (toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone-slash mr-2"></i>Aturar Escolta`; toggleBtn.classList.add('bg-orange-500', 'hover:bg-orange-600'); } };
-            recognition.onend = () => { if (!recognitionManuallyStopped) { log("El reconeixement de veu ha finalitzat, reiniciant automàticament..."); try { recognition.start(); } catch (e) { logError("Error reiniciant el reconeixement", e) } } else { isListening = false; updateStatusDisplay("Inactiu", "gray"); if (toggleBtn) { toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); } if (transcriptPreview) { transcriptPreview.textContent = "La transcripció en directe apareixerà aquí..."; } log("Reconeixement aturat manualment."); } };
+            recognition.onstart = () => { isListening = true; recognitionManuallyStopped = false; updateStatusDisplay("Escoltant...", "green"); if (toggleBtn) { toggleBtn.textContent = 'Aturar Escolta'; toggleBtn.classList.add('bg-orange-500', 'hover:bg-orange-600'); } };
+            recognition.onend = () => { if (!recognitionManuallyStopped) { log("El reconeixement de veu ha finalitzat, reiniciant automàticament..."); try { recognition.start(); } catch (e) { logError("Error reiniciant el reconeixement", e) } } else { isListening = false; updateStatusDisplay("Inactiu", "gray"); if (toggleBtn) { toggleBtn.textContent = 'Escoltar'; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); } if (transcriptPreview) { transcriptPreview.textContent = "La transcripció en directe apareixerà aquí..."; } log("Reconeixement aturat manualment."); } };
             recognition.onerror = (event) => {
                 logError("Error de reconeixement:", event.error);
                 showCustomMessage(`Error de micro: ${event.error}`, 'error');
@@ -514,7 +539,7 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
                     recognitionManuallyStopped = true;
                     updateStatusDisplay("Error de micro", "red");
                     if (toggleBtn) {
-                        toggleBtn.innerHTML = `<i class="fas fa-microphone mr-2"></i>Escoltar`;
+                        toggleBtn.textContent = 'Escoltar';
                         toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
                     }
                 }
@@ -527,19 +552,32 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
 
         async function processAccumulatedTranscript() {
             const textToProcess = accumulatedTranscript.trim();
-            if (!textToProcess) {
-                return;
-            }
+            if (textToProcess.length < 20) return; 
+            
             accumulatedTranscript = "";
-            log(`Processant text: "${textToProcess}"`);
-            let recipe = await getMusicRecipeFromAI(activeGameInspiration, textToProcess);
-            if (recipe) {
-                const validRecipe = validateAndCleanRecipe(recipe);
-                if (validRecipe) {
-                    await musicManager.play(validRecipe);
-                } else {
-                    showCustomMessage("La IA ha generat una recepta musical invàlida. Si us plau, intenta-ho de nou.", "error");
+            log(`Processant text per al Guardià: "${textToProcess}"`);
+            
+            const decision = await shouldChangeMusic(textToProcess, activeGameInspiration);
+
+            if (decision === 'SI') {
+                showCustomMessage("Canvi d'escena detectat! Generant nova música...", "info");
+                log("El Guardià ha autoritzat un canvi. Cridant a l'Analista i al Compositor...");
+                
+                const newInspiration = textToProcess.slice(-200); // Pren els últims 200 caràcters com a nova inspiració
+                const detailedPrompt = await createDetailedPromptFromInspiration(newInspiration);
+                activeGameInspiration = detailedPrompt;
+
+                let recipe = await getMusicRecipeFromAI(detailedPrompt, textToProcess);
+                if (recipe) {
+                    const validRecipe = validateAndCleanRecipe(recipe);
+                    if (validRecipe) {
+                        await musicManager.play(validRecipe);
+                    } else {
+                        showCustomMessage("La IA ha generat una recepta musical invàlida.", "error");
+                    }
                 }
+            } else {
+                log("El Guardià ha decidit no canviar la música. Es manté l'ambient actual.");
             }
         }
 
@@ -566,8 +604,11 @@ REQUISITS CRÍTICS DEL FORMAT JSON:
             
             const instrumentsLoaded = await loadInstrumentData();
             if (!instrumentsLoaded) {
-                document.getElementById('start-session-btn').disabled = true;
-                document.getElementById('start-session-btn').classList.add('opacity-50', 'cursor-not-allowed');
+                const startBtn = document.getElementById('start-session-btn');
+                if(startBtn) {
+                    startBtn.disabled = true;
+                    startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
                 return;
             }
 
