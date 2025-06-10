@@ -19,7 +19,6 @@
         .message-success { background-color: #059669; color: #d1fae5; } .message-error { background-color: #b91c1c; color: #fee2e2; } .message-info { background-color: #1d4ed8; color: #dbeafe; }
         .btn-loading { opacity: 0.6; cursor: not-allowed; }
 
-        /* NOVES CLASSES PER A L'ANIMACIÓ DELS BOTONS DE SO */
         .btn-sound {
             transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
         }
@@ -89,12 +88,12 @@
                     <div class="mt-6">
                         <h3 class="text-sm font-medium text-gray-300 mb-2">Efectes Sonors</h3>
                         <div id="soundboard" class="grid grid-cols-3 gap-2">
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/sword-clash.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Espasa</button>
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/monster-roar.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Rugit</button>
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/magic-spell.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Màgia</button>
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/door-creak.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Porta</button>
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/arrow-shot.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Fletxa</button>
-                            <button data-sound="https://cdn.jsdelivr.net/gh/k-aram/dnd-bard-ai/assets/sounds/coins.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Monedes</button>
+                            <button data-sound="https://faustsjg.github.io/HarmoniaArcana/assets/sounds/espasa.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Espasa</button>
+                            <button data-sound="https://faustsjg.github.io/HarmoniaArcana/assets/sounds/rugit.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Rugit</button>
+                            <button data-sound="https://faustsjg.github.io/HarmoniaArcana/assets/sounds/magia.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Màgia</button>
+                            <button data-sound="https://faustsjg.github.io/HarmoniaArcana/assets/sounds/porta.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Porta</button>
+                            <button data-sound="https://faustsjg.github.io/HarmoniaArcana/assets/sounds/fletxa.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Fletxa</button>
+                            <button data-sound="https://faustsjg.github.io/HarmoniaArcana/assets/sounds/monedes.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Monedes</button>
                         </div>
                     </div>
 
@@ -112,7 +111,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250609_0045_SOUND_FX_ANIM"; // VERSIÓ ACTUALITZADA
+        const SCRIPT_VERSION = "V20250610_1715_FINAL_URLS"; // VERSIÓ ACTUALITZADA
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 10000;
         let activeGameInspiration = "";
@@ -351,7 +350,6 @@
                 this.updateToggleButton();
             },
 
-            // FUNCIÓ DE SO MODIFICADA PER A L'ANIMACIÓ
             playSoundEffect(buttonElement) {
                 if (!buttonElement || !buttonElement.dataset.sound) return;
                 
@@ -363,14 +361,15 @@
                     autostart: true,
                     onstop: () => {
                         buttonElement.classList.remove('btn-sound-active');
-                        player.dispose(); // Allibera memòria
+                        player.dispose();
+                    },
+                    onerror: (err) => {
+                        logError(`Error carregant l'efecte ${soundUrl}:`, err);
+                        showCustomMessage(`No s'ha pogut carregar el so. Verifica la URL.`, 'error');
+                        buttonElement.classList.remove('btn-sound-active');
+                        player.dispose();
                     }
                 }).toDestination();
-                
-                player.onerror = (err) => {
-                    logError(`Error carregant l'efecte ${soundUrl}`, err);
-                    buttonElement.classList.remove('btn-sound-active'); // Restaura el botó si hi ha error
-                };
             },
 
             disposeAll() { this.stop(); for (const key in this.activeSamplers) { this.activeSamplers[key].dispose(); } this.activeSamplers = {}; log("Tots els instruments descarregats."); },
@@ -404,18 +403,13 @@
                 let jsonText = responseData.candidates[0].content.parts[0].text;
                 log("Resposta rebuda de la IA:", jsonText);
                 
-                const cleanedText = jsonText.replace(/^```json\s*|```$/g, '').trim();
-
-                try {
-                    return JSON.parse(cleanedText);
-                } catch (e) {
-                    log("El parseig directe ha fallat, buscant l'objecte JSON amb regex...", e);
-                    const match = cleanedText.match(/\{[\s\S]*\}/);
-                    if (!match) throw new Error("La resposta de la IA no conté un objecte JSON vàlid.");
-                    return JSON.parse(match[0]);
+                const match = jsonText.match(/\{[\s\S]*\}/);
+                if (!match) {
+                    throw new Error("La resposta de la IA no conté un objecte JSON vàlid.");
                 }
+                return JSON.parse(match[0]);
 
-            } catch (error) { logError("Error en la petició a la IA:", error); showCustomMessage(`Error de l'API: ${error.message}`, 'error'); return null; 
+            } catch (error) { logError("Error en la petició a la IA o en el parseig:", error); showCustomMessage(`Error de l'API: ${error.message}`, 'error'); return null; 
             } finally {
                 setButtonsLoading(false);
             }
@@ -509,7 +503,6 @@
                 }
             });
 
-            // LISTENER MODIFICAT PER A L'ANIMACIÓ
             document.getElementById('soundboard').addEventListener('click', (event) => {
                 const target = event.target.closest('button.btn-sound');
                 if (target) {
