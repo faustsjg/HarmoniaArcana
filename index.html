@@ -17,6 +17,7 @@
         .dot-gray { background-color: #6b7280; } .dot-green { background-color: #10b981; } .dot-yellow { background-color: #f59e0b; } .dot-red { background-color: #ef4444; }
         #custom-message-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1050; display: none; font-size: 0.875rem; border: 1px solid rgba(255,255,255,0.1); }
         .message-success { background-color: #059669; color: #d1fae5; } .message-error { background-color: #b91c1c; color: #fee2e2; } .message-info { background-color: #1d4ed8; color: #dbeafe; }
+        /* La classe btn-loading només s'usarà per als botons sense animació pròpia */
         .btn-loading { opacity: 0.6; cursor: not-allowed; }
         .btn-sound { transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease; }
         .btn-sound-active { transform: scale(0.95); box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); filter: brightness(0.8); }
@@ -27,21 +28,22 @@
         .progress-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #4b5563; transition: background-color 0.3s ease; }
         .progress-dot.active { background-color: #a78bfa; }
 
-        /* CANVI: CSS per a l'animació de càrrega */
+        /* CANVI: Animació de càrrega més visible */
         @keyframes shimmer {
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
 
         .btn-composing {
+            cursor: not-allowed; /* Indicar que no es pot clicar */
             background-size: 200% 100%;
             background-image: linear-gradient(
                 90deg,
-                rgba(255, 255, 255, 0),
-                rgba(255, 255, 255, 0.2),
-                rgba(255, 255, 255, 0)
+                transparent,
+                rgba(255, 255, 255, 0.25), /* Més opacitat per a més visibilitat */
+                transparent
             );
-            animation: shimmer 2s infinite linear;
+            animation: shimmer 1.5s infinite linear;
         }
     </style>
 </head>
@@ -180,7 +182,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_0001_COMPOSING_ANIMATION";
+        const SCRIPT_VERSION = "V20250612_0003_ANIMATION_FIX";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -263,9 +265,9 @@
         
         function setButtonsLoading(loading, message = "Processant...") {
             const buttons = [
-                document.getElementById('start-session-btn'),
                 document.getElementById('toggle-listening-btn'),
                 document.getElementById('skip-context-btn')
+                // CANVI: Hem tret start-session-btn d'aquí per gestionar-lo individualment
             ];
             buttons.forEach(btn => {
                 if (btn) {
@@ -274,13 +276,10 @@
                         if (!btn.dataset.originalText) {
                            btn.dataset.originalText = btn.textContent;
                         }
-                        btn.classList.add('opacity-50', 'cursor-not-allowed');
-                        // No canviem el text si és el botó d'iniciar sessió, ja que té el seu propi estat
-                        if (btn.id !== 'start-session-btn' || message !== "Composant...") {
-                           btn.textContent = message;
-                        }
+                        btn.classList.add('btn-loading');
+                        btn.textContent = message;
                     } else {
-                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        btn.classList.remove('btn-loading');
                         if (btn.dataset.originalText) {
                            btn.textContent = btn.dataset.originalText;
                         }
@@ -310,7 +309,6 @@
                 await this.stop();
                 log(`Reproduint nova recepta orquestral:`, recipe);
                 try {
-                    setButtonsLoading(true, "Carregant Orquestra...");
                     await ensureAudioContextStarted();
                     const requiredInstruments = [...new Set(recipe.parts.map(part => part.instrument))];
                     await this.loadInstruments(requiredInstruments);
@@ -356,8 +354,6 @@
                 } catch (error) {
                     logError("Error al musicManager.play:", error);
                     showCustomMessage("Error en la recepta musical. Comproveu la consola.", "error");
-                } finally {
-                    setButtonsLoading(false);
                 }
             },
             async stop() {
@@ -410,7 +406,6 @@
         }
         
         async function getMusicRecipeFromAI(inspiration, context) {
-            // Aquesta funció ara no activa l'animació, es fa des del botó que la crida
             updateStatusDisplay("Consultant Mestre Llama...", "yellow");
             
             const API_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct";
@@ -503,22 +498,26 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
             log(`Processant text per a nova composició: "${textToProcess}"`);
             showCustomMessage("Canvi d'escena detectat! Generant nova música...", "info");
             
-            const skipContextBtn = document.getElementById('skip-context-btn');
-            skipContextBtn.classList.add('btn-composing');
-            setButtonsLoading(true, "Composant...");
+            const skipBtn = document.getElementById('skip-context-btn');
+            const originalText = skipBtn.textContent;
+            skipBtn.textContent = "Composant...";
+            skipBtn.disabled = true;
+            skipBtn.classList.add('btn-composing');
 
-            let recipe = await getMusicRecipeFromAI(activeGameInspiration, textToProcess);
-            
-            skipContextBtn.classList.remove('btn-composing');
-            setButtonsLoading(false);
-
-            if (recipe) {
-                const validRecipe = validateAndCleanRecipe(recipe);
-                if (validRecipe) {
-                    await musicManager.play(validRecipe);
-                } else {
-                    showCustomMessage("La IA ha generat una recepta musical invàlida.", "error");
+            try {
+                let recipe = await getMusicRecipeFromAI(activeGameInspiration, textToProcess);
+                if (recipe) {
+                    const validRecipe = validateAndCleanRecipe(recipe);
+                    if (validRecipe) {
+                        await musicManager.play(validRecipe);
+                    } else {
+                        showCustomMessage("La IA ha generat una recepta musical invàlida.", "error");
+                    }
                 }
+            } finally {
+                skipBtn.classList.remove('btn-composing');
+                skipBtn.disabled = false;
+                skipBtn.textContent = originalText;
             }
         }
 
@@ -588,7 +587,7 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                 const startBtn = document.getElementById('start-session-btn');
                 if(startBtn) {
                     startBtn.disabled = true;
-                    startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    startBtn.classList.add('btn-loading');
                 }
                 return;
             }
@@ -622,11 +621,14 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
 
             document.getElementById('start-session-btn').addEventListener('click', async (event) => {
                 const startBtn = event.target;
+                const originalText = startBtn.textContent;
+                
                 try {
-                    // CANVI: Aplicar l'animació i gestionar l'estat del botó aquí
+                    // CANVI: Gestió individual de l'estat del botó
+                    startBtn.disabled = true;
                     startBtn.textContent = "Composant...";
                     startBtn.classList.add('btn-composing');
-                    setButtonsLoading(true, "Composant...");
+                    setButtonsLoading(true); // Bloqueja els altres botons
                     
                     await ensureAudioContextStarted();
                     await screenWakeLockManager.request();
@@ -655,9 +657,11 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     showCustomMessage('Error iniciant la sessió. Comprova la consola.', 'error');
                     await screenWakeLockManager.release();
                 } finally {
-                    // CANVI: Treure l'animació i restaurar l'estat del botó
+                    // CANVI: Restaura l'estat del botó
                     startBtn.classList.remove('btn-composing');
-                    setButtonsLoading(false);
+                    startBtn.disabled = false;
+                    startBtn.textContent = originalText;
+                    setButtonsLoading(false); // Desbloqueja els altres botons
                 }
             });
 
@@ -669,19 +673,7 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
             });
 
             document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
-            
-            document.getElementById('skip-context-btn').addEventListener('click', async (event) => {
-                const skipBtn = event.target;
-                try {
-                    skipBtn.classList.add('btn-composing');
-                    setButtonsLoading(true, "Composant...");
-                    await processAccumulatedTranscript(true); // Passar un flag per saber que ve d'aquí
-                } finally {
-                    skipBtn.classList.remove('btn-composing');
-                    setButtonsLoading(false);
-                }
-            });
-            
+            document.getElementById('skip-context-btn').addEventListener('click', processAccumulatedTranscript);
             document.getElementById('stop-music-btn').addEventListener('click', () => { musicManager.isPaused ? musicManager.resume() : musicManager.pause(); });
             
             document.getElementById('end-session-btn').addEventListener('click', async () => {
