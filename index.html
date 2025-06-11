@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harmonia Arcana</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="assets/js/tone.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
@@ -162,7 +162,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_2338_CODE_CLEANUP";
+        const SCRIPT_VERSION = "V20250611_2112_REFACTOR";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -171,6 +171,19 @@
         let apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
         
         let TONEJS_DEFAULT_INSTRUMENTS = [];
+
+        // CANVI 4: Centralització de la inicialització de l'àudio
+        async function ensureAudioContextStarted() {
+            if (Tone.context.state !== 'running') {
+                try {
+                    await Tone.start();
+                    log('Context d\'àudio de Tone.js inicialitzat correctament.');
+                } catch (error) {
+                    logError('L\'usuari ha de fer un gest per iniciar l\'àudio.', error);
+                    showCustomMessage("Cal interacció de l'usuari per activar el so.", "info");
+                }
+            }
+        }
 
         const screenWakeLockManager = {
             wakeLockSentinel: null, videoElement: null,
@@ -230,18 +243,28 @@
             if (statusMessage) statusMessage.textContent = status;
             if (statusDot) statusDot.className = `status-dot dot-${color}`;
         }
-
+        
+        // CANVI 3: Gestió de l'estat de càrrega dels botons millorada
         function setButtonsLoading(loading, message = "Processant...") {
-            const buttons = [ document.getElementById('start-session-btn'), document.getElementById('toggle-listening-btn'), document.getElementById('skip-context-btn') ];
+            const buttons = [
+                document.getElementById('start-session-btn'),
+                document.getElementById('toggle-listening-btn'),
+                document.getElementById('skip-context-btn')
+            ];
             buttons.forEach(btn => {
                 if (btn) {
                     btn.disabled = loading;
-                    if (loading) { btn.classList.add('opacity-50', 'cursor-not-allowed'); btn.textContent = message; } 
-                    else {
+                    if (loading) {
+                        if (!btn.dataset.originalText) {
+                           btn.dataset.originalText = btn.textContent;
+                        }
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                        btn.textContent = message;
+                    } else {
                         btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                        if (btn.id === 'start-session-btn') btn.textContent = 'Inicia la Simfonia';
-                        if (btn.id === 'toggle-listening-btn') btn.textContent = 'Escoltar';
-                        if (btn.id === 'skip-context-btn') btn.textContent = 'Forçar Anàlisi';
+                        if (btn.dataset.originalText) {
+                           btn.textContent = btn.dataset.originalText;
+                        }
                     }
                 }
             });
@@ -254,11 +277,9 @@
                 const promises = uniqueInstrumentNames.map(name => {
                     if (this.activeSamplers[name] || !this.instrumentUrls[name]) return Promise.resolve();
                     return new Promise((resolve, reject) => {
-                        const firstNote = Object.keys(this.instrumentUrls[name])[0];
-                        const firstUrl = this.instrumentUrls[name][firstNote];
-                        let baseUrl = TONEJS_DEFAULT_INSTRUMENTS.includes(name) ? "https://tonejs.github.io/audio/salamander/" : "";
                         const sampler = new Tone.Sampler({
-                            urls: this.instrumentUrls[name], baseUrl: baseUrl,
+                            urls: this.instrumentUrls[name], 
+                            baseUrl: TONEJS_DEFAULT_INSTRUMENTS.includes(name) ? "https://tonejs.github.io/audio/salamander/" : "",
                             onload: () => { log(`Instrument ${name} carregat.`); this.activeSamplers[name] = sampler.toDestination(); resolve(); },
                             onerror: (error) => { logError(`Error carregant ${name}`, error); reject(new Error(`No s'ha pogut carregar l'instrument: ${name}`)); }
                         });
@@ -271,6 +292,7 @@
                 log(`Reproduint nova recepta orquestral:`, recipe);
                 try {
                     setButtonsLoading(true, "Carregant Orquestra...");
+                    await ensureAudioContextStarted();
                     const requiredInstruments = [...new Set(recipe.parts.map(part => part.instrument))];
                     await this.loadInstruments(requiredInstruments);
                     recipe.parts.forEach(part => {
@@ -330,8 +352,9 @@
                 if (musicStatus) musicStatus.textContent = "Aturada";
                 this.updateToggleButton();
             },
-            playSoundEffect(buttonElement) {
+            async playSoundEffect(buttonElement) {
                 if (!buttonElement || !buttonElement.dataset.sound) return;
+                await ensureAudioContextStarted();
                 const soundUrl = buttonElement.dataset.sound;
                 buttonElement.classList.add('btn-sound-active');
                 const player = new Tone.Player({
@@ -347,9 +370,7 @@
         };
 
         function validateAndCleanRecipe(recipe) {
-            if (!recipe || typeof recipe !== 'object' || !Array.isArray(recipe.parts)) {
-                logError("Recepta invàlida: L'estructura base és incorrecta.", recipe); return null;
-            }
+            if (!recipe || typeof recipe !== 'object' || !Array.isArray(recipe.parts)) { logError("Recepta invàlida: L'estructura base és incorrecta.", recipe); return null; }
             try {
                 const validParts = recipe.parts.filter(part => {
                     const instrumentName = part.instrument.replace(/-/g, '_');
@@ -365,12 +386,8 @@
                     return part.sequence.length > 0;
                 });
                 if (validParts.length === 0) { logError("Recepta invàlida: Cap de les parts era vàlida després de la neteja."); return null; }
-                recipe.parts = validParts;
-                return recipe;
-            } catch (error) {
-                logError("Error catastròfic durant la validació de la recepta:", error);
-                return null;
-            }
+                recipe.parts = validParts; return recipe;
+            } catch (error) { logError("Error catastròfic durant la validació de la recepta:", error); return null; }
         }
         
         async function getMusicRecipeFromAI(inspiration, context) {
@@ -380,15 +397,34 @@
             const API_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct";
             const availableInstruments = Object.keys(musicManager.instrumentUrls).join(', ');
 
-            const prompt = `Ets Harmonia, un Mestre Compositor. La teva tasca és doble:
-1.  **ANÀLISI D'ESTIL:** Analitza en profunditat la inspiració principal de l'usuari: "${inspiration}". Pensa en l'estil, instrumentació, tempo, harmonies i emocions clau.
-2.  **COMPOSICIÓ:** Basant-te en la teva anàlisi i en l'escena actual ("${context}"), compon una peça musical LLARGA i amb DESENVOLUPAMENT (mínim 8 compassos) en format JSON.
+            // CANVI 2: Prompt millorat per a una extracció de JSON més fiable
+            const prompt = `Ets Harmonia, un Mestre Compositor expert. La teva tasca és analitzar una inspiració i un context per generar una peça musical en format JSON.
+
+INSPIRACIÓ PRINCIPAL: "${inspiration}"
+ESCENA ACTUAL: "${context}"
 
 REGLA D'OR: Utilitza ÚNICA I EXCLUSIVAMENT els noms d'instrument de la següent llista. No inventis noms.
 LLISTA ESTRICTA D'INSTRUMENTS: "${availableInstruments}".
 
-REQUISITS CRÍTICS DEL FORMAT JSON:
-La resposta ha de ser un únic objecte JSON que contingui "name", "bpm", i "parts". Cada element de "parts" ha de seguir totes les regles (sequence com a array, events amb time/note/duration, etc.). Inclou varietat dinàminca amb "velocity", i textures com "arpeggiate" i "effects" si escau.`;
+REQUISITS CRÍTICS DEL FORMAT:
+La teva resposta final ha de contenir NOMÉS el codi JSON. Embolica l'objecte JSON complet dins d'un bloc de codi marcat amb \`\`\`json.
+Exemple de format de resposta:
+\`\`\`json
+{
+  "name": "Nom de la Peça",
+  "bpm": 120,
+  "parts": [
+    {
+      "instrument": "piano",
+      "sequence": [
+        {"time": "0:0:0", "note": "C4", "duration": "4n", "velocity": 0.9}
+      ],
+      "loopDuration": "1m"
+    }
+  ]
+}
+\`\`\`
+Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que reflecteixi l'emoció de l'escena.`;
 
             try {
                 const response = await fetch(API_ENDPOINT, {
@@ -409,10 +445,11 @@ La resposta ha de ser un únic objecte JSON que contingui "name", "bpm", i "part
                 let jsonText = responseData[0].generated_text;
                 log("Resposta rebuda de la IA:", jsonText);
                 
-                const match = jsonText.match(/\{[\s\S]*\}/);
-                if (!match) throw new Error("La IA no ha retornat un JSON vàlid.");
+                // CANVI 2: Regex millorada per a una extracció de JSON més fiable
+                const match = jsonText.match(/```json\n([\s\S]*?)\n```/);
+                if (!match || !match[1]) throw new Error("La IA no ha retornat un bloc de codi JSON vàlid. Comprova la resposta a la consola.");
                 
-                return JSON.parse(match[0]);
+                return JSON.parse(match[1]);
             } catch (error) {
                 logError("Error en la petició a la IA o en el parseig:", error);
                 showCustomMessage(`Error de l'API: ${error.message}`, 'error');
@@ -562,7 +599,7 @@ La resposta ha de ser un únic objecte JSON que contingui "name", "bpm", i "part
             document.getElementById('start-session-btn').addEventListener('click', async () => {
                 try {
                     setButtonsLoading(true, "Iniciant...");
-                    if (Tone.context.state !== 'running') { await Tone.start(); }
+                    await ensureAudioContextStarted();
                     await screenWakeLockManager.request();
                     
                     const rawInspiration = document.getElementById('session-inspiration-input').value.trim() || "Fantasia èpica";
@@ -593,9 +630,11 @@ La resposta ha de ser un únic objecte JSON que contingui "name", "bpm", i "part
                 }
             });
 
-            document.getElementById('soundboard').addEventListener('click', (event) => {
+            document.getElementById('soundboard').addEventListener('click', async (event) => {
                 const target = event.target.closest('button.btn-sound');
-                if (target) { musicManager.playSoundEffect(target); }
+                if (target) {
+                    await musicManager.playSoundEffect(target);
+                }
             });
 
             document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
