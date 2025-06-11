@@ -60,7 +60,7 @@
                 <div data-slide="3" class="onboarding-slide flex-col justify-between hidden">
                     <div>
                         <h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 2 de 3: Activa l'Accés al Model</h3>
-                        <p class="text-gray-400 mb-4">El "cervell" de l'aplicació és <strong>Llama 3</strong>. Per poder-lo fer servir, has de visitar la seva pàgina oficial i acceptar les seves condicions d'ús.</p>
+                        <p class="text-gray-400 mb-4">El "cervell" de l'aplicació és <strong>Llama 3</strong>. Per poder-lo fer servir, has de visitar la sua pàgina oficial i acceptar les seves condicions d'ús.</p>
                          <p class="text-gray-400">És un requisit de seguretat obligatori i només s'ha de fer un cop.</p>
                         <a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la pàgina de Llama 3 per acceptar termes</a>
                     </div>
@@ -152,17 +152,18 @@
                 </div>
             </section>
         </main>
-        <footer class="mt-10 text-center">
-            <p id="version-display" class="text-xs text-gray-600 mt-2"></p>
-        </footer>
     </div>
+
+    <footer class="mt-10 text-center">
+        <p id="version-display" class="text-xs text-gray-600 mt-2"></p>
+    </footer>
 
     <script type="module"> 
         const DEBUG = true;
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250611_2112_REFACTOR";
+        const SCRIPT_VERSION = "V20250611_2328_FOOTER_FIX";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -172,7 +173,6 @@
         
         let TONEJS_DEFAULT_INSTRUMENTS = [];
 
-        // CANVI 4: Centralització de la inicialització de l'àudio
         async function ensureAudioContextStarted() {
             if (Tone.context.state !== 'running') {
                 try {
@@ -244,7 +244,6 @@
             if (statusDot) statusDot.className = `status-dot dot-${color}`;
         }
         
-        // CANVI 3: Gestió de l'estat de càrrega dels botons millorada
         function setButtonsLoading(loading, message = "Processant...") {
             const buttons = [
                 document.getElementById('start-session-btn'),
@@ -397,7 +396,6 @@
             const API_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct";
             const availableInstruments = Object.keys(musicManager.instrumentUrls).join(', ');
 
-            // CANVI 2: Prompt millorat per a una extracció de JSON més fiable
             const prompt = `Ets Harmonia, un Mestre Compositor expert. La teva tasca és analitzar una inspiració i un context per generar una peça musical en format JSON.
 
 INSPIRACIÓ PRINCIPAL: "${inspiration}"
@@ -445,7 +443,6 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                 let jsonText = responseData[0].generated_text;
                 log("Resposta rebuda de la IA:", jsonText);
                 
-                // CANVI 2: Regex millorada per a una extracció de JSON més fiable
                 const match = jsonText.match(/```json\n([\s\S]*?)\n```/);
                 if (!match || !match[1]) throw new Error("La IA no ha retornat un bloc de codi JSON vàlid. Comprova la resposta a la consola.");
                 
