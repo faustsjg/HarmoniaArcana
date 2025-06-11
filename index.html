@@ -26,6 +26,23 @@
         .onboarding-slide { min-height: 420px; display: flex; }
         .progress-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #4b5563; transition: background-color 0.3s ease; }
         .progress-dot.active { background-color: #a78bfa; }
+
+        /* CANVI: CSS per a l'animació de càrrega */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .btn-composing {
+            background-size: 200% 100%;
+            background-image: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0),
+                rgba(255, 255, 255, 0.2),
+                rgba(255, 255, 255, 0)
+            );
+            animation: shimmer 2s infinite linear;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 pt-8 sm:p-6">
@@ -163,8 +180,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        // CANVI: Actualitzat número de versió
-        const SCRIPT_VERSION = "V20250611_2350_LLAMA31_UPGRADE";
+        const SCRIPT_VERSION = "V20250612_0001_COMPOSING_ANIMATION";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -259,7 +275,10 @@
                            btn.dataset.originalText = btn.textContent;
                         }
                         btn.classList.add('opacity-50', 'cursor-not-allowed');
-                        btn.textContent = message;
+                        // No canviem el text si és el botó d'iniciar sessió, ja que té el seu propi estat
+                        if (btn.id !== 'start-session-btn' || message !== "Composant...") {
+                           btn.textContent = message;
+                        }
                     } else {
                         btn.classList.remove('opacity-50', 'cursor-not-allowed');
                         if (btn.dataset.originalText) {
@@ -391,10 +410,9 @@
         }
         
         async function getMusicRecipeFromAI(inspiration, context) {
-            setButtonsLoading(true, "Composant...");
+            // Aquesta funció ara no activa l'animació, es fa des del botó que la crida
             updateStatusDisplay("Consultant Mestre Llama...", "yellow");
             
-            // CANVI: Actualitzat l'endpoint de l'API a Llama 3.1
             const API_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct";
             const availableInstruments = Object.keys(musicManager.instrumentUrls).join(', ');
 
@@ -453,8 +471,6 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                 logError("Error en la petició a la IA o en el parseig:", error);
                 showCustomMessage(`Error de l'API: ${error.message}`, 'error');
                 return null;
-            } finally {
-                setButtonsLoading(false);
             }
         }
 
@@ -486,7 +502,16 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
             accumulatedTranscript = "";
             log(`Processant text per a nova composició: "${textToProcess}"`);
             showCustomMessage("Canvi d'escena detectat! Generant nova música...", "info");
+            
+            const skipContextBtn = document.getElementById('skip-context-btn');
+            skipContextBtn.classList.add('btn-composing');
+            setButtonsLoading(true, "Composant...");
+
             let recipe = await getMusicRecipeFromAI(activeGameInspiration, textToProcess);
+            
+            skipContextBtn.classList.remove('btn-composing');
+            setButtonsLoading(false);
+
             if (recipe) {
                 const validRecipe = validateAndCleanRecipe(recipe);
                 if (validRecipe) {
@@ -595,9 +620,14 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                 showSlide(1); 
             });
 
-            document.getElementById('start-session-btn').addEventListener('click', async () => {
+            document.getElementById('start-session-btn').addEventListener('click', async (event) => {
+                const startBtn = event.target;
                 try {
-                    setButtonsLoading(true, "Iniciant...");
+                    // CANVI: Aplicar l'animació i gestionar l'estat del botó aquí
+                    startBtn.textContent = "Composant...";
+                    startBtn.classList.add('btn-composing');
+                    setButtonsLoading(true, "Composant...");
+                    
                     await ensureAudioContextStarted();
                     await screenWakeLockManager.request();
                     
@@ -625,6 +655,8 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     showCustomMessage('Error iniciant la sessió. Comprova la consola.', 'error');
                     await screenWakeLockManager.release();
                 } finally {
+                    // CANVI: Treure l'animació i restaurar l'estat del botó
+                    startBtn.classList.remove('btn-composing');
                     setButtonsLoading(false);
                 }
             });
@@ -637,7 +669,19 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
             });
 
             document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
-            document.getElementById('skip-context-btn').addEventListener('click', processAccumulatedTranscript);
+            
+            document.getElementById('skip-context-btn').addEventListener('click', async (event) => {
+                const skipBtn = event.target;
+                try {
+                    skipBtn.classList.add('btn-composing');
+                    setButtonsLoading(true, "Composant...");
+                    await processAccumulatedTranscript(true); // Passar un flag per saber que ve d'aquí
+                } finally {
+                    skipBtn.classList.remove('btn-composing');
+                    setButtonsLoading(false);
+                }
+            });
+            
             document.getElementById('stop-music-btn').addEventListener('click', () => { musicManager.isPaused ? musicManager.resume() : musicManager.pause(); });
             
             document.getElementById('end-session-btn').addEventListener('click', async () => {
