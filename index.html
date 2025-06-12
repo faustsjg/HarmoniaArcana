@@ -181,7 +181,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_1805_PROMPT_SIMPLIFICATION_FIX";
+        const SCRIPT_VERSION = "V20250612_1830_JSON_FORMAT_FIX";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -440,17 +440,18 @@
 
 ### INSTRUCTIONS AND RULES
 1.  **Primary Goal:** Your ONLY output must be a valid JSON object. Do not write any text, explanation, or notes before or after the JSON block.
-2.  **JSON Structure:** The JSON object must contain "name" (string), "bpm" (number), and "parts" (an array of objects).
+2.  **JSON Structure:** The JSON object must contain "name" (string), "bpm" (number), and "parts" (an array of objects). Each event in a part's sequence MUST contain "time", "note", and "duration" keys.
 3.  **Instrument Palette:** You MUST ONLY use instrument names from this exact list: ${Object.keys(musicManager.instrumentUrls).join(', ')}.
 4.  **Composition Rules:**
     - The composition must have a minimum of 4 instrumental parts.
     - The main loop duration (\`loopDuration\`) for each part must be at least 8 measures long (e.g., "8m" or "16m").
     - Create variety: assign different roles to instruments (e.g., melody, harmony, bass, rhythm). Do not have all instruments playing at the same time.
-    - Use varied note durations and velocities to create dynamics and interest.
+    - Use varied note durations (e.g., "4n", "8n", "2n") and velocities to create dynamics and interest.
 5.  **Inspiration:** The music must be based on this theme: "${inspiration}".
 6.  **Scene Context:** The music must fit this specific scene: "${context}".
 
-### REQUIRED OUTPUT FORMAT
+### REQUIRED OUTPUT FORMAT EXAMPLE
+Your response must be ONLY the JSON, like this example that shows the required keys for each event:
 \`\`\`json
 {
   "name": "A Creative Title for the Piece",
@@ -458,7 +459,10 @@
   "parts": [
     {
       "instrument": "piano",
-      "sequence": [],
+      "sequence": [
+        { "time": "0:0:0", "note": "C4", "duration": "4n", "velocity": 0.9 },
+        { "time": "0:1:0", "note": ["E4", "G4"], "duration": "8n", "velocity": 0.7 }
+      ],
       "loopDuration": "8m"
     }
   ]
