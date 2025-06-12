@@ -121,20 +121,19 @@
 
         <main id="main-content">
             <section id="initial-setup-screen">
-                 <div class="bg-gray-800 p-6 rounded-xl shadow-xl relative">
+                 <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
                     <h2 class="text-xl font-semibold text-purple-300 mb-4">Prepara la Teva Sessió</h2>
                     <div class="mb-6">
                         <label for="session-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Escriu una inspiració (opcional)</label>
                         <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Hans Zimmer, Fantasia èpica, Gladiator...">
                     </div>
                     
-                    <div class="mb-8">
+                    <div class="text-center">
                         <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md">Inicia la Simfonia</button>
                         <div id="warmup-status" class="text-center text-xs text-gray-500 pt-3 h-4"></div>
+                        <button id="change-token-btn" class="mt-4 text-xs text-gray-400 border border-gray-600 rounded-md px-3 py-1.5 hover:bg-gray-700 hover:text-white transition-all duration-200 inline-block">Canviar Token</button>
                     </div>
-                    
-                    <button id="change-token-btn" class="absolute bottom-4 right-4 text-xs text-gray-400 border border-gray-600 rounded-md px-3 py-1.5 hover:bg-gray-700 hover:text-white transition-all duration-200">Canviar Token</button>
-                </div>
+                 </div>
             </section>
 
             <section id="active-session-content" class="hidden">
@@ -182,7 +181,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_1745_PROMPT_UPGRADE_FIX";
+        const SCRIPT_VERSION = "V20250612_1755_ERROR_HANDLING_UI_FIX";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
