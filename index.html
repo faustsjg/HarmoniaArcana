@@ -149,7 +149,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                         <button id="toggle-listening-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Escoltar</button>
                         <button id="skip-context-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg text-sm" title="Força una anàlisi del text acumulat">Forçar Anàlisi</button>
-                        <button id="stop-music-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Pausa</button>
+                        <button id="stop-music-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Aturar Música</button>
                     </div>
                     <div class="mb-4 p-3 bg-gray-700 rounded-lg h-20 overflow-y-auto text-xs text-gray-300 border border-gray-600">
                         <p id="transcript-preview">La transcripció en directe apareixerà aquí...</p>
@@ -181,7 +181,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250613_0001_FINAL_ARCHITECTURE";
+        const SCRIPT_VERSION = "V20250613_0030_FINAL_ARCHITECTURE_FIX";
         
         const MAIN_THEME_RECIPE = {
             name: "Tema de l'Aventura",
@@ -218,7 +218,7 @@
                         { time: "0:0:0", note: "G4", duration: "2n", velocity: 0.9 },
                         { time: "1:0:0", note: "E5", duration: "1n", velocity: 0.9 },
                         { time: "2:0:0", note: "F5", duration: "2n", velocity: 0.8 },
-                        { time: "3:0:0", note: "E5", duration": "2n", "velocity": 0.7 },
+                        { time: "3:0:0", note: "E5", "duration": "2n", "velocity": 0.7 },
                         { "time": "3:2:0", "note": "D5", "duration": "2n", "velocity": 0.6 }
                     ]
                 }
@@ -266,12 +266,49 @@
                 hasAIBeenWarmedUp = false;
             }
         }
-
+        
+        // ... La resta de funcions (showCustomMessage, showUI, etc.) es mantenen iguals ...
+        function showCustomMessage(message, type = 'info', duration = 3000) {
+            const box = document.getElementById('custom-message-box');
+            if (!box) return;
+            box.style.display = 'block'; box.textContent = message; box.className = 'p-3 text-white rounded-lg shadow-lg fixed top-5 left-1/2 -translate-x-1/2'; box.classList.add('message-' + type.toLowerCase());
+            if (duration > 0) { setTimeout(() => { if (box.textContent === message) box.style.display = 'none'; }, duration); }
+        }
+        function showUI() {
+            apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+            const apiKeyScreen = document.getElementById('api-key-setup-screen');
+            const mainApp = document.getElementById('main-app-content');
+            if (apiKey) { apiKeyScreen.classList.add('hidden'); mainApp.classList.remove('hidden'); warmUpAI(); } 
+            else { apiKeyScreen.classList.remove('hidden'); mainApp.classList.add('hidden'); }
+        }
+        function showScreen(screenId) {
+            const initialScreen = document.getElementById('initial-setup-screen');
+            const activeScreen = document.getElementById('active-session-content');
+            if (screenId === 'initial-setup-screen') { initialScreen.classList.remove('hidden'); activeScreen.classList.add('hidden');} 
+            else { initialScreen.classList.add('hidden'); activeScreen.classList.remove('hidden');}
+        }
+        function updateStatusDisplay(status, color = 'gray') {
+            const statusMessage = document.getElementById('status-message');
+            const statusDot = document.getElementById('status-dot');
+            if (statusMessage) statusMessage.textContent = status;
+            if (statusDot) statusDot.className = `status-dot dot-${color}`;
+        }
+        function setButtonsLoading(loading) {
+            const buttons = [ document.getElementById('toggle-listening-btn'), document.getElementById('skip-context-btn') ];
+            buttons.forEach(btn => {
+                if (btn) {
+                    btn.disabled = loading;
+                    if (loading) { btn.classList.add('btn-loading'); } 
+                    else { btn.classList.remove('btn-loading'); }
+                }
+            });
+        }
+        
         const musicManager = {
-            activeParts: [], activeSamplers: {}, isPlaying: false,
+            activeParts: [], activeSamplers: {}, isPlaying: false, instrumentUrls: {},
             async _internalStop() {
-                this.activeParts.forEach(part => part.dispose());
-                this.activeParts = []; 
+                this.activeParts.forEach(part => { if (part) part.dispose(); });
+                this.activeParts = [];
                 if (Tone.Transport.state !== 'stopped') {
                     Tone.Transport.stop();
                     await Tone.Transport.cancel(0);
@@ -298,7 +335,7 @@
                              sampler.triggerAttackRelease(value.note, value.duration, time, value.velocity || 0.8);
                         }, part.sequence).start(0);
                         tonePart.loop = true;
-                        tonePart.loopEnd = part.loopDuration || "8m";
+                        tonePart.loopEnd = part.loopDuration;
                         this.activeParts.push(tonePart);
                         sampler.toDestination();
                     });
@@ -310,7 +347,6 @@
                     
                     this.isPlaying = true;
                     document.getElementById('music-status').textContent = `Reproduint (${recipe.name})`;
-
                 } catch (error) {
                     logError("Error a musicManager.fadeInAndPlay:", error);
                 }
@@ -318,10 +354,10 @@
             async loadInstruments(instrumentNames = []) {
                 const uniqueInstrumentNames = [...new Set(instrumentNames.map(name => name.replace(/-/g, '_')))];
                 const promises = uniqueInstrumentNames.map(name => {
-                    if (this.activeSamplers[name] || !musicManager.instrumentUrls[name]) return Promise.resolve();
+                    if (this.activeSamplers[name] || !window.musicManager.instrumentUrls[name]) return Promise.resolve();
                     return new Promise((resolve, reject) => {
                         const sampler = new Tone.Sampler({
-                            urls: musicManager.instrumentUrls[name], 
+                            urls: window.musicManager.instrumentUrls[name], 
                             baseUrl: TONEJS_DEFAULT_INSTRUMENTS.includes(name) ? "https://tonejs.github.io/audio/salamander/" : "",
                             onload: () => { log(`Instrument ${name} carregat.`); this.activeSamplers[name] = sampler; resolve(); },
                             onerror: (error) => { logError(`Error carregant ${name}`, error); reject(new Error(`No s'ha pogut carregar l'instrument: ${name}`)); }
@@ -331,11 +367,204 @@
                 await Promise.allSettled(promises);
             },
             disposeAll() { this._internalStop(); for (const key in this.activeSamplers) { this.activeSamplers[key].dispose(); } this.activeSamplers = {}; log("Tots els instruments descarregats."); },
-            // ... (altres funcions com playSoundEffect, showUI, etc. es mantenen igual)
+            async playSoundEffect(buttonElement) {
+                if (!buttonElement || !buttonElement.dataset.sound) return;
+                await ensureAudioContextStarted();
+                const soundUrl = buttonElement.dataset.sound;
+                buttonElement.classList.add('btn-sound-active');
+                const player = new Tone.Player({
+                    url: soundUrl, autostart: true,
+                    onstop: () => { buttonElement.classList.remove('btn-sound-active'); player.dispose(); },
+                }).toDestination();
+            },
         };
+
+        // --- Nova Arquitectura de Composició ---
+        const API_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct";
         
-        // ... (La resta de la lògica de l'aplicació)
+        async function makeAIRequest(prompt, onStatusUpdate) {
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    if (attempt > 1) onStatusUpdate(`Reintentant... (${attempt}/3)`);
+                    const response = await fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ inputs: prompt, parameters: { max_new_tokens: 2048, temperature: 0.9 } })
+                    });
+                    if (!response.ok) {
+                        if (response.status === 503 || response.status === 504) throw new Error(`Servidor ocupat`);
+                        throw new Error(`Error de l'API (${response.status})`);
+                    }
+                    const data = await response.json();
+                    const text = data[0].generated_text;
+                    const match = text.match(/```json\n([\s\S]*?)\n```/);
+                    if (!match || !match[1]) throw new Error("La IA ha retornat un format de JSON invàlid.");
+                    return JSON.parse(match[1]);
+                } catch (error) {
+                    logError(`Intent ${attempt} ha fallat:`, error);
+                    if (attempt === 3) throw new Error(`No s'ha pogut contactar amb la IA després de 3 intents.`);
+                    await new Promise(res => setTimeout(res, 3000));
+                }
+            }
+        }
+
+        async function getInstrumentPalette(inspiration, allInstruments) {
+            const prompt = `Based on the musical inspiration "${inspiration}", select between 8 and 10 thematically appropriate instruments from the provided list. Order them from foundational (rhythm, bass) to melodic/textural.
+            Instrument List: ${allInstruments.join(', ')}.
+            Your ONLY output must be a JSON object with a single key "instruments" containing the array of selected instrument names.
+            Example format:
+            \`\`\`json
+            {
+              "instruments": ["percussio_kick", "percussio_snare", "bass_electric", "piano", "string_ensemble_1", "violin", "flute", "french_horn"]
+            }
+            \`\`\``;
+            const response = await makeAIRequest(prompt);
+            return response.instruments;
+        }
+
+        async function composeFoundation(inspiration, context, foundationInstruments) {
+             const prompt = `Create the rhythmic and harmonic foundation for a musical piece for this inspiration: "${inspiration}" and context: "${context}".
+             Your ONLY output must be a JSON object containing an 8-measure chord progression in a "chords" array, and "parts" for a bassline and percussion using these specific instruments: ${foundationInstruments.join(', ')}.
+             The bassline must follow the root notes of the chords. The percussion must be a steady, simple 4/4 beat.
+             \`\`\`json
+             {
+                "chords": ["Am", "G", "C", "F", "Dm", "E", "Am", "G"],
+                "parts": [
+                    { "instrument": "percussio_kick", "sequence": [{"time":"0:0:0", "note":"C1", "duration":"4n"}, ...], "loopDuration": "8m"},
+                    { "instrument": "bass_electric", "sequence": [{"time":"0:0:0", "note":"A2", "duration":"2n"}, ...], "loopDuration": "8m"}
+                ]
+             }
+             \`\`\``;
+             return makeAIRequest(prompt);
+        }
         
+        async function composePartForInstrument(inspiration, instrument, existingContext) {
+            const prompt = `Here is a musical foundation (chords and existing parts): ${JSON.stringify(existingContext)}.
+            Compose a new, complementary 8-measure musical part for the instrument "${instrument}" that fits the provided harmony and is inspired by "${inspiration}". Distribute notes across the entire loop.
+            Your ONLY output must be the JSON for a single musical part object, like this:
+            \`\`\`json
+            {
+                "instrument": "${instrument}",
+                "sequence": [
+                    { "time": "0:0:0", "note": "C5", "duration": "4n", "velocity": 0.8 }
+                ],
+                "loopDuration": "8m"
+            }
+            \`\`\``;
+            return makeAIRequest(prompt);
+        }
+
+        async function conductOrchestration(inspiration, context, onStatusUpdate) {
+            const allInstruments = Object.keys(musicManager.instrumentUrls);
+            
+            onStatusUpdate("Escollint instruments...");
+            const thematicInstruments = await getInstrumentPalette(inspiration, allInstruments);
+            if (!thematicInstruments || thematicInstruments.length === 0) throw new Error("La IA no ha suggerit cap instrument.");
+
+            const foundationInstruments = thematicInstruments.filter(inst => inst.includes('bass') || inst.includes('percussio'));
+            const melodicInstruments = thematicInstruments.filter(inst => !foundationInstruments.includes(inst));
+            
+            onStatusUpdate("Creant els fonaments...");
+            const foundation = await composeFoundation(inspiration, context, foundationInstruments);
+            let finalParts = foundation.parts;
+            
+            for (const instrument of melodicInstruments) {
+                onStatusUpdate(`Componint per a ${instrument.replace(/_/g, ' ')}...`);
+                const newPart = await composePartForInstrument(inspiration, instrument, {chords: foundation.chords, parts: finalParts});
+                finalParts.push(newPart);
+            }
+
+            return {
+                name: inspiration,
+                bpm: 120,
+                parts: finalParts
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('version-display').textContent = `Versió: ${SCRIPT_VERSION}`;
+            
+            await loadInstrumentData();
+            showUI();
+            await setupSpeechRecognition();
+            
+            // ... (Tots els altres listeners d'events)
+            document.getElementById('start-session-btn').addEventListener('click', async (event) => {
+                const startBtn = event.target;
+                if(startBtn.disabled) return;
+                
+                const originalText = startBtn.textContent;
+                let messageInterval;
+                
+                try {
+                    startBtn.disabled = true;
+                    startBtn.classList.add('btn-composing');
+                    setButtonsLoading(true);
+
+                    await ensureAudioContextStarted();
+                    await musicManager.fadeInAndPlay(MAIN_THEME_RECIPE, 2);
+                    
+                    const messages = ["El bard busca inspiració...", "Consultant les muses...", "Afinant el llaüt..."];
+                    let messageIndex = 0;
+                    const updateMessage = (text) => {
+                        clearInterval(messageInterval);
+                        startBtn.textContent = text;
+                    };
+                    updateMessage(messages[messageIndex]);
+                    messageInterval = setInterval(() => {
+                        messageIndex = (messageIndex + 1) % messages.length;
+                        updateMessage(messages[messageIndex]);
+                    }, 4500);
+
+                    await screenWakeLockManager.request();
+                    
+                    const rawInspiration = document.getElementById('session-inspiration-input').value.trim() || "Fantasia èpica";
+                    
+                    const finalRecipe = await conductOrchestration(rawInspiration, "Una peça musical introductòria", updateMessage);
+                    
+                    clearInterval(messageInterval);
+                    updateMessage("Orquestra preparada!");
+
+                    if (finalRecipe) {
+                        const validRecipe = validateAndCleanRecipe(finalRecipe);
+                        if (validRecipe) {
+                            await musicManager.fadeOutAndStop(1.5);
+                            await new Promise(res => setTimeout(res, 1500));
+                            await musicManager.fadeInAndPlay(validRecipe, 2);
+                            showScreen('active-session-content');
+                            document.getElementById('current-inspiration-display').textContent = `Inspiració: ${rawInspiration}`;
+                        } else {
+                           throw new Error("La recepta final generada era invàlida.");
+                        }
+                    } else {
+                         throw new Error("No s'ha rebut cap recepta musical de la IA.");
+                    }
+                } catch (error) {
+                    logError("Error en iniciar la sessió:", error);
+                    showCustomMessage(error.message, 'error', 5000);
+                    await musicManager.fadeOutAndStop(0.5);
+                } finally {
+                    clearInterval(messageInterval);
+                    startBtn.classList.remove('btn-composing');
+                    startBtn.disabled = false;
+                    startBtn.textContent = originalText;
+                    setButtonsLoading(false);
+                    await screenWakeLockManager.release();
+                }
+            });
+
+            document.getElementById('change-token-btn').addEventListener('click', () => { /* ... */ });
+            document.getElementById('save-api-key-btn').addEventListener('click', () => { /* ... */ });
+            document.getElementById('soundboard').addEventListener('click', (e) => musicManager.playSoundEffect(e.target.closest('button')));
+            document.getElementById('toggle-listening-btn').addEventListener('click', () => isListening ? stopListening() : startListening());
+            document.getElementById('skip-context-btn').addEventListener('click', () => processAccumulatedTranscript(true));
+            document.getElementById('stop-music-btn').addEventListener('click', () => musicManager.fadeOutAndStop(1));
+            document.getElementById('end-session-btn').addEventListener('click', async () => {
+                if (isListening) stopListening();
+                await musicManager.fadeOutAndStop(1);
+                showScreen('initial-setup-screen');
+            });
+        });
     </script>
 </body>
 </html>
