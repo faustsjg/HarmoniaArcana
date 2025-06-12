@@ -124,7 +124,7 @@
                     <h2 class="text-xl font-semibold text-purple-300 mb-4">Prepara la Teva Sessió</h2>
                     <div class="mb-6">
                         <label for="session-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Escriu una inspiració (opcional)</label>
-                        <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Hans Zimmer, Fantasia èpica, Lo-fi per estudiar...">
+                        <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Hans Zimmer, Fantasia èpica, Gladiator...">
                     </div>
                     
                     <div class="mb-8">
@@ -132,7 +132,7 @@
                         <div id="warmup-status" class="text-center text-xs text-gray-500 pt-3 h-4"></div>
                     </div>
                     
-                    <button id="change-token-btn" class="absolute bottom-4 right-4 text-xs text-gray-500 hover:text-gray-300">Canviar Token</button>
+                    <button id="change-token-btn" class="absolute bottom-4 right-4 text-xs text-gray-500 hover:text-gray-300 underline transition-colors duration-200 px-2 py-1">Canviar Token</button>
                 </div>
             </section>
 
@@ -181,7 +181,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_1432_LAYOUT_FIX";
+        const SCRIPT_VERSION = "V20250612_1440_UX_TWEAKS";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -221,13 +221,15 @@
 
                 if (response.ok) {
                     log("Escalfament de la IA completat amb èxit.");
-                    if (warmupStatus) warmupStatus.textContent = "✅ Connexió amb la IA a punt.";
+                    // CANVI: Eliminat l'icona
+                    if (warmupStatus) warmupStatus.textContent = "Connexió amb la IA a punt.";
                 } else {
                     throw new Error(`L'escalfament ha fallat: ${response.statusText}`);
                 }
             } catch (error) {
                 logError("Error durant l'escalfament de la IA:", error);
-                if (warmupStatus) warmupStatus.textContent = "⚠️ No s'ha pogut contactar amb la IA. Pot trigar més del normal.";
+                // CANVI: Eliminat l'icona
+                if (warmupStatus) warmupStatus.textContent = "No s'ha pogut contactar amb la IA. Pot trigar més del normal.";
                 hasAIBeenWarmedUp = false;
             }
         }
@@ -675,8 +677,8 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     startBtn.classList.add('btn-composing');
                     setButtonsLoading(true);
 
-                    // CANVI: Llista de missatges nova i aleatoritzada
-                    let messages = ["El bard busca inspiració...", "Encordant el llaüt...", "Afinant els instruments...", "Aclarant la veu..."];
+                    // CANVI: Llista de missatges actualitzada i temps d'interval més llarg
+                    let messages = ["El bard busca inspiració...", "Encordant el llaüt...", "Afinant els instruments...", "Aclarant la veu...", "Repassant la partitura...", "Comprovant l'acústica..."];
                     messages.sort(() => 0.5 - Math.random());
                     
                     let messageIndex = 0;
@@ -684,7 +686,7 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     messageInterval = setInterval(() => {
                         messageIndex = (messageIndex + 1) % messages.length;
                         startBtn.textContent = messages[messageIndex];
-                    }, 3500);
+                    }, 4500); // Temps augmentat a 4.5 segons
 
                     await ensureAudioContextStarted();
                     await screenWakeLockManager.request();
