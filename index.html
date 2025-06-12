@@ -182,7 +182,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_1745_COMPOSITION_AI_UPGRADE";
+        const SCRIPT_VERSION = "V20250612_1745_PROMPT_UPGRADE_FIX";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -436,7 +436,6 @@
             const MAX_RETRIES = 3;
             const RETRY_DELAY_MS = 3000;
 
-            // CANVI: El prompt ara és un "màster de composició" per a la IA
             const prompt = `Ets Harmonia, un Mestre Compositor expert. La teva missió és crear una peça musical evocadora en format JSON, seguint uns principis musicals sòlids.
 
 ### INSPIRACIÓ I CONTEXT
@@ -448,7 +447,7 @@ Has d'utilitzar **ÚNICA I EXCLUSIVAMENT** instruments d'aquesta llista: ${Objec
 
 ### ELS TEUS PRINCIPIS DE COMPOSICIÓ
 1.  **ESTRUCTURA I DESENVOLUPAMENT:** No creïs un simple bucle. Construeix una peça amb interès.
-    - **Durada:** El bucle principal (`loopDuration`) ha de ser llarg, com a mínim de **"8m"** (8 compassos) o **"16m"**.
+    - **Durada:** El bucle principal (\`loopDuration\`) ha de ser llarg, com a mínim de **"8m"** (8 compassos) o **"16m"**.
     - **Seccions:** Intenta crear una estructura amb seccions diferents (p. ex., una secció A més calmada i una secció B més intensa) per donar varietat.
 2.  **HARMONIA I MELODIA:** Crea una base musical coherent.
     - **Tonalitat:** Tria una tonalitat clara (p. ex., Do Major, La menor) i fes que les notes de les teves melodies i acords hi pertanyin.
@@ -459,7 +458,7 @@ Has d'utilitzar **ÚNICA I EXCLUSIVAMENT** instruments d'aquesta llista: ${Objec
         - **Ritme:** Utilitza els instruments de percussió per crear una base rítmica interessant.
 3.  **RITME I DINÀMICA:** Dóna vida a la música.
     - **Duracions:** Barreja notes llargues i curtes per crear ritmes expressius.
-    - **Dinàmiques (`velocity`):** Fes un ús significatiu de la `velocity` (entre 0.1 i 1.0) per simular canvis d'intensitat (piano, forte, crescendos).
+    - **Dinàmiques (\`velocity\`):** Fes un ús significatiu de la \`velocity\` (entre 0.1 i 1.0) per simular canvis d'intensitat (piano, forte, crescendos).
 4.  **ORQUESTRACIÓ I TEXTURA:**
     - Fes que els instruments entrin i surtin gradualment. No han de sonar tots alhora des del principi. Això crea interès i desenvolupament.
 
