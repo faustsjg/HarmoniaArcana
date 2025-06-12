@@ -126,9 +126,13 @@
                         <label for="session-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Escriu una inspiració (opcional)</label>
                         <input type="text" id="session-inspiration-input" class="input-styled" placeholder="Ex: Hans Zimmer, Fantasia èpica, Lo-fi per estudiar...">
                     </div>
-                    <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3">Inicia la Simfonia</button>
+                    
+                    <div class="mb-8">
+                        <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md">Inicia la Simfonia</button>
+                        <div id="warmup-status" class="text-center text-xs text-gray-500 pt-3 h-4"></div>
+                    </div>
+                    
                     <button id="change-token-btn" class="absolute bottom-4 right-4 text-xs text-gray-500 hover:text-gray-300">Canviar Token</button>
-                    <div id="warmup-status" class="text-center text-xs text-gray-500 pt-3 h-4 mt-4"></div>
                 </div>
             </section>
 
@@ -177,7 +181,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_1426_UX_FIX_MESSAGES";
+        const SCRIPT_VERSION = "V20250612_1432_LAYOUT_FIX";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -671,8 +675,9 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     startBtn.classList.add('btn-composing');
                     setButtonsLoading(true);
 
+                    // CANVI: Llista de missatges nova i aleatoritzada
                     let messages = ["El bard busca inspiració...", "Encordant el llaüt...", "Afinant els instruments...", "Aclarant la veu..."];
-                    messages.sort(() => 0.5 - Math.random()); // Aleatoritzar
+                    messages.sort(() => 0.5 - Math.random());
                     
                     let messageIndex = 0;
                     startBtn.textContent = messages[messageIndex];
@@ -689,7 +694,7 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     document.getElementById('current-inspiration-display').textContent = `Inspiració: ${rawInspiration}`;
                     
                     const initialRecipe = await getMusicRecipeFromAI(rawInspiration, "Una peça musical introductòria que marqui el to de l'aventura.", (status) => {
-                        clearInterval(messageInterval); // Aturem els missatges aleatoris per mostrar l'estat del reintent
+                        clearInterval(messageInterval);
                         startBtn.textContent = status;
                     });
                     
