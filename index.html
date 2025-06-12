@@ -128,7 +128,7 @@
                     </div>
                     <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3">Inicia la Simfonia</button>
                     <button id="change-token-btn" class="absolute bottom-4 right-4 text-xs text-gray-500 hover:text-gray-300">Canviar Token</button>
-                    <div id="warmup-status" class="text-center text-xs text-gray-500 pt-3 h-4"></div>
+                    <div id="warmup-status" class="text-center text-xs text-gray-500 pt-3 h-4 mt-4"></div>
                 </div>
             </section>
 
@@ -177,7 +177,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_0802_API_RETRY_WARMUP_FIX";
+        const SCRIPT_VERSION = "V20250612_1426_UX_FIX_MESSAGES";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -462,9 +462,9 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
             for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
                 try {
                     if (attempt > 1) {
-                        onStatusUpdate(`Reintentant... (intent ${attempt}/${MAX_RETRIES})`);
+                        onStatusUpdate(`Reintentant... (${attempt}/${MAX_RETRIES})`);
                     }
-                    updateStatusDisplay(`Consultant Mestre Llama... (intent ${attempt})`, "yellow");
+                    updateStatusDisplay(`Consultant la IA... (intent ${attempt})`, "yellow");
 
                     const response = await fetch(API_ENDPOINT, {
                         method: 'POST',
@@ -477,7 +477,7 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
 
                     if (!response.ok) {
                         if (response.status === 503 || response.status === 504) {
-                           throw new Error(`El servidor no està disponible (codi ${response.status}).`);
+                           throw new Error(`Servidor ocupat (codi ${response.status}).`);
                         }
                         const errorText = await response.text();
                         throw new Error(`Error de l'API (${response.status}): ${errorText}`);
@@ -488,12 +488,14 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     log("Resposta rebuda de la IA:", jsonText);
                     
                     const match = jsonText.match(/```json\n([\s\S]*?)\n```/);
-                    if (!match || !match[1]) throw new Error("La IA no ha retornat un bloc de codi JSON vàlid.");
+                    if (!match || !match[1]) throw new Error("La IA ha retornat un format de JSON invàlid.");
                     
+                    updateStatusDisplay("Inactiu");
                     return JSON.parse(match[1]);
 
                 } catch (error) {
                     logError(`Intent ${attempt} ha fallat:`, error);
+                    updateStatusDisplay(`Error de connexió`, "red");
                     if (attempt === MAX_RETRIES) {
                         throw new Error(`No s'ha pogut contactar amb la IA després de ${MAX_RETRIES} intents.`);
                     }
@@ -522,7 +524,7 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
         }
 
         function startListening() { if (!recognition) return; if (!isListening) { accumulatedTranscript = ""; document.getElementById('transcript-preview').textContent = "Escoltant..."; recognitionManuallyStopped = false; try { recognition.start(); } catch (e) { logError("No s'ha pogut iniciar l'escolta", e) } analysisInterval = setInterval(processAccumulatedTranscript, ANALYSIS_INTERVAL_MS); } }
-        function stopListening() { if (isListening) { recognitionManuallyStopped = true; clearInterval(analysisInterval); recognition.stop(); processAccumulatedTranscript(true); } }
+        function stopListening() { if (isListening) { recognitionManuallyStopped = true; clearInterval(analysisInterval); processAccumulatedTranscript(true); } }
 
         async function processAccumulatedTranscript(force = false) {
             const textToProcess = accumulatedTranscript.trim();
@@ -659,6 +661,8 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
 
             document.getElementById('start-session-btn').addEventListener('click', async (event) => {
                 const startBtn = event.target;
+                if(startBtn.disabled) return;
+                
                 const originalText = startBtn.textContent;
                 let messageInterval;
                 
@@ -667,13 +671,15 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     startBtn.classList.add('btn-composing');
                     setButtonsLoading(true);
 
-                    const messages = ["Connectant amb la IA...", "Iniciant motor Llama 3.1...", "El mestre Llama compon la teva simfonia..."];
+                    let messages = ["El bard busca inspiració...", "Encordant el llaüt...", "Afinant els instruments...", "Aclarant la veu..."];
+                    messages.sort(() => 0.5 - Math.random()); // Aleatoritzar
+                    
                     let messageIndex = 0;
                     startBtn.textContent = messages[messageIndex];
                     messageInterval = setInterval(() => {
                         messageIndex = (messageIndex + 1) % messages.length;
                         startBtn.textContent = messages[messageIndex];
-                    }, 4000);
+                    }, 3500);
 
                     await ensureAudioContextStarted();
                     await screenWakeLockManager.request();
@@ -683,6 +689,7 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     document.getElementById('current-inspiration-display').textContent = `Inspiració: ${rawInspiration}`;
                     
                     const initialRecipe = await getMusicRecipeFromAI(rawInspiration, "Una peça musical introductòria que marqui el to de l'aventura.", (status) => {
+                        clearInterval(messageInterval); // Aturem els missatges aleatoris per mostrar l'estat del reintent
                         startBtn.textContent = status;
                     });
                     
@@ -703,7 +710,7 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     }
                 } catch (error) {
                     logError("Error en iniciar la sessió:", error);
-                    showCustomMessage(error.message, 'error');
+                    showCustomMessage(error.message, 'error', 5000);
                     await screenWakeLockManager.release();
                 } finally {
                     clearInterval(messageInterval);
@@ -722,7 +729,7 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
             });
 
             document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
-            document.getElementById('skip-context-btn').addEventListener('click', processAccumulatedTranscript);
+            document.getElementById('skip-context-btn').addEventListener('click', () => processAccumulatedTranscript(true));
             document.getElementById('stop-music-btn').addEventListener('click', () => { musicManager.isPaused ? musicManager.resume() : musicManager.pause(); });
             
             document.getElementById('end-session-btn').addEventListener('click', async () => {
