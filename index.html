@@ -100,6 +100,7 @@
                     <div>
                         <h3 class="text-xl font-semibold text-purple-300 mb-4">Últim Pas: Activa Harmonia Arcana!</h3>
                         <p class="text-gray-400 mb-4">Ja ho tens gairebé tot! Enganxa la teva clau (comença per `hf_...`) al camp de sota i desa-la per començar la teva aventura musical.</p>
+                        <p class="text-xs text-gray-500 mt-3 italic mb-4">Nota: La primera connexió amb la IA pot trigar uns minuts a "despertar" el model. Això pot tornar a passar si no fas servir l'aplicació durant una estona.</p>
                         <input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí el teu Access Token...">
                         <button id="save-api-key-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg">Desar Token i Començar</button>
                     </div>
@@ -132,7 +133,7 @@
                         <div id="warmup-status" class="text-center text-xs text-gray-500 pt-3 h-4"></div>
                     </div>
                     
-                    <button id="change-token-btn" class="absolute bottom-4 right-4 text-xs text-gray-500 hover:text-gray-300 underline transition-colors duration-200 px-2 py-1">Canviar Token</button>
+                    <button id="change-token-btn" class="absolute bottom-4 right-4 text-xs text-gray-400 border border-gray-600 rounded-md px-3 py-1.5 hover:bg-gray-700 hover:text-white transition-all duration-200">Canviar Token</button>
                 </div>
             </section>
 
@@ -181,7 +182,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_1440_UX_TWEAKS";
+        const SCRIPT_VERSION = "V20250612_1722_COLD_START_NOTICE";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -221,14 +222,12 @@
 
                 if (response.ok) {
                     log("Escalfament de la IA completat amb èxit.");
-                    // CANVI: Eliminat l'icona
                     if (warmupStatus) warmupStatus.textContent = "Connexió amb la IA a punt.";
                 } else {
                     throw new Error(`L'escalfament ha fallat: ${response.statusText}`);
                 }
             } catch (error) {
                 logError("Error durant l'escalfament de la IA:", error);
-                // CANVI: Eliminat l'icona
                 if (warmupStatus) warmupStatus.textContent = "No s'ha pogut contactar amb la IA. Pot trigar més del normal.";
                 hasAIBeenWarmedUp = false;
             }
@@ -677,7 +676,6 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     startBtn.classList.add('btn-composing');
                     setButtonsLoading(true);
 
-                    // CANVI: Llista de missatges actualitzada i temps d'interval més llarg
                     let messages = ["El bard busca inspiració...", "Encordant el llaüt...", "Afinant els instruments...", "Aclarant la veu...", "Repassant la partitura...", "Comprovant l'acústica..."];
                     messages.sort(() => 0.5 - Math.random());
                     
@@ -686,7 +684,7 @@ Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que r
                     messageInterval = setInterval(() => {
                         messageIndex = (messageIndex + 1) % messages.length;
                         startBtn.textContent = messages[messageIndex];
-                    }, 4500); // Temps augmentat a 4.5 segons
+                    }, 4500);
 
                     await ensureAudioContextStarted();
                     await screenWakeLockManager.request();
