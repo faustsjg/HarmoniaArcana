@@ -52,7 +52,7 @@
     <div id="api-key-setup-screen" class="w-full max-w-xl hidden">
         <div class="bg-gray-800 p-8 rounded-xl shadow-xl">
             <div id="onboarding-container">
-                 <div data-slide="1" class="onboarding-slide flex-col justify-between text-center">
+                <div data-slide="1" class="onboarding-slide flex-col justify-between text-center">
                     <div>
                         <h2 class="text-2xl font-bold text-purple-300 mb-2">Benvingut a Harmonia Arcana</h2>
                         <p class="text-gray-400">El teu company musical per a partides de rol. Aquesta eina crea una banda sonora única en temps real per a les teves històries.</p>
@@ -128,7 +128,7 @@
                     </div>
                     <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md mb-3">Inicia la Simfonia</button>
                     <button id="change-token-btn" class="absolute bottom-4 right-4 text-xs text-gray-500 hover:text-gray-300">Canviar Token</button>
-                    <div id="warmup-status" class="text-center text-xs text-gray-500 pt-3"></div>
+                    <div id="warmup-status" class="text-center text-xs text-gray-500 pt-3 h-4"></div>
                 </div>
             </section>
 
@@ -177,7 +177,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250612_0450_API_RETRY_WARMUP";
+        const SCRIPT_VERSION = "V20250612_0802_API_RETRY_WARMUP_FIX";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -200,32 +200,31 @@
             }
         }
         
-        // CANVI: Nova funció per escalfar la IA en segon pla
         async function warmUpAI() {
             if (hasAIBeenWarmedUp || !apiKey) return;
             hasAIBeenWarmedUp = true;
             
             const warmupStatus = document.getElementById('warmup-status');
-            warmupStatus.textContent = "Inicialitzant connexió amb la IA en segon pla...";
+            if (warmupStatus) warmupStatus.textContent = "Inicialitzant connexió amb la IA en segon pla...";
 
             try {
                 const API_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct";
                 const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ inputs: "Hola", parameters: { max_new_tokens: 2 } })
+                    body: JSON.stringify({ inputs: "Digues 'hola'", parameters: { max_new_tokens: 2 } })
                 });
 
                 if (response.ok) {
                     log("Escalfament de la IA completat amb èxit.");
-                    warmupStatus.textContent = "✅ Connexió amb la IA a punt.";
+                    if (warmupStatus) warmupStatus.textContent = "✅ Connexió amb la IA a punt.";
                 } else {
                     throw new Error(`L'escalfament ha fallat: ${response.statusText}`);
                 }
             } catch (error) {
                 logError("Error durant l'escalfament de la IA:", error);
-                warmupStatus.textContent = "⚠️ No s'ha pogut contactar amb la IA. Pot trigar més del normal.";
-                hasAIBeenWarmedUp = false; // Permet un altre intent si aquest falla
+                if (warmupStatus) warmupStatus.textContent = "⚠️ No s'ha pogut contactar amb la IA. Pot trigar més del normal.";
+                hasAIBeenWarmedUp = false;
             }
         }
 
@@ -265,10 +264,12 @@
             const apiKeyScreen = document.getElementById('api-key-setup-screen');
             const mainApp = document.getElementById('main-app-content');
             if (apiKey) {
-                apiKeyScreen.classList.add('hidden'); mainApp.classList.remove('hidden');
-                warmUpAI(); // CANVI: Iniciem l'escalfament aquí
+                apiKeyScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                warmUpAI();
             } else {
-                apiKeyScreen.classList.remove('hidden'); mainApp.classList.add('hidden');
+                apiKeyScreen.classList.remove('hidden');
+                mainApp.classList.add('hidden');
             }
         }
 
@@ -276,9 +277,11 @@
             const initialScreen = document.getElementById('initial-setup-screen');
             const activeScreen = document.getElementById('active-session-content');
             if (screenId === 'initial-setup-screen') {
-                initialScreen.classList.remove('hidden'); activeScreen.classList.add('hidden');
+                initialScreen.classList.remove('hidden');
+                activeScreen.classList.add('hidden');
             } else {
-                initialScreen.classList.add('hidden'); activeScreen.classList.remove('hidden');
+                initialScreen.classList.add('hidden');
+                activeScreen.classList.remove('hidden');
             }
         }
 
@@ -423,14 +426,39 @@
             } catch (error) { logError("Error catastròfic durant la validació de la recepta:", error); return null; }
         }
         
-        // CANVI: Funció refactoritzada amb lògica de reintents
         async function getMusicRecipeFromAI(inspiration, context, onStatusUpdate) {
             const API_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct";
             const MAX_RETRIES = 3;
-            const RETRY_DELAY_MS = 2000;
+            const RETRY_DELAY_MS = 3000;
 
-            const prompt = `Ets Harmonia...`; // El prompt és el mateix, es pot ometre per brevetat
-            
+            const prompt = `Ets Harmonia, un Mestre Compositor expert. La teva tasca és analitzar una inspiració i un context per generar una peça musical en format JSON.
+
+INSPIRACIÓ PRINCIPAL: "${inspiration}"
+ESCENA ACTUAL: "${context}"
+
+REGLA D'OR: Utilitza ÚNICA I EXCLUSIVAMENT els noms d'instrument de la següent llista. No inventis noms.
+LLISTA ESTRICTA D'INSTRUMENTS: "${Object.keys(musicManager.instrumentUrls).join(', ')}".
+
+REQUISITS CRÍTICS DEL FORMAT:
+La teva resposta final ha de contenir NOMÉS el codi JSON. Embolica l'objecte JSON complet dins d'un bloc de codi marcat amb \`\`\`json.
+Exemple de format de resposta:
+\`\`\`json
+{
+  "name": "Nom de la Peça",
+  "bpm": 120,
+  "parts": [
+    {
+      "instrument": "piano",
+      "sequence": [
+        {"time": "0:0:0", "note": "C4", "duration": "4n", "velocity": 0.9}
+      ],
+      "loopDuration": "1m"
+    }
+  ]
+}
+\`\`\`
+Genera una composició variada, amb desenvolupament (mínim 8 compassos) i que reflecteixi l'emoció de l'escena.`;
+
             for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
                 try {
                     if (attempt > 1) {
@@ -442,17 +470,15 @@
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            inputs: `Ets Harmonia, un Mestre Compositor expert...`, // Prompt complet aquí
+                            inputs: prompt,
                             parameters: { max_new_tokens: 2048, temperature: 0.8, return_full_text: false }
                         })
                     });
 
                     if (!response.ok) {
-                        // Si l'error és 503 (servei no disponible) o similar, reintentem
                         if (response.status === 503 || response.status === 504) {
-                           throw new Error(`El servidor no està disponible (codi ${response.status}). Reintentant...`);
+                           throw new Error(`El servidor no està disponible (codi ${response.status}).`);
                         }
-                        // Per a altres errors (4xx), no reintentem i mostrem l'error
                         const errorText = await response.text();
                         throw new Error(`Error de l'API (${response.status}): ${errorText}`);
                     }
@@ -464,19 +490,17 @@
                     const match = jsonText.match(/```json\n([\s\S]*?)\n```/);
                     if (!match || !match[1]) throw new Error("La IA no ha retornat un bloc de codi JSON vàlid.");
                     
-                    return JSON.parse(match[1]); // Èxit, retornem la recepta
+                    return JSON.parse(match[1]);
 
                 } catch (error) {
                     logError(`Intent ${attempt} ha fallat:`, error);
                     if (attempt === MAX_RETRIES) {
-                        // Si tots els intents han fallat, llancem l'error final
-                        throw new Error(`No s'ha pogut contactar amb la IA després de ${MAX_RETRIES} intents. Error: ${error.message}`);
+                        throw new Error(`No s'ha pogut contactar amb la IA després de ${MAX_RETRIES} intents.`);
                     }
-                    await new Promise(res => setTimeout(res, RETRY_DELAY_MS)); // Esperem abans de reintentar
+                    await new Promise(res => setTimeout(res, RETRY_DELAY_MS));
                 }
             }
         }
-
 
         async function setupSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -485,10 +509,56 @@
             recognition.lang = 'ca-ES';
             recognition.continuous = true;
             recognition.interimResults = true;
-            recognition.onstart = () => { isListening = true; updateStatusDisplay("Escoltant...", "green"); };
-            recognition.onend = () => { isListening = false; updateStatusDisplay("Inactiu", "gray"); };
-            recognition.onerror = (event) => { logError("Error de reconeixement:", event.error); };
-            recognition.onresult = (event) => { /* ... */ };
+            const toggleBtn = document.getElementById('toggle-listening-btn');
+            const transcriptPreview = document.getElementById('transcript-preview');
+            recognition.onstart = () => { isListening = true; recognitionManuallyStopped = false; updateStatusDisplay("Escoltant...", "green"); if (toggleBtn) { toggleBtn.textContent = 'Aturar Escolta'; toggleBtn.classList.add('bg-orange-500', 'hover:bg-orange-600'); } };
+            recognition.onend = () => { if (!recognitionManuallyStopped) { log("El reconeixement de veu ha finalitzat, reiniciant..."); try { recognition.start(); } catch (e) { logError("Error reiniciant el reconeixement", e) } } else { isListening = false; updateStatusDisplay("Inactiu", "gray"); if (toggleBtn) { toggleBtn.textContent = 'Escoltar'; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); } if (transcriptPreview) { transcriptPreview.textContent = "La transcripció en directe apareixerà aquí..."; } log("Reconeixement aturat manualment."); } };
+            recognition.onerror = (event) => {
+                logError("Error de reconeixement:", event.error); showCustomMessage(`Error de micro: ${event.error}`, 'error');
+                const fatalErrors = ['not-allowed', 'service-not-allowed'];
+                if (fatalErrors.includes(event.error)) { isListening = false; recognitionManuallyStopped = true; updateStatusDisplay("Error de micro", "red"); if (toggleBtn) { toggleBtn.textContent = 'Escoltar'; toggleBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); } }
+            };
+            recognition.onresult = (event) => { let finalTranscript = ''; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) { finalTranscript += event.results[i][0].transcript; } else { transcriptPreview.textContent = accumulatedTranscript + event.results[i][0].transcript; } } if (finalTranscript) { accumulatedTranscript += finalTranscript.trim() + '. '; transcriptPreview.textContent = accumulatedTranscript; } };
+        }
+
+        function startListening() { if (!recognition) return; if (!isListening) { accumulatedTranscript = ""; document.getElementById('transcript-preview').textContent = "Escoltant..."; recognitionManuallyStopped = false; try { recognition.start(); } catch (e) { logError("No s'ha pogut iniciar l'escolta", e) } analysisInterval = setInterval(processAccumulatedTranscript, ANALYSIS_INTERVAL_MS); } }
+        function stopListening() { if (isListening) { recognitionManuallyStopped = true; clearInterval(analysisInterval); recognition.stop(); processAccumulatedTranscript(true); } }
+
+        async function processAccumulatedTranscript(force = false) {
+            const textToProcess = accumulatedTranscript.trim();
+            if (!force && textToProcess.length < 20) return;
+            if (textToProcess.length === 0) return;
+            
+            accumulatedTranscript = "";
+            log(`Processant text per a nova composició: "${textToProcess}"`);
+            showCustomMessage("Canvi d'escena detectat! Generant nova música...", "info");
+            
+            const skipBtn = document.getElementById('skip-context-btn');
+            const originalText = skipBtn.dataset.originalText || 'Forçar Anàlisi';
+            let recipe;
+            try {
+                skipBtn.disabled = true;
+                skipBtn.classList.add('btn-composing');
+                recipe = await getMusicRecipeFromAI(activeGameInspiration, textToProcess, (status) => {
+                    skipBtn.textContent = status;
+                });
+            } catch (error) {
+                logError("Error forçant anàlisi:", error);
+                showCustomMessage(error.message, 'error');
+            } finally {
+                skipBtn.classList.remove('btn-composing');
+                skipBtn.disabled = false;
+                skipBtn.textContent = originalText;
+            }
+
+            if (recipe) {
+                const validRecipe = validateAndCleanRecipe(recipe);
+                if (validRecipe) {
+                    await musicManager.play(validRecipe);
+                } else {
+                    showCustomMessage("La IA ha generat una recepta musical invàlida.", "error");
+                }
+            }
         }
 
         async function loadInstrumentData() {
@@ -498,9 +568,11 @@
                 const data = await response.json();
                 musicManager.instrumentUrls = data.INSTRUMENTS;
                 TONEJS_DEFAULT_INSTRUMENTS = data.TONEJS_DEFAULT_INSTRUMENTS;
+                log("Dades dels instruments carregades correctament.");
                 return true;
             } catch (error) {
                 logError("No s'ha pogut carregar el fitxer d'instruments:", error);
+                showCustomMessage("Error crític: No s'ha pogut carregar la llibreria d'instruments.", "error", 0);
                 return false;
             }
         }
@@ -508,8 +580,83 @@
         document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('version-display').textContent = `Versió: ${SCRIPT_VERSION}`;
             
-            // ... (Codi dels listeners i inicialització que no canvia)
+            let currentSlide = 1;
+            const totalSlides = 5;
+            const onboardingContainer = document.getElementById('onboarding-container');
+            const dotsContainer = document.getElementById('onboarding-dots');
+
+            function updateProgressDots() {
+                dotsContainer.innerHTML = '';
+                for (let i = 1; i <= totalSlides; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'progress-dot';
+                    if (i === currentSlide) {
+                        dot.classList.add('active');
+                    }
+                    dotsContainer.appendChild(dot);
+                }
+            }
+
+            function showSlide(slideNumber) {
+                currentSlide = slideNumber;
+                document.querySelectorAll('.onboarding-slide').forEach(slide => {
+                    slide.classList.add('hidden');
+                    slide.classList.remove('flex');
+                });
+                const nextSlide = document.querySelector(`.onboarding-slide[data-slide="${slideNumber}"]`);
+                if (nextSlide) {
+                    nextSlide.classList.remove('hidden');
+                    nextSlide.classList.add('flex');
+                }
+                updateProgressDots();
+            }
             
+            showSlide(1);
+
+            onboardingContainer.addEventListener('click', (event) => {
+                if (event.target.classList.contains('onboarding-next')) {
+                    if (currentSlide < totalSlides) showSlide(currentSlide + 1);
+                }
+                if (event.target.classList.contains('onboarding-prev')) {
+                    if (currentSlide > 1) showSlide(currentSlide - 1);
+                }
+            });
+
+            const instrumentsLoaded = await loadInstrumentData();
+            if (!instrumentsLoaded) {
+                document.getElementById('start-session-btn').disabled = true;
+                return;
+            }
+
+            showUI();
+            await setupSpeechRecognition();
+            
+            document.addEventListener('visibilitychange', () => screenWakeLockManager.handleVisibilityChange());
+            
+            document.getElementById('save-api-key-btn').addEventListener('click', () => {
+                const key = document.getElementById('api-key-input').value;
+                if (key && key.trim() !== '' && key.startsWith('hf_')) { 
+                    localStorage.setItem(API_KEY_STORAGE_KEY, key); 
+                    apiKey = key; 
+                    showCustomMessage("Token desat correctament!", "success"); 
+                    showUI(); 
+                } else { 
+                    showCustomMessage("Si us plau, introdueix un token de Hugging Face vàlid.", "error"); 
+                }
+            });
+
+            document.getElementById('change-token-btn').addEventListener('click', () => {
+                if(isListening) stopListening();
+                if(Tone.Transport.state === 'started') musicManager.stop();
+                localStorage.removeItem(API_KEY_STORAGE_KEY);
+                apiKey = null;
+                hasAIBeenWarmedUp = false;
+                document.getElementById('warmup-status').textContent = '';
+                showUI();
+                showScreen('initial-setup-screen'); 
+                showSlide(1); 
+            });
+
             document.getElementById('start-session-btn').addEventListener('click', async (event) => {
                 const startBtn = event.target;
                 const originalText = startBtn.textContent;
@@ -520,14 +667,13 @@
                     startBtn.classList.add('btn-composing');
                     setButtonsLoading(true);
 
-                    // CANVI: Sistema de missatges dinàmics
-                    const messages = ["Connectant amb la IA...", "Iniciant motor Llama 3.1...", "El mestre Llama compon la simfonia..."];
+                    const messages = ["Connectant amb la IA...", "Iniciant motor Llama 3.1...", "El mestre Llama compon la teva simfonia..."];
                     let messageIndex = 0;
                     startBtn.textContent = messages[messageIndex];
                     messageInterval = setInterval(() => {
                         messageIndex = (messageIndex + 1) % messages.length;
                         startBtn.textContent = messages[messageIndex];
-                    }, 4000); // Canvia el missatge cada 4 segons
+                    }, 4000);
 
                     await ensureAudioContextStarted();
                     await screenWakeLockManager.request();
@@ -536,11 +682,11 @@
                     activeGameInspiration = rawInspiration; 
                     document.getElementById('current-inspiration-display').textContent = `Inspiració: ${rawInspiration}`;
                     
-                    const initialRecipe = await getMusicRecipeFromAI(rawInspiration, "Una peça musical introductòria...", (status) => {
-                        startBtn.textContent = status; // Actualitza el botó amb missatges de reintent
+                    const initialRecipe = await getMusicRecipeFromAI(rawInspiration, "Una peça musical introductòria que marqui el to de l'aventura.", (status) => {
+                        startBtn.textContent = status;
                     });
                     
-                    clearInterval(messageInterval); // Aturem els missatges dinàmics
+                    clearInterval(messageInterval);
                     startBtn.textContent = "Carregant orquestra...";
 
                     if (initialRecipe) {
@@ -552,7 +698,9 @@
                            showCustomMessage("No s'ha pogut generar la música inicial. La IA ha retornat un format invàlid.", "error");
                            await screenWakeLockManager.release();
                         }
-                    } 
+                    } else {
+                         throw new Error("No s'ha rebut cap recepta musical de la IA.");
+                    }
                 } catch (error) {
                     logError("Error en iniciar la sessió:", error);
                     showCustomMessage(error.message, 'error');
@@ -566,7 +714,23 @@
                 }
             });
 
-             // ... (Resta de listeners)
+            document.getElementById('soundboard').addEventListener('click', async (event) => {
+                const target = event.target.closest('button.btn-sound');
+                if (target) {
+                    await musicManager.playSoundEffect(target);
+                }
+            });
+
+            document.getElementById('toggle-listening-btn').addEventListener('click', () => { isListening ? stopListening() : startListening(); });
+            document.getElementById('skip-context-btn').addEventListener('click', processAccumulatedTranscript);
+            document.getElementById('stop-music-btn').addEventListener('click', () => { musicManager.isPaused ? musicManager.resume() : musicManager.pause(); });
+            
+            document.getElementById('end-session-btn').addEventListener('click', async () => {
+                if (isListening) stopListening();
+                musicManager.disposeAll();
+                await screenWakeLockManager.release();
+                showScreen('initial-setup-screen');
+            });
         });
     </script>
 </body>
