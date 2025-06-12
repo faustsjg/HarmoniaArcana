@@ -181,7 +181,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250613_2100_FILL_LOOP_FIX";
+        const SCRIPT_VERSION = "V20250613_2222_STABLE_PROMPT_REVERT";
         let recognition, isListening = false, accumulatedTranscript = "", analysisInterval, recognitionManuallyStopped = false;
         const ANALYSIS_INTERVAL_MS = 20000;
         let activeGameInspiration = "";
@@ -435,6 +435,7 @@
             const MAX_RETRIES = 3;
             const RETRY_DELAY_MS = 3000;
 
+            // CANVI: Afegida regla 5 per omplir el bucle
             const prompt = `TASK: Create a musical piece in JSON format based on an inspiration and a scene.
 
 ### INSTRUCTIONS AND RULES
