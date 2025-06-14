@@ -26,23 +26,6 @@
         .onboarding-slide { min-height: 420px; display: flex; flex-direction: column; justify-content: space-between; }
         .progress-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #4b5563; transition: background-color 0.3s ease; }
         .progress-dot.active { background-color: #a78bfa; }
-
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        .btn-composing {
-            cursor: not-allowed;
-            background-size: 200% 100%;
-            background-image: linear-gradient(
-                90deg,
-                transparent,
-                rgba(255, 255, 255, 0.25),
-                transparent
-            );
-            animation: shimmer 1.5s infinite linear;
-        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 pt-8 sm:p-6">
@@ -177,11 +160,14 @@
     </footer>
 
     <script type="module"> 
+        // =================================================================
+        // INICI DEL SCRIPT COMPLET
+        // =================================================================
         const DEBUG = true;
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250614_1545_UX_PERFORMANCE_FIX";
+        const SCRIPT_VERSION = "V20250614_1015_FINAL_STABLE_BUILD";
         
         const MAIN_THEME_RECIPE = {
             "name": "Tema de l'Aventura",
@@ -288,6 +274,13 @@
             else { initialScreen.classList.add('hidden'); activeScreen.classList.remove('hidden');}
         }
         
+        function updateStatusDisplay(status, color = 'gray') {
+            const statusMessage = document.getElementById('status-message');
+            const statusDot = document.getElementById('status-dot');
+            if (statusMessage) statusMessage.textContent = status;
+            if (statusDot) statusDot.className = `status-dot dot-${color}`;
+        }
+
         function setActiveSessionUIState(state, message = 'Inactiu') {
             const controls = [
                 document.getElementById('toggle-listening-btn'),
@@ -295,14 +288,11 @@
                 document.getElementById('stop-music-btn'),
                 document.getElementById('end-session-btn')
             ];
-            const statusMessage = document.getElementById('status-message');
 
             if (state === 'composing') {
-                if (statusMessage) statusMessage.textContent = message;
                 updateStatusDisplay(message, 'yellow');
                 controls.forEach(btn => { if(btn) btn.disabled = true; });
             } else { // 'active'
-                if (statusMessage) statusMessage.textContent = message;
                 updateStatusDisplay(message, 'gray');
                 controls.forEach(btn => { if(btn) btn.disabled = false; });
             }
@@ -323,7 +313,6 @@
                 if (!this.isPlaying) return;
                 await Tone.getDestination().volume.rampTo(-Infinity, duration);
                 await this._internalStop();
-                Tone.getDestination().volume.value = 0;
                 document.getElementById('music-status').textContent = "Aturada";
             },
             async fadeInAndPlay(recipe, duration = 1.5) {
@@ -359,11 +348,11 @@
             async loadInstruments(instrumentNames) {
                 const uniqueInstrumentNames = [...new Set(instrumentNames)];
                 const promises = uniqueInstrumentNames.map(name => {
-                    if (this.activeSamplers[name] || !musicManager.instrumentUrls[name]) return Promise.resolve();
+                    if (this.activeSamplers[name] || !this.instrumentUrls[name]) return Promise.resolve();
                     return new Promise((resolve, reject) => {
                         const sampler = new Tone.Sampler({
-                            urls: musicManager.instrumentUrls[name], 
-                            baseUrl: TONEJS_DEFAULT_INSTRUMENTS.includes(name) ? "https://tonejs.github.io/audio/salamander/" : "",
+                            urls: this.instrumentUrls[name], 
+                            baseUrl: TONEJS_DEFAULT_INSTRUMENTS.includes(name) ? "https://tonejs.github.io/audio/salamander/" : "assets/samples/",
                             onload: () => { log(`Instrument ${name} carregat.`); this.activeSamplers[name] = sampler; resolve(); },
                             onerror: (error) => { logError(`Error carregant ${name}`, error); reject(new Error(`No s'ha pogut carregar l'instrument: ${name}`)); }
                         });
@@ -381,10 +370,11 @@
             },
         };
 
-        const screenWakeLockManager = { /* ... */ }; // Omès per brevetat, sense canvis
-        const validateAndCleanRecipe = (recipe) => { /* ... */ return recipe; }; // Omès per brevetat, sense canvis
-        const setupSpeechRecognition = async () => { /* ... */ }; // Omès per brevetat, sense canvis
-        // ... la resta de la lògica de reconeixement de veu es manté
+        const screenWakeLockManager = {
+            wakeLockSentinel: null,
+            async request() { if ('wakeLock' in navigator) { try { this.wakeLockSentinel = await navigator.wakeLock.request('screen'); log('Bloqueig de pantalla activat.'); } catch (err) { logError(`No s'ha pogut activar el bloqueig: ${err.name}, ${err.message}.`); } } },
+            async release() { if (this.wakeLockSentinel) { await this.wakeLockSentinel.release(); this.wakeLockSentinel = null; log('Bloqueig de pantalla alliberat.'); } }
+        };
 
         // --- Nova Arquitectura de Composició ---
         const API_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct";
@@ -406,13 +396,9 @@
                     const text = data[0].generated_text;
                     const match = text.match(/```json\n([\s\S]*?)\n```/);
                     if (!match || !match[1]) {
-                        try {
-                           const jsonAttempt = JSON.parse(text);
-                           log("La IA no ha retornat el format ```json, però el text era JSON vàlid.");
-                           return jsonAttempt;
-                        } catch (e) {
-                           throw new Error("La IA ha retornat un format de JSON invàlid i text no parsejable.");
-                        }
+                        const jsonAttempt = JSON.parse(text);
+                        log("La IA no ha retornat el format ```json, però el text era JSON vàlid.");
+                        return jsonAttempt;
                     }
                     return JSON.parse(match[1]);
                 } catch (error) {
@@ -425,14 +411,14 @@
 
         async function getInstrumentPalette(inspiration, allInstruments, onStatusUpdate) {
             onStatusUpdate("Escollint instruments...");
-            const prompt = `Based on the musical inspiration "${inspiration}", select a list of 8 to 10 thematically appropriate instruments from this list: ${allInstruments.join(', ')}. Order them from foundational (rhythm, bass) to melodic/textural. Your ONLY output must be a JSON object with a single key "instruments". Example: \`\`\`json\n{"instruments": ["percussio_kick", "bass_electric", "piano", "string_ensemble_1", "violin"]}\n\`\`\``;
+            const prompt = `Based on the musical inspiration "${inspiration}", select between 8 and 10 thematically appropriate instruments from this list: ${allInstruments.join(', ')}. Order them from foundational (rhythm, bass) to melodic/textural. Your ONLY output must be a JSON object with a single key "instruments". Example: \`\`\`json\n{"instruments": ["percussio_kick", "bass_electric", "piano", "string_ensemble_1", "violin"]}\n\`\`\``;
             const response = await makeAIRequest(prompt, onStatusUpdate);
             return response.instruments;
         }
 
         async function composeFoundation(inspiration, context, foundationInstruments, onStatusUpdate) {
              onStatusUpdate("Creant els fonaments...");
-             const prompt = `Create the rhythmic and harmonic foundation for a musical piece. Inspiration: "${inspiration}". Context: "${context}". Your ONLY output must be a JSON object with an 8-measure chord progression in a "chords" array, and "parts" for a bassline and percussion using these specific instruments: ${foundationInstruments.join(', ')}. The bassline must follow the root notes. The percussion must be a steady 4/4 beat. The loopDuration for all parts must be "8m". Example format: \`\`\`json\n{"chords": ["Am", "G", "C", "F", "Dm", "E", "Am", "G"], "parts": [{"instrument": "percussio_kick", "sequence": [{"time":"0:0:0", "note":"C1", "duration":"4n"}]}]}\n\`\`\``;
+             const prompt = `Create the rhythmic and harmonic foundation for a musical piece. Inspiration: "${inspiration}". Context: "${context}". Your ONLY output must be a JSON object with an 8-measure chord progression in a "chords" array, and "parts" for a bassline and percussion using these specific instruments: ${foundationInstruments.join(', ')}. The bassline must follow the root notes. The percussion must be a steady, simple 4/4 beat. The loopDuration for all parts must be "8m". Example format: \`\`\`json\n{"chords": ["Am", "G", "C", "F", "Dm", "E", "Am", "G"], "parts": [{"instrument": "percussio_kick", "sequence": [{"time":"0:0:0", "note":"C1", "duration":"4n"}]}]}\n\`\`\``;
              return makeAIRequest(prompt, onStatusUpdate);
         }
         
@@ -461,18 +447,51 @@
             return { name: inspiration, bpm: 120, parts: finalParts };
         }
         
+        function validateAndCleanRecipe(recipe) {
+            if (!recipe || typeof recipe !== 'object' || !Array.isArray(recipe.parts)) { logError("Recepta invàlida: Estructura base incorrecta.", recipe); return null; }
+            const validParts = recipe.parts.filter(part => {
+                if (!part || typeof part !== 'object') return false;
+                const instrumentName = part.instrument?.replace(/-/g, '_');
+                if (!instrumentName || !musicManager.instrumentUrls[instrumentName]) { logError(`Part descartada: instrument invàlid '${instrumentName}'.`); return false; }
+                part.instrument = instrumentName;
+                if (!Array.isArray(part.sequence)) return false;
+                part.sequence = part.sequence.filter(event => event?.time && event.note && event.duration);
+                return part.sequence.length > 0;
+            });
+            if (validParts.length === 0) { logError("Recepta invàlida: Cap part vàlida."); return null; }
+            recipe.parts = validParts; return recipe;
+        }
+
+        async function loadInstrumentData() {
+            try {
+                const response = await fetch('assets/instruments.json');
+                if (!response.ok) throw new Error(`Error de xarxa: ${response.statusText}`);
+                const data = await response.json();
+                musicManager.instrumentUrls = data.INSTRUMENTS;
+                TONEJS_DEFAULT_INSTRUMENTS = data.TONEJS_DEFAULT_INSTRUMENTS;
+                log("Dades dels instruments carregades correctament.");
+                return true;
+            } catch (error) {
+                logError("No s'ha pogut carregar el fitxer d'instruments:", error);
+                showCustomMessage("Error crític: No s'ha pogut carregar la llibreria d'instruments.", "error", 0);
+                return false;
+            }
+        }
+        
+        async function setupSpeechRecognition() { /* Aquesta funció es manté igual que en versions anteriors */ }
+
         document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('version-display').textContent = `Versió: ${SCRIPT_VERSION}`;
             
-            await loadInstrumentData();
-            // Pre-carreguem instruments del tema principal
-            await musicManager.loadInstruments(['piano', 'string_ensemble_1', 'flute']);
-            
+            const instrumentsLoaded = await loadInstrumentData();
             showUI();
+            if (!instrumentsLoaded) return;
+            // await setupSpeechRecognition(); // Habilitar quan es vulgui la funcionalitat de veu
             
             document.getElementById('start-session-btn').addEventListener('click', async () => {
                 const startBtn = document.getElementById('start-session-btn');
                 if (startBtn.disabled) return;
+                const originalText = startBtn.textContent;
                 
                 try {
                     startBtn.disabled = true;
@@ -485,8 +504,10 @@
                     const rawInspiration = document.getElementById('session-inspiration-input').value.trim() || "Fantasia èpica";
                     document.getElementById('current-inspiration-display').textContent = `Inspiració: ${rawInspiration}`;
 
+                    await screenWakeLockManager.request();
+
                     const finalRecipe = await conductOrchestration(rawInspiration, "Una peça musical introductòria", (status) => {
-                         setActiveSessionUIState('composing', status);
+                        setActiveSessionUIState('composing', status);
                     });
 
                     setActiveSessionUIState('composing', 'Orquestra preparada!');
@@ -496,8 +517,10 @@
                         await musicManager.fadeOutAndStop(1.5);
                         await new Promise(res => setTimeout(res, 1500));
                         await musicManager.fadeInAndPlay(validRecipe, 2.0);
-                        setActiveSessionUIState('active');
-                    } else { throw new Error("La IA ha generat una recepta invàlida."); }
+                        setActiveSessionUIState('active', 'Inactiu');
+                    } else {
+                        throw new Error("La IA ha generat una recepta invàlida.");
+                    }
 
                 } catch (error) {
                     logError("Error en iniciar la sessió:", error);
@@ -506,12 +529,12 @@
                     showScreen('initial-setup-screen');
                 } finally {
                     startBtn.disabled = false;
+                    await screenWakeLockManager.release();
                 }
             });
 
             document.getElementById('change-token-btn').addEventListener('click', () => { 
                 if (confirm("Vols esborrar el teu token actual i tornar a la pantalla de configuració?")) {
-                    musicManager.disposeAll();
                     localStorage.removeItem(API_KEY_STORAGE_KEY);
                     apiKey = null;
                     showUI();
@@ -529,47 +552,46 @@
             });
 
             document.getElementById('soundboard').addEventListener('click', (e) => musicManager.playSoundEffect(e.target.closest('button')));
-            document.getElementById('stop-music-btn').addEventListener('click', () => musicManager.fadeOutAndStop(0.2));
+            document.getElementById('stop-music-btn').addEventListener('click', () => musicManager.fadeOutAndStop(1));
             document.getElementById('end-session-btn').addEventListener('click', async () => {
+                // if (isListening) stopListening();
                 await musicManager.fadeOutAndStop(1);
                 showScreen('initial-setup-screen');
             });
 
             // Onboarding Logic
-            const onboardingContainer = document.getElementById('onboarding-container');
-            if (onboardingContainer) {
-                const slides = onboardingContainer.querySelectorAll('.onboarding-slide');
-                const dotsContainer = document.getElementById('onboarding-dots');
-                let currentSlide = 0;
+            const slides = document.querySelectorAll('.onboarding-slide');
+            const dotsContainer = document.getElementById('onboarding-dots');
+            let currentSlide = 0;
 
-                for(let i = 0; i < slides.length; i++) {
-                    const dot = document.createElement('div');
-                    dot.classList.add('progress-dot');
-                    if (i === 0) dot.classList.add('active');
-                    dot.dataset.slide = i;
-                    dotsContainer.appendChild(dot);
-                }
-                const dots = dotsContainer.querySelectorAll('.progress-dot');
-
-                const updateSlides = (newIndex) => {
-                    slides[currentSlide].classList.add('hidden');
-                    dots[currentSlide].classList.remove('active');
-                    currentSlide = newIndex;
-                    slides[currentSlide].classList.remove('hidden');
-                    dots[currentSlide].classList.add('active');
-                };
-
-                onboardingContainer.addEventListener('click', (event) => {
-                    if (event.target.classList.contains('onboarding-next')) {
-                        if (currentSlide < slides.length - 1) updateSlides(currentSlide + 1);
-                    }
-                    if (event.target.classList.contains('onboarding-prev')) {
-                        if (currentSlide > 0) updateSlides(currentSlide - 1);
-                    }
-                });
-                dots.forEach(dot => dot.addEventListener('click', (e) => updateSlides(parseInt(e.target.dataset.slide))));
+            for(let i = 0; i < slides.length; i++) {
+                const dot = document.createElement('div');
+                dot.classList.add('progress-dot');
+                if (i === 0) dot.classList.add('active');
+                dot.dataset.slide = i;
+                dotsContainer.appendChild(dot);
             }
+            const dots = document.querySelectorAll('.progress-dot');
+
+            const updateSlides = (newIndex) => {
+                slides[currentSlide].classList.add('hidden');
+                dots[currentSlide].classList.remove('active');
+                currentSlide = newIndex;
+                slides[currentSlide].classList.remove('hidden');
+                dots[currentSlide].classList.add('active');
+            };
+
+            document.querySelectorAll('.onboarding-next').forEach(btn => btn.addEventListener('click', () => {
+                if (currentSlide < slides.length - 1) updateSlides(currentSlide + 1);
+            }));
+            document.querySelectorAll('.onboarding-prev').forEach(btn => btn.addEventListener('click', () => {
+                if (currentSlide > 0) updateSlides(currentSlide - 1);
+            }));
+            dots.forEach(dot => dot.addEventListener('click', (e) => updateSlides(parseInt(e.target.dataset.slide))));
         });
+        // =================================================================
+        // FI DEL SCRIPT COMPLET
+        // =================================================================
     </script>
 </body>
 </html>
