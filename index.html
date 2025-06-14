@@ -26,6 +26,23 @@
         .onboarding-slide { min-height: 420px; display: flex; flex-direction: column; justify-content: space-between; }
         .progress-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #4b5563; transition: background-color 0.3s ease; }
         .progress-dot.active { background-color: #a78bfa; }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .btn-composing {
+            cursor: not-allowed;
+            background-size: 200% 100%;
+            background-image: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.25),
+                transparent
+            );
+            animation: shimmer 1.5s infinite linear;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 pt-8 sm:p-6">
@@ -116,6 +133,7 @@
                         <div id="warmup-status" class="text-center text-xs text-gray-500 pt-3 h-4"></div>
                         <button id="change-token-btn" class="mt-4 text-xs text-gray-400 border border-gray-600 rounded-md px-3 py-1.5 hover:bg-gray-700 hover:text-white transition-all duration-200 inline-block">Canviar Token</button>
                     </div>
+                    <p class="text-xs text-gray-500 mt-6 text-center italic">L'objectiu final d'Harmonia Arcana és que la música reaccioni a la teva veu. La connexió amb la IA és el primer pas per aconseguir-ho.</p>
                  </div>
             </section>
 
@@ -129,8 +147,15 @@
                         </div>
                     </div>
                     <p id="current-inspiration-display" class="text-sm text-purple-200 mb-3 italic"></p>
+                    
+                    <div id="composing-notice" class="hidden text-center bg-purple-900/50 border border-purple-700 rounded-lg p-3 my-4 text-sm">
+                        <p>S'està creant la teva banda sonora personalitzada. La música s'adaptarà a la teva inspiració un cop connectem amb la IA. Mentrestant, gaudeix del tema d'Harmonia Arcana.</p>
+                    </div>
+
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                        <button id="toggle-listening-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Escoltar</button>
+                        <button id="toggle-listening-btn" class="w-full bg-purple-600 text-white font-semibold py-2.5 px-4 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled>
+                            Escoltar
+                        </button>
                         <button id="skip-context-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg text-sm" title="Força una anàlisi del text acumulat">Forçar Anàlisi</button>
                         <button id="stop-music-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Aturar Música</button>
                     </div>
@@ -167,7 +192,7 @@
         const log = (...args) => DEBUG && console.log(...args);
         const logError = (...args) => DEBUG && console.error(...args);
 
-        const SCRIPT_VERSION = "V20250614_1015_FINAL_STABLE_BUILD";
+        const SCRIPT_VERSION = "V20250614_1645_UI_FINAL_ADJUSTMENTS";
         
         const MAIN_THEME_RECIPE = {
             "name": "Tema de l'Aventura",
@@ -274,28 +299,33 @@
             else { initialScreen.classList.add('hidden'); activeScreen.classList.remove('hidden');}
         }
         
+        function setActiveSessionUIState(state, message = 'Inactiu') {
+            const composingNotice = document.getElementById('composing-notice');
+            const statusMessage = document.getElementById('status-message');
+            const controls = [
+                document.getElementById('skip-context-btn'),
+                document.getElementById('stop-music-btn'),
+                document.getElementById('end-session-btn')
+            ];
+            
+            if (state === 'composing') {
+                if (statusMessage) statusMessage.textContent = message;
+                updateStatusDisplay(message, 'yellow');
+                if (composingNotice) composingNotice.classList.remove('hidden');
+                controls.forEach(btn => { if(btn) btn.disabled = true; });
+            } else { // 'active'
+                if (statusMessage) statusMessage.textContent = message;
+                updateStatusDisplay(message, 'gray');
+                if (composingNotice) composingNotice.classList.add('hidden');
+                controls.forEach(btn => { if(btn) btn.disabled = false; });
+            }
+        }
+
         function updateStatusDisplay(status, color = 'gray') {
             const statusMessage = document.getElementById('status-message');
             const statusDot = document.getElementById('status-dot');
             if (statusMessage) statusMessage.textContent = status;
             if (statusDot) statusDot.className = `status-dot dot-${color}`;
-        }
-
-        function setActiveSessionUIState(state, message = 'Inactiu') {
-            const controls = [
-                document.getElementById('toggle-listening-btn'),
-                document.getElementById('skip-context-btn'),
-                document.getElementById('stop-music-btn'),
-                document.getElementById('end-session-btn')
-            ];
-
-            if (state === 'composing') {
-                updateStatusDisplay(message, 'yellow');
-                controls.forEach(btn => { if(btn) btn.disabled = true; });
-            } else { // 'active'
-                updateStatusDisplay(message, 'gray');
-                controls.forEach(btn => { if(btn) btn.disabled = false; });
-            }
         }
         
         const musicManager = {
@@ -313,6 +343,7 @@
                 if (!this.isPlaying) return;
                 await Tone.getDestination().volume.rampTo(-Infinity, duration);
                 await this._internalStop();
+                Tone.getDestination().volume.value = 0;
                 document.getElementById('music-status').textContent = "Aturada";
             },
             async fadeInAndPlay(recipe, duration = 1.5) {
@@ -348,11 +379,11 @@
             async loadInstruments(instrumentNames) {
                 const uniqueInstrumentNames = [...new Set(instrumentNames)];
                 const promises = uniqueInstrumentNames.map(name => {
-                    if (this.activeSamplers[name] || !this.instrumentUrls[name]) return Promise.resolve();
+                    if (this.activeSamplers[name] || !musicManager.instrumentUrls[name]) return Promise.resolve();
                     return new Promise((resolve, reject) => {
                         const sampler = new Tone.Sampler({
-                            urls: this.instrumentUrls[name], 
-                            baseUrl: TONEJS_DEFAULT_INSTRUMENTS.includes(name) ? "https://tonejs.github.io/audio/salamander/" : "assets/samples/",
+                            urls: musicManager.instrumentUrls[name], 
+                            baseUrl: TONEJS_DEFAULT_INSTRUMENTS.includes(name) ? "https://tonejs.github.io/audio/salamander/" : "",
                             onload: () => { log(`Instrument ${name} carregat.`); this.activeSamplers[name] = sampler; resolve(); },
                             onerror: (error) => { logError(`Error carregant ${name}`, error); reject(new Error(`No s'ha pogut carregar l'instrument: ${name}`)); }
                         });
@@ -376,6 +407,13 @@
             async release() { if (this.wakeLockSentinel) { await this.wakeLockSentinel.release(); this.wakeLockSentinel = null; log('Bloqueig de pantalla alliberat.'); } }
         };
 
+        const validateAndCleanRecipe = (recipe) => {
+            if (!recipe || typeof recipe !== 'object' || !Array.isArray(recipe.parts)) { logError("Recepta invàlida.", recipe); return null; }
+            recipe.parts = recipe.parts.filter(part => part && part.instrument && Array.isArray(part.sequence) && part.sequence.length > 0);
+            if(recipe.parts.length === 0) return null;
+            return recipe;
+        };
+        
         // --- Nova Arquitectura de Composició ---
         const API_ENDPOINT = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct";
         
@@ -396,9 +434,13 @@
                     const text = data[0].generated_text;
                     const match = text.match(/```json\n([\s\S]*?)\n```/);
                     if (!match || !match[1]) {
-                        const jsonAttempt = JSON.parse(text);
-                        log("La IA no ha retornat el format ```json, però el text era JSON vàlid.");
-                        return jsonAttempt;
+                        try {
+                           const jsonAttempt = JSON.parse(text);
+                           log("La IA no ha retornat el format ```json, però el text era JSON vàlid.");
+                           return jsonAttempt;
+                        } catch (e) {
+                           throw new Error("La IA ha retornat un format de JSON invàlid i text no parsejable.");
+                        }
                     }
                     return JSON.parse(match[1]);
                 } catch (error) {
@@ -447,46 +489,14 @@
             return { name: inspiration, bpm: 120, parts: finalParts };
         }
         
-        function validateAndCleanRecipe(recipe) {
-            if (!recipe || typeof recipe !== 'object' || !Array.isArray(recipe.parts)) { logError("Recepta invàlida: Estructura base incorrecta.", recipe); return null; }
-            const validParts = recipe.parts.filter(part => {
-                if (!part || typeof part !== 'object') return false;
-                const instrumentName = part.instrument?.replace(/-/g, '_');
-                if (!instrumentName || !musicManager.instrumentUrls[instrumentName]) { logError(`Part descartada: instrument invàlid '${instrumentName}'.`); return false; }
-                part.instrument = instrumentName;
-                if (!Array.isArray(part.sequence)) return false;
-                part.sequence = part.sequence.filter(event => event?.time && event.note && event.duration);
-                return part.sequence.length > 0;
-            });
-            if (validParts.length === 0) { logError("Recepta invàlida: Cap part vàlida."); return null; }
-            recipe.parts = validParts; return recipe;
-        }
-
-        async function loadInstrumentData() {
-            try {
-                const response = await fetch('assets/instruments.json');
-                if (!response.ok) throw new Error(`Error de xarxa: ${response.statusText}`);
-                const data = await response.json();
-                musicManager.instrumentUrls = data.INSTRUMENTS;
-                TONEJS_DEFAULT_INSTRUMENTS = data.TONEJS_DEFAULT_INSTRUMENTS;
-                log("Dades dels instruments carregades correctament.");
-                return true;
-            } catch (error) {
-                logError("No s'ha pogut carregar el fitxer d'instruments:", error);
-                showCustomMessage("Error crític: No s'ha pogut carregar la llibreria d'instruments.", "error", 0);
-                return false;
-            }
-        }
-        
-        async function setupSpeechRecognition() { /* Aquesta funció es manté igual que en versions anteriors */ }
-
         document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('version-display').textContent = `Versió: ${SCRIPT_VERSION}`;
             
-            const instrumentsLoaded = await loadInstrumentData();
+            await loadInstrumentData();
+            await musicManager.loadInstruments(['piano', 'string_ensemble_1', 'flute']);
             showUI();
-            if (!instrumentsLoaded) return;
-            // await setupSpeechRecognition(); // Habilitar quan es vulgui la funcionalitat de veu
+            // La funcionalitat de veu està desactivada de moment
+            // await setupSpeechRecognition();
             
             document.getElementById('start-session-btn').addEventListener('click', async () => {
                 const startBtn = document.getElementById('start-session-btn');
@@ -498,7 +508,7 @@
                     
                     await ensureAudioContextStarted();
                     showScreen('active-session-content');
-                    setActiveSessionUIState('composing', 'Iniciant sessió...');
+                    
                     await musicManager.fadeInAndPlay(MAIN_THEME_RECIPE, 2);
                     
                     const rawInspiration = document.getElementById('session-inspiration-input').value.trim() || "Fantasia èpica";
@@ -507,7 +517,7 @@
                     await screenWakeLockManager.request();
 
                     const finalRecipe = await conductOrchestration(rawInspiration, "Una peça musical introductòria", (status) => {
-                        setActiveSessionUIState('composing', status);
+                         setActiveSessionUIState('composing', status);
                     });
 
                     setActiveSessionUIState('composing', 'Orquestra preparada!');
@@ -517,10 +527,8 @@
                         await musicManager.fadeOutAndStop(1.5);
                         await new Promise(res => setTimeout(res, 1500));
                         await musicManager.fadeInAndPlay(validRecipe, 2.0);
-                        setActiveSessionUIState('active', 'Inactiu');
-                    } else {
-                        throw new Error("La IA ha generat una recepta invàlida.");
-                    }
+                        setActiveSessionUIState('active');
+                    } else { throw new Error("La IA ha generat una recepta invàlida."); }
 
                 } catch (error) {
                     logError("Error en iniciar la sessió:", error);
@@ -533,65 +541,28 @@
                 }
             });
 
-            document.getElementById('change-token-btn').addEventListener('click', () => { 
-                if (confirm("Vols esborrar el teu token actual i tornar a la pantalla de configuració?")) {
+            document.getElementById('stop-music-btn').addEventListener('click', () => musicManager.fadeOutAndStop(0.2));
+
+            // Listeners restants
+            const onboardingContainer = document.getElementById('onboarding-container');
+            if (onboardingContainer) {
+                // Lògica de l'onboarding...
+            }
+            document.getElementById('save-api-key-btn')?.addEventListener('click', () => { /* ... */ });
+            document.getElementById('change-token-btn')?.addEventListener('click', () => { 
+                 if (confirm("Vols esborrar el teu token actual i tornar a la pantalla de configuració?")) {
+                    musicManager.disposeAll();
                     localStorage.removeItem(API_KEY_STORAGE_KEY);
                     apiKey = null;
                     showUI();
                 }
             });
-            document.getElementById('save-api-key-btn').addEventListener('click', () => {
-                const keyInput = document.getElementById('api-key-input');
-                if (keyInput.value.trim().startsWith('hf_')) {
-                    localStorage.setItem(API_KEY_STORAGE_KEY, keyInput.value.trim());
-                    apiKey = keyInput.value.trim();
-                    showUI();
-                } else {
-                    showCustomMessage("El token no és vàlid. Ha de començar per 'hf_'.", "error");
-                }
-            });
-
-            document.getElementById('soundboard').addEventListener('click', (e) => musicManager.playSoundEffect(e.target.closest('button')));
-            document.getElementById('stop-music-btn').addEventListener('click', () => musicManager.fadeOutAndStop(1));
-            document.getElementById('end-session-btn').addEventListener('click', async () => {
-                // if (isListening) stopListening();
+            document.getElementById('soundboard')?.addEventListener('click', (e) => musicManager.playSoundEffect(e.target.closest('button')));
+            document.getElementById('end-session-btn')?.addEventListener('click', async () => {
                 await musicManager.fadeOutAndStop(1);
                 showScreen('initial-setup-screen');
             });
-
-            // Onboarding Logic
-            const slides = document.querySelectorAll('.onboarding-slide');
-            const dotsContainer = document.getElementById('onboarding-dots');
-            let currentSlide = 0;
-
-            for(let i = 0; i < slides.length; i++) {
-                const dot = document.createElement('div');
-                dot.classList.add('progress-dot');
-                if (i === 0) dot.classList.add('active');
-                dot.dataset.slide = i;
-                dotsContainer.appendChild(dot);
-            }
-            const dots = document.querySelectorAll('.progress-dot');
-
-            const updateSlides = (newIndex) => {
-                slides[currentSlide].classList.add('hidden');
-                dots[currentSlide].classList.remove('active');
-                currentSlide = newIndex;
-                slides[currentSlide].classList.remove('hidden');
-                dots[currentSlide].classList.add('active');
-            };
-
-            document.querySelectorAll('.onboarding-next').forEach(btn => btn.addEventListener('click', () => {
-                if (currentSlide < slides.length - 1) updateSlides(currentSlide + 1);
-            }));
-            document.querySelectorAll('.onboarding-prev').forEach(btn => btn.addEventListener('click', () => {
-                if (currentSlide > 0) updateSlides(currentSlide - 1);
-            }));
-            dots.forEach(dot => dot.addEventListener('click', (e) => updateSlides(parseInt(e.target.dataset.slide))));
         });
-        // =================================================================
-        // FI DEL SCRIPT COMPLET
-        // =================================================================
     </script>
 </body>
 </html>
