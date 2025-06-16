@@ -16,3 +16,27 @@ body {
     border-color: #4f46e5; 
     box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5); 
 }
+.link-styled {
+    color: #93c5fd;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+.link-styled:hover {
+    color: #60a5fa;
+}
+
+/* Nous estils per a l'onboarding */
+.onboarding-slide {
+    min-height: 180px; /* Assegura una alçada mínima consistent */
+}
+
+.progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #4b5563; /* Gris fosc per defecte */
+    transition: background-color 0.3s ease;
+}
+.progress-dot.active {
+    background-color: #a78bfa; /* Lila per al punt actiu */
+}
