@@ -5,7 +5,7 @@ export const UI = {
     versionDisplay: document.getElementById('version-display'),
     dmEffectsPanel: document.getElementById('dm-effects-panel'),
     
-    // Pantalles
+    // Pantalles (CORREGIT)
     apiKeyScreen: document.getElementById('api-key-screen'),
     setupScreen: document.getElementById('setup-screen'),
     sessionScreen: document.getElementById('session-screen'),
@@ -50,12 +50,17 @@ export const UI = {
     },
     
     showScreen(screenName) {
-        ['apiKeyScreen', 'setupScreen', 'sessionScreen'].forEach(id => {
+        // CORREGIT: Utilitzem els IDs correctes amb guions
+        ['api-key-screen', 'setup-screen', 'session-screen'].forEach(id => {
             const screen = document.getElementById(id);
             if(screen) screen.classList.add('hidden');
         });
         const screenToShow = document.getElementById(screenName);
-        if (screenToShow) screenToShow.classList.remove('hidden');
+        if (screenToShow) {
+            screenToShow.classList.remove('hidden');
+        } else {
+            console.error(`Error: No s'ha trobat la pantalla amb l'ID "${screenName}"`);
+        }
     },
 
     showDMPanel() { 
