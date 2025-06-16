@@ -25,18 +25,25 @@ body {
     color: #60a5fa;
 }
 
-/* Nous estils per a l'onboarding */
-.onboarding-slide {
-    min-height: 180px; /* Assegura una alçada mínima consistent */
-}
+/* Onboarding */
+.onboarding-slide { min-height: 180px; }
+.progress-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #4b5563; transition: background-color 0.3s ease; }
+.progress-dot.active { background-color: #a78bfa; }
 
-.progress-dot {
-    width: 8px;
-    height: 8px;
+/* Nou estil per al punt d'estat de la música */
+.status-dot-music {
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    background-color: #4b5563; /* Gris fosc per defecte */
+    margin-right: 8px;
     transition: background-color 0.3s ease;
 }
-.progress-dot.active {
-    background-color: #a78bfa; /* Lila per al punt actiu */
+
+/* Estils per als botons de soundboard */
+.btn-sound {
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.btn-sound:active {
+    transform: scale(0.95);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
 }
