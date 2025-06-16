@@ -14,11 +14,24 @@
     <div id="main-app-content" class="w-full max-w-xl">
         <header class="mb-6 text-left">
             <h1 class="text-3xl font-bold text-purple-400">Harmonia Arcana</h1>
-            <p id="status-display" class="text-gray-400 text-sm">El teu director musical personal.</p>
+            <p id="status-display" class="text-gray-400 text-sm">Benvingut. Si us plau, configura la teva API Key.</p>
         </header>
 
         <main id="main-content">
-            <section id="setup-screen">
+            <section id="api-key-screen" class="hidden">
+                <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
+                    <h2 class="text-xl font-semibold text-purple-300 mb-4">Configuració Inicial</h2>
+                    <p class="text-sm text-gray-400 mb-4">Per funcionar, Harmonia Arcana necessita una clau (Token) gratuïta de Hugging Face. Aquesta clau es guardarà només al teu navegador i mai serà compartida.</p>
+                    <a href="https://huggingface.co/docs/hub/security-tokens" target="_blank" class="text-blue-400 hover:text-blue-300 text-sm mb-4 block">Com obtenir un Token d'Accés?</a>
+                    <div class="mb-6">
+                        <label for="api-key-input" class="block text-sm font-medium text-gray-300 mb-1">El teu Token d'Accés de Hugging Face</label>
+                        <input type="password" id="api-key-input" class="input-styled" placeholder="Enganxa aquí el teu token (comença per hf_)...">
+                    </div>
+                    <button id="save-api-key-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg text-md">Desar i Continuar</button>
+                </div>
+            </section>
+
+            <section id="setup-screen" class="hidden">
                  <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
                     <h2 class="text-xl font-semibold text-purple-300 mb-4">Prepara la Simfonia</h2>
                     <div class="mb-6">
@@ -27,10 +40,12 @@
                     </div>
                     <div class="text-center">
                         <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md">Començar Sessió</button>
+                        <button id="change-api-key-btn" class="text-xs text-gray-500 hover:text-gray-300 mt-4">Canviar API Key</button>
                     </div>
                  </div>
             </section>
-             <section id="session-screen" class="hidden">
+            
+            <section id="session-screen" class="hidden">
                 <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
                     <h2 class="text-xl font-semibold text-purple-300 mb-4">Sessió Activa</h2>
                     <p class="text-sm text-gray-400">El director de IA està escoltant...</p>
