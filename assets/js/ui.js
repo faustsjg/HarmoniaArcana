@@ -26,8 +26,13 @@ export const UI = {
         console.log(`UI Inicialitzada. Versió: ${version}`);
     },
     
-    updateStatus(message) {
-        this.statusDisplay.textContent = message;
+    updateStatus(message, isListening = false) {
+        // Afegeix un punt vermell parpellejant si està escoltant
+        if (isListening) {
+            this.statusDisplay.innerHTML = `<span class="inline-block w-2 h-2 mr-2 bg-red-500 rounded-full animate-pulse"></span> ${message}`;
+        } else {
+            this.statusDisplay.textContent = message;
+        }
     },
 
     // Funcions per gestionar la visibilitat de les pantalles
