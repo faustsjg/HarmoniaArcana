@@ -1,48 +1,45 @@
 // FILE: assets/js/ui.js
 
-// Un objecte per agrupar tots els elements de la UI i les funcions que els manipulen.
 export const UI = {
     // Referències als elements del DOM
     statusDisplay: document.getElementById('status-display'),
-    dmEffectsPanel: document.getElementById('dm-effects-panel'),
-    startSessionBtn: document.getElementById('start-session-btn'),
-    stopSessionBtn: document.getElementById('stop-session-btn'),
-    masterInspirationInput: document.getElementById('master-inspiration-input'),
+    versionDisplay: document.getElementById('version-display'),
+    
+    // Pantalles
+    apiKeyScreen: document.getElementById('api-key-screen'),
     setupScreen: document.getElementById('setup-screen'),
     sessionScreen: document.getElementById('session-screen'),
-    versionDisplay: document.getElementById('version-display'),
+    
+    // Entrades i botons
+    apiKeyInput: document.getElementById('api-key-input'),
+    saveApiKeyBtn: document.getElementById('save-api-key-btn'),
+    changeApiKeyBtn: document.getElementById('change-api-key-btn'),
+    masterInspirationInput: document.getElementById('master-inspiration-input'),
+    startSessionBtn: document.getElementById('start-session-btn'),
+    stopSessionBtn: document.getElementById('stop-session-btn'),
 
-    // Funció d'inicialització.
+    // Panell del DM
+    dmEffectsPanel: document.getElementById('dm-effects-panel'),
+
     init(version) {
         this.versionDisplay.textContent = `Harmonia Arcana ${version}`;
         console.log(`UI Inicialitzada. Versió: ${version}`);
     },
-
-    // Funció per actualitzar el text d'estat a la capçalera.
+    
     updateStatus(message) {
         this.statusDisplay.textContent = message;
-        console.log(`UI Status: ${message}`);
     },
 
-    // Mostra el panell d'efectes del DM.
-    showDMPanel() {
-        this.dmEffectsPanel.classList.remove('hidden');
-    },
-    
-    // Amaga el panell d'efectes del DM.
-    hideDMPanel() {
-        this.dmEffectsPanel.classList.add('hidden');
-    },
-
-    // Funció per canviar de la pantalla de configuració a la de sessió activa.
-    showSessionScreen() {
-        this.setupScreen.classList.add('hidden');
-        this.sessionScreen.classList.remove('hidden');
+    // Funcions per gestionar la visibilitat de les pantalles
+    showScreen(screenName) {
+        ['apiKeyScreen', 'setupScreen', 'sessionScreen'].forEach(id => {
+            this[id].classList.add('hidden');
+        });
+        if (this[screenName]) {
+            this[screenName].classList.remove('hidden');
+        }
     },
 
-    // Funció per tornar a la pantalla de configuració.
-    showSetupScreen() {
-        this.sessionScreen.classList.add('hidden');
-        this.setupScreen.classList.remove('hidden');
-    }
+    showDMPanel() { this.dmEffectsPanel.classList.remove('hidden'); },
+    hideDMPanel() { this.dmEffectsPanel.classList.add('hidden'); }
 };
