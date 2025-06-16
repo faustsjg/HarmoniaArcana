@@ -1,7 +1,7 @@
 // FILE: assets/js/config.js
 
 // Versió actual de l'aplicació
-export const APP_VERSION = "v3.3-OnboardingUI";
+export const APP_VERSION = "v3.4-AudioFix";
 
 // Clau que farem servir per guardar i recuperar l'API Key del localStorage.
 export const API_KEY_STORAGE_ID = 'harmoniaArcana_huggingFaceApiKey';
