@@ -25,42 +25,19 @@
                             <h2 class="text-2xl font-bold text-purple-300 mb-2">Benvingut a Harmonia Arcana</h2>
                             <p class="text-gray-400">El teu company musical per a partides de rol.</p>
                         </div>
-                        <div data-slide="2" class="onboarding-slide hidden">
-                            <h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 1: El teu Compte a Hugging Face</h3>
-                            <p class="text-gray-400">Harmonia Arcana utilitza models d'IA de codi obert a través de Hugging Face de manera 100% gratuïta.</p>
-                            <a href="https://huggingface.co/join" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la pàgina de registre</a>
-                        </div>
-                        <div data-slide="3" class="onboarding-slide hidden">
-                            <h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 2: Aconsegueix la Clau d'Accés</h3>
-                            <p class="text-gray-400">L'Access Token és la teva clau personal. Crea'n una nova amb el rol "write" i copia-la.</p>
-                             <a href="https://huggingface.co/settings/tokens" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la teva pàgina per generar tokens</a>
-                        </div>
-                        <div data-slide="4" class="onboarding-slide hidden">
-                           <h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 3: Activa Harmonia Arcana!</h3>
-                           <p class="text-gray-400">Enganxa la teva clau (comença per `hf_...`) per començar.</p>
-                           <input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí el teu Access Token...">
-                           <button id="save-api-key-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg text-md">Desar Token i Començar</button>
-                        </div>
+                        <div data-slide="2" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 1: Compte a Hugging Face</h3><p class="text-gray-400">Harmonia Arcana utilitza models d'IA de codi obert gratuïts a través de Hugging Face.</p><a href="https://huggingface.co/join" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la pàgina de registre</a></div>
+                        <div data-slide="3" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 2: Aconsegueix la Clau d'Accés</h3><p class="text-gray-400">Crea una nova clau (Access Token) amb el rol "write" i copia-la.</p><a href="https://huggingface.co/settings/tokens" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la teva pàgina per generar tokens</a></div>
+                        <div data-slide="4" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 3: Activa Harmonia Arcana!</h3><p class="text-gray-400">Enganxa la teva clau (comença per `hf_...`) per començar.</p><input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí el teu Access Token..."><button id="save-api-key-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg text-md">Desar Token</button></div>
                     </div>
-                    <div class="flex justify-between items-center mt-6">
-                        <button id="onboarding-prev" class="text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">&larr; Enrere</button>
-                        <div id="onboarding-dots" class="flex justify-center items-center space-x-2"></div>
-                        <button id="onboarding-next" class="text-gray-400 hover:text-white">Següent &rarr;</button>
-                    </div>
+                    <div class="flex justify-between items-center mt-6"><button id="onboarding-prev" class="text-gray-400 hover:text-white disabled:opacity-50">&larr; Enrere</button><div id="onboarding-dots" class="flex space-x-2"></div><button id="onboarding-next" class="text-gray-400 hover:text-white">Següent &rarr;</button></div>
                 </div>
             </section>
 
             <section id="setup-screen" class="hidden">
                  <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
                     <h2 class="text-xl font-semibold text-purple-300 mb-4">Prepara la Simfonia</h2>
-                    <div class="mb-6">
-                        <label for="master-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Inspiració Mestra</label>
-                        <input type="text" id="master-inspiration-input" class="input-styled" placeholder="Ex: El Senyor dels Anells, Howard Shore...">
-                    </div>
-                    <div class="text-center">
-                        <button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md">Començar Sessió</button>
-                        <button id="change-api-key-btn" class="text-xs text-gray-500 hover:text-gray-300 mt-4">Canviar API Key</button>
-                    </div>
+                    <div class="mb-6"><label for="master-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Inspiració Mestra</label><input type="text" id="master-inspiration-input" class="input-styled" placeholder="Ex: El Senyor dels Anells, Howard Shore..."></div>
+                    <div class="text-center"><button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md">Començar Sessió</button><button id="change-api-key-btn" class="text-xs text-gray-500 hover:text-gray-300 mt-4">Canviar API Key</button></div>
                  </div>
             </section>
             
@@ -68,10 +45,7 @@
                  <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-2xl font-semibold text-purple-300">Sessió Activa</h2>
-                        <div id="music-status-container" class="flex items-center text-sm">
-                            <span class="status-dot-music bg-gray-500"></span>
-                            <span id="music-status-text">Aturada</span>
-                        </div>
+                        <div id="music-status-container" class="flex items-center text-sm"><span class="status-dot-music bg-gray-500"></span><span id="music-status-text">Aturada</span></div>
                     </div>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
@@ -101,9 +75,7 @@
         </main>
     </div>
 
-    <footer class="mt-10 text-center">
-        <p id="version-display" class="text-xs text-gray-600"></p>
-    </footer>
+    <footer class="mt-10 text-center"><p id="version-display" class="text-xs text-gray-600"></p></footer>
 
     <script src="assets/js/config.js" type="module"></script>
     <script src="assets/js/ui.js" type="module"></script>
