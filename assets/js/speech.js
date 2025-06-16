@@ -1,11 +1,10 @@
 // FILE: assets/js/speech.js
 
-// Accedim a l'API de reconeixement de veu, compatible amb Chrome i altres navegadors.
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 export const Speech = {
     recognition: null,
-    transcriptBuffer: "", // Aquí s'acumula el text transcrit.
+    transcriptBuffer: "",
     isListening: false,
     
     init(onNewText) {
@@ -15,21 +14,19 @@ export const Speech = {
             return false;
         }
         this.recognition = new SpeechRecognition();
-        this.recognition.lang = 'ca-ES'; // Idioma de reconeixement
-        this.recognition.interimResults = false; // No volem resultats provisionals
-        this.recognition.continuous = true; // Continua escoltant fins que es pari explícitament
+        this.recognition.lang = 'ca-ES';
+        this.recognition.interimResults = false;
+        this.recognition.continuous = true;
 
-        // Aquest esdeveniment salta cada cop que es detecta una frase completa.
         this.recognition.onresult = (event) => {
             let newText = "";
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 newText += event.results[i][0].transcript;
             }
             this.transcriptBuffer += newText + " ";
-            onNewText(newText); // Cridem la funció callback per notificar
+            onNewText(newText);
         };
 
-        // Si l'escolta s'atura per alguna raó (ex: silenci llarg), la reiniciem.
         this.recognition.onend = () => {
             if (this.isListening) {
                 this.recognition.start();
@@ -55,7 +52,6 @@ export const Speech = {
         }
     },
 
-    // El Director cridarà aquesta funció per obtenir el text acumulat i netejar el buffer.
     getAndClearBuffer() {
         const buffer = this.transcriptBuffer;
         this.transcriptBuffer = "";
