@@ -13,12 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const setupOnboardingListeners = () => {
         const onboardingContainer = document.getElementById('onboarding-container');
         if (!onboardingContainer) return;
+        
         const slides = onboardingContainer.querySelectorAll('.onboarding-slide');
         const prevBtn = document.getElementById('onboarding-prev');
         const nextBtn = document.getElementById('onboarding-next');
         const dotsContainer = document.getElementById('onboarding-dots');
         let currentSlide = 0;
-        if(dotsContainer && dotsContainer.children.length === 0) {
+
+        if (dotsContainer && dotsContainer.children.length === 0) {
             for(let i = 0; i < slides.length; i++) {
                 const dot = document.createElement('div');
                 dot.classList.add('progress-dot');
@@ -26,15 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         const dots = dotsContainer.querySelectorAll('.progress-dot');
+
         const updateOnboardingUI = () => {
-            if (!slides.length || !dots || !prevBtn || !nextBtn) return;
+            if (!slides.length || !dots.length || !prevBtn || !nextBtn) return;
             slides.forEach((s, i) => s.classList.toggle('hidden', i !== currentSlide));
             dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
             prevBtn.disabled = currentSlide === 0;
             nextBtn.disabled = currentSlide === slides.length - 1;
         };
-        if(nextBtn) nextBtn.addEventListener('click', () => { if (currentSlide < slides.length - 1) { currentSlide++; updateOnboardingUI(); }});
-        if(prevBtn) prevBtn.addEventListener('click', () => { if (currentSlide > 0) { currentSlide--; updateOnboardingUI(); }});
+
+        if (nextBtn) nextBtn.addEventListener('click', () => { if (currentSlide < slides.length - 1) { currentSlide++; updateOnboardingUI(); }});
+        if (prevBtn) prevBtn.addEventListener('click', () => { if (currentSlide > 0) { currentSlide--; updateOnboardingUI(); }});
+        
         updateOnboardingUI();
     };
 
@@ -66,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem(API_KEY_STORAGE_ID);
             if (Director.isSessionActive) Director.aturarSessio();
             UI.showScreen('api-key-screen');
-            setupOnboardingListeners();
+            setupOnboardingListeners(); // Reiniciem els listeners de l'onboarding
         }
     });
 
