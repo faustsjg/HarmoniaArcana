@@ -1,5 +1,4 @@
 // FILE: assets/js/ui.js
-
 export const UI = {
     // Referències generals
     statusDisplay: document.getElementById('status-display'),
@@ -32,26 +31,37 @@ export const UI = {
         console.log(`UI Inicialitzada. Versió: ${version}`);
     },
     
-    updateStatus(message) {
-        this.statusDisplay.textContent = message;
+    updateStatus(message, isListening = false) {
+        this.statusDisplay.innerHTML = isListening 
+            ? `<span class="inline-block w-2 h-2 mr-2 bg-red-500 rounded-full animate-pulse"></span> ${message}` 
+            : message;
     },
 
     updateMusicStatus(isPlaying, name = '') {
-        this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
-        this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
+        if(this.musicStatusDot) this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
+        if(this.musicStatusText) this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
     },
 
     updateTranscript(fullText) {
-        this.transcriptPreview.textContent = fullText;
-        // Fer scroll automàtic cap avall
-        this.transcriptPreview.scrollTop = this.transcriptPreview.scrollHeight;
+        if(this.transcriptPreview) {
+            this.transcriptPreview.textContent = fullText;
+            this.transcriptPreview.scrollTop = this.transcriptPreview.scrollHeight;
+        }
     },
     
     showScreen(screenName) {
-        ['apiKeyScreen', 'setupScreen', 'sessionScreen'].forEach(id => this[id].classList.add('hidden'));
-        if (this[screenName]) this[screenName].classList.remove('hidden');
+        ['apiKeyScreen', 'setupScreen', 'sessionScreen'].forEach(id => {
+            const screen = document.getElementById(id);
+            if(screen) screen.classList.add('hidden');
+        });
+        const screenToShow = document.getElementById(screenName);
+        if (screenToShow) screenToShow.classList.remove('hidden');
     },
 
-    showDMPanel() { this.dmEffectsPanel.classList.remove('hidden'); },
-    hideDMPanel() { this.dmEffectsPanel.classList.add('hidden'); }
+    showDMPanel() { 
+        if(this.dmEffectsPanel) this.dmEffectsPanel.classList.remove('hidden'); 
+    },
+    hideDMPanel() { 
+        if(this.dmEffectsPanel) this.dmEffectsPanel.classList.add('hidden');
+    }
 };
