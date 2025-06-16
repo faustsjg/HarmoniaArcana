@@ -1,7 +1,7 @@
 // FILE: assets/js/config.js
 
 // Versió actual de l'aplicació
-export const APP_VERSION = "v3.7.1-UIScreenFix";
+export const APP_VERSION = "v3.7.2-DebugUI";
 
 // Clau que farem servir per guardar i recuperar l'API Key del localStorage.
 export const API_KEY_STORAGE_ID = 'harmoniaArcana_huggingFaceApiKey';
