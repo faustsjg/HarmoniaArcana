@@ -1,0 +1,18 @@
+/* FILE: assets/css/style.css */
+body { 
+    font-family: 'Inter', sans-serif; 
+}
+.input-styled { 
+    background-color: #374151; 
+    border: 1px solid #4b5563; 
+    color: #f3f4f6; 
+    border-radius: 0.375rem; 
+    padding: 0.5rem 0.75rem; 
+    font-size: 0.875rem; 
+    width: 100%; 
+}
+.input-styled:focus { 
+    outline: none; 
+    border-color: #4f46e5; 
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5); 
+}
