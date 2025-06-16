@@ -24,32 +24,32 @@ export const UI = {
         console.log(`UI Inicialitzada. Versió: ${version}`);
     },
     
-    updateStatus(message, isListening = false) { /* ... (sense canvis) ... */ },
-    updateMusicStatus(isPlaying, name = '') { /* ... (sense canvis) ... */ },
-    updateTranscript(fullText) { /* ... (sense canvis) ... */ },
+    updateStatus(message, isListening = false) {
+        this.statusDisplay.innerHTML = isListening 
+            ? `<span class="inline-block w-2 h-2 mr-2 bg-red-500 rounded-full animate-pulse"></span> ${message}` 
+            : message;
+    },
+
+    updateMusicStatus(isPlaying, name = '') {
+        if(this.musicStatusDot) this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
+        if(this.musicStatusText) this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
+    },
+
+    updateTranscript(fullText) {
+        if(this.transcriptPreview) {
+            this.transcriptPreview.textContent = fullText;
+            this.transcriptPreview.scrollTop = this.transcriptPreview.scrollHeight;
+        }
+    },
     
-    // Funció actualitzada amb missatges de diagnòstic
     showScreen(screenName) {
-        console.log(`[UI.showScreen] Petició per mostrar: "${screenName}"`);
-        const allScreenIds = ['api-key-screen', 'setup-screen', 'session-screen'];
-
-        allScreenIds.forEach(id => {
+        ['api-key-screen', 'setup-screen', 'session-screen'].forEach(id => {
             const screen = document.getElementById(id);
-            if (screen) {
-                screen.classList.add('hidden');
-            } else {
-                console.error(`[UI.showScreen] ATENCIÓ: L'element #${id} no s'ha trobat a l'HTML.`);
-            }
+            if(screen) screen.classList.add('hidden');
         });
-
         const screenToShow = document.getElementById(screenName);
         if (screenToShow) {
-            console.log(`[UI.showScreen] Element #${screenName} trobat a l'HTML.`);
-            console.log(`[UI.showScreen] Llista de classes ABANS de modificar: "${screenToShow.className}"`);
             screenToShow.classList.remove('hidden');
-            console.log(`[UI.showScreen] Llista de classes DESPRÉS de modificar: "${screenToShow.className}"`);
-        } else {
-            console.error(`[UI.showScreen] ERROR CRÍTIC: No s'ha trobat la pantalla amb l'ID "${screenName}"`);
         }
     },
 
