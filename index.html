@@ -21,13 +21,10 @@
             <section id="api-key-screen" class="hidden">
                  <div class="bg-gray-800 p-6 sm:p-8 rounded-xl shadow-xl">
                     <div id="onboarding-container">
-                        <div data-slide="1" class="onboarding-slide">
-                            <h2 class="text-2xl font-bold text-purple-300 mb-2">Benvingut a Harmonia Arcana</h2>
-                            <p class="text-gray-400">El teu company musical per a partides de rol.</p>
-                        </div>
-                        <div data-slide="2" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 1: Compte a Hugging Face</h3><p class="text-gray-400">Harmonia Arcana utilitza models d'IA de codi obert gratuïts a través de Hugging Face.</p><a href="https://huggingface.co/join" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la pàgina de registre</a></div>
+                        <div data-slide="1" class="onboarding-slide"><h2 class="text-2xl font-bold text-purple-300 mb-2">Benvingut a Harmonia Arcana</h2><p class="text-gray-400">El teu company musical per a partides de rol.</p></div>
+                        <div data-slide="2" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 1: Compte a Hugging Face</h3><p class="text-gray-400">Harmonia Arcana utilitza models d'IA gratuïts a través de Hugging Face.</p><a href="https://huggingface.co/join" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la pàgina de registre</a></div>
                         <div data-slide="3" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 2: Aconsegueix la Clau d'Accés</h3><p class="text-gray-400">Crea una nova clau (Access Token) amb el rol "write" i copia-la.</p><a href="https://huggingface.co/settings/tokens" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la teva pàgina per generar tokens</a></div>
-                        <div data-slide="4" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 3: Activa Harmonia Arcana!</h3><p class="text-gray-400">Enganxa la teva clau (comença per `hf_...`) per començar.</p><input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí el teu Access Token..."><button id="save-api-key-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg text-md">Desar Token</button></div>
+                        <div data-slide="4" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 3: Activa Harmonia Arcana!</h3><p class="text-gray-400">Enganxa la teva clau (comença per `hf_...`).</p><input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí el teu Access Token..."><button id="save-api-key-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg text-md">Desar Token</button></div>
                     </div>
                     <div class="flex justify-between items-center mt-6"><button id="onboarding-prev" class="text-gray-400 hover:text-white disabled:opacity-50">&larr; Enrere</button><div id="onboarding-dots" class="flex space-x-2"></div><button id="onboarding-next" class="text-gray-400 hover:text-white">Següent &rarr;</button></div>
                 </div>
@@ -73,6 +70,13 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <div id="dm-effects-panel" class="hidden fixed bottom-4 right-4 flex flex-col gap-2 p-3 bg-gray-800 rounded-lg shadow-lg border border-gray-700">
+        <p class="text-xs text-purple-300 text-center font-semibold mb-2">Efectes Reactius</p>
+        <button data-effect="critical-hit" class="p-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-transform duration-100 active:scale-95">Cop Crític</button>
+        <button data-effect="discovery" class="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-transform duration-100 active:scale-95">Descobriment</button>
+        <button data-effect="fail" class="p-2 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs transition-transform duration-100 active:scale-95">Pífia</button>
     </div>
 
     <footer class="mt-10 text-center"><p id="version-display" class="text-xs text-gray-600"></p></footer>
