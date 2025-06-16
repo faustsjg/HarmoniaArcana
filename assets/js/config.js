@@ -1,17 +1,16 @@
 // FILE: assets/js/config.js
 
 // Versió actual de l'aplicació
-export const APP_VERSION = "v3.0-DirectorIA";
+export const APP_VERSION = "v3.1-UserAPI";
 
-// IMPORTANT: Posa la teva clau d'API de Hugging Face aquí.
-// La pots obtenir a https://huggingface.co/settings/tokens
-export const HUGGING_FACE_API_KEY = "hf_TEVA_CLAU_API_AQUI";
+// Clau que farem servir per guardar i recuperar l'API Key del localStorage.
+export const API_KEY_STORAGE_ID = 'harmoniaArcana_huggingFaceApiKey';
 
 // Definim els models que farem servir per a cada tasca.
 export const MODELS = {
     // Model per analitzar el context de la narració
     analyst: "meta-llama/Llama-3.1-8B-Instruct",
-    // Model per generar la música. MusicGen és una bona opció.
+    // Model per generar la música.
     musicgen: "facebook/musicgen-small" 
 };
 
