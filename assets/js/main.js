@@ -15,7 +15,50 @@ document.addEventListener('DOMContentLoaded', () => {
         UI.updateStatus("Llest per començar una nova sessió.");
     } else {
         UI.showScreen('apiKeyScreen');
+        UI.updateStatus("Benvingut. Si us plau, completa la configuració inicial.");
     }
+
+    // --- LÒGICA DE L'ONBOARDING ---
+    const onboardingContainer = document.getElementById('onboarding-container');
+    const slides = onboardingContainer.querySelectorAll('.onboarding-slide');
+    const prevBtn = document.getElementById('onboarding-prev');
+    const nextBtn = document.getElementById('onboarding-next');
+    const dotsContainer = document.getElementById('onboarding-dots');
+    let currentSlide = 0;
+
+    // Crear punts de progrés
+    for(let i = 0; i < slides.length; i++) {
+        const dot = document.createElement('div');
+        dot.classList.add('progress-dot');
+        dotsContainer.appendChild(dot);
+    }
+    const dots = dotsContainer.querySelectorAll('.progress-dot');
+
+    const updateOnboardingUI = () => {
+        slides.forEach((slide, index) => {
+            slide.classList.toggle('hidden', index !== currentSlide);
+        });
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index === currentSlide);
+        });
+        prevBtn.disabled = currentSlide === 0;
+        nextBtn.disabled = currentSlide === slides.length - 1;
+    };
+    
+    nextBtn.addEventListener('click', () => {
+        if (currentSlide < slides.length - 1) {
+            currentSlide++;
+            updateOnboardingUI();
+        }
+    });
+    prevBtn.addEventListener('click', () => {
+        if (currentSlide > 0) {
+            currentSlide--;
+            updateOnboardingUI();
+        }
+    });
+
+    updateOnboardingUI(); // Inicialitza la UI de l'onboarding
 
     // --- LÒGICA DELS EVENT LISTENERS ---
 
@@ -38,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
             apiKey = null;
             localStorage.removeItem(API_KEY_STORAGE_ID);
             Director.aturarSessio(); // Aturem qualsevol sessió activa.
+            currentSlide = 0; // Reseteja l'onboarding
+            updateOnboardingUI();
             UI.showScreen('apiKeyScreen');
             UI.updateStatus("Si us plau, introdueix una nova API Key.");
         }
@@ -57,10 +102,13 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.showScreen('apiKeyScreen');
             return;
         }
-
+        
+        // **ARREGLAT L'ERROR DE L'ÀUDIO**
+        // Inicialitzem l'àudio DESPRÉS d'aquesta interacció de l'usuari.
         UI.updateStatus("Inicialitzant motor d'àudio...");
         await AudioManager.init();
         
+        // Comença la màgia: passem el control al Director.
         Director.init(apiKey, inspiracio);
     });
 
