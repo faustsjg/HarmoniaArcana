@@ -22,7 +22,8 @@ export const Director = {
         this.isSessionActive = true;
         this.fullTranscript = "";
         
-        UI.showScreen('sessionScreen');
+        // CORRECCIÓ: Utilitzem l'ID correcte 'session-screen' amb guió.
+        UI.showScreen('session-screen');
         UI.showDMPanel();
         UI.updateStatus("Sessió iniciada. Fes clic a 'Començar a Escoltar'.");
         UI.updateTranscript("");
@@ -45,6 +46,7 @@ export const Director = {
             UI.toggleListeningBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
             UI.toggleListeningBtn.classList.add('bg-purple-600', 'hover:bg-purple-700');
             if (this.intervalId) clearInterval(this.intervalId);
+            this.intervalId = null;
         } else {
             Speech.startListening();
             UI.toggleListeningBtn.textContent = "Aturar Escolta";
@@ -60,7 +62,10 @@ export const Director = {
             if (!this.isSessionActive || !Speech.isListening || this.isProcessing) return;
 
             const textBuffer = Speech.getAndClearBuffer();
-            if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
+            if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) {
+                UI.updateStatus("Escoltant...", true);
+                return;
+            }
 
             this.isProcessing = true;
             UI.updateStatus("Analitzant narració...");
@@ -71,7 +76,7 @@ export const Director = {
                 UI.updateStatus(`Nou ambient: ${nouContext.mood}. Generant música...`);
                 this.contextActual = nouContext;
                 
-                const prompt = `Estil: ${this.inspiracioMestra}. Escena: ${nouContext.mood} en ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera un loop instrumental d'un minut atmosfèric.`;
+                const prompt = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} en ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera un loop instrumental d'un minut atmosfèric.`;
                 const novesPistes = await AI.generarMusica(this.apiKey, prompt);
                 
                 if (novesPistes) {
@@ -81,6 +86,7 @@ export const Director = {
                 }
             }
             
+            UI.updateStatus("Escoltant...", true);
             this.isProcessing = false;
         }, DIRECTOR_CONFIG.analysisInterval);
     },
@@ -92,12 +98,15 @@ export const Director = {
 
     aturarSessio() {
         if (!this.isSessionActive) return;
-        if (this.intervalId) clearInterval(this.intervalId);
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
         this.isSessionActive = false;
         Speech.stopListening();
         this.stopMusic();
         UI.updateStatus("Sessió finalitzada.");
-        UI.showScreen('setupScreen');
+        UI.showScreen('setup-screen');
         UI.hideDMPanel();
     }
 };
