@@ -19,17 +19,54 @@
 
         <main id="main-content">
             <section id="api-key-screen" class="hidden">
-                 </section>
+                 <div class="bg-gray-800 p-6 sm:p-8 rounded-xl shadow-xl">
+                    <div id="onboarding-container">
+                        <div data-slide="1" class="onboarding-slide"><h2 class="text-2xl font-bold text-purple-300 mb-2">Benvingut a Harmonia Arcana</h2><p class="text-gray-400">El teu company musical per a partides de rol.</p></div>
+                        <div data-slide="2" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 1: Compte a Hugging Face</h3><p class="text-gray-400">Harmonia Arcana utilitza models d'IA gratuïts a través de Hugging Face.</p><a href="https://huggingface.co/join" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la pàgina de registre</a></div>
+                        <div data-slide="3" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 2: Aconsegueix la Clau d'Accés</h3><p class="text-gray-400">Crea una nova clau (Access Token) amb el rol "write" i copia-la.</p><a href="https://huggingface.co/settings/tokens" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la teva pàgina per generar tokens</a></div>
+                        <div data-slide="4" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 3: Activa Harmonia Arcana!</h3><p class="text-gray-400">Enganxa la teva clau (comença per `hf_...`).</p><input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí el teu Access Token..."><button id="save-api-key-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg text-md">Desar Token</button></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-6"><button id="onboarding-prev" class="text-gray-400 hover:text-white disabled:opacity-50">&larr; Enrere</button><div id="onboarding-dots" class="flex space-x-2"></div><button id="onboarding-next" class="text-gray-400 hover:text-white">Següent &rarr;</button></div>
+                </div>
+            </section>
             <section id="setup-screen" class="hidden">
-                 </section>
-            
+                 <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
+                    <h2 class="text-xl font-semibold text-purple-300 mb-4">Prepara la Simfonia</h2>
+                    <div class="mb-6"><label for="master-inspiration-input" class="block text-sm font-medium text-gray-300 mb-1">Inspiració Mestra</label><input type="text" id="master-inspiration-input" class="input-styled" placeholder="Ex: El Senyor dels Anells, Howard Shore..."></div>
+                    <div class="text-center"><button id="start-session-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg text-md">Començar Sessió</button><button id="change-api-key-btn" class="text-xs text-gray-500 hover:text-gray-300 mt-4">Canviar API Key</button></div>
+                 </div>
+            </section>
             <section id="session-screen" class="hidden">
-                 </section>
+                 <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-semibold text-purple-300">Sessió Activa</h2>
+                        <div id="music-status-container" class="flex items-center text-sm"><span class="status-dot-music bg-gray-500"></span><span id="music-status-text">Aturada</span></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                        <button id="toggle-listening-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Començar a Escoltar</button>
+                        <button id="stop-music-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Aturar Música</button>
+                        <button id="stop-session-btn" class="w-full bg-red-700 hover:bg-red-800 text-white font-semibold py-2.5 px-4 rounded-lg text-sm">Finalitzar Sessió</button>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Transcripció en directe:</label>
+                        <div id="transcript-preview" class="p-3 bg-gray-900 rounded-lg h-24 overflow-y-auto text-sm text-gray-300 border border-gray-700"></div>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-300 mb-2">Efectes Sonors</h3>
+                        <div id="soundboard" class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                            <button data-sound="espasa.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Espasa</button>
+                            <button data-sound="rugit.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Rugit</button>
+                            <button data-sound="encanteri.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Encanteri</button>
+                            <button data-sound="porta.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Porta</button>
+                            <button data-sound="llampec.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Llampec</button>
+                            <button data-sound="misil.mp3" class="btn-sound bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg text-xs">Míssil</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
-
     <footer class="mt-10 text-center"><p id="version-display" class="text-xs text-gray-600"></p></footer>
-
     <script src="assets/js/config.js" type="module"></script>
     <script src="assets/js/ui.js" type="module"></script>
     <script src="assets/js/ai.js" type="module"></script>
