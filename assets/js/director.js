@@ -11,62 +11,79 @@ export const Director = {
     contextActual: { mood: 'inici' },
     bibliotecaSessio: {},
     intervalId: null,
+    isSessionActive: false,
 
     init(apiKey, inspiracio) {
+        if (this.isSessionActive) return;
+
         this.apiKey = apiKey;
         this.inspiracioMestra = inspiracio;
+        this.isSessionActive = true;
         
-        UI.updateStatus("Sessió iniciada. Escoltant la partida...");
         UI.showScreen('sessionScreen');
         UI.showDMPanel();
         
         const speechSupported = Speech.init((text) => {});
-        if(speechSupported) Speech.startListening();
+        
+        if (speechSupported) {
+            Speech.startListening();
+            UI.updateStatus("Sessió iniciada. Escoltant...", true);
+        } else {
+            UI.updateStatus("Error: El reconeixement de veu no és compatible.");
+        }
         
         this.iniciarBuclePrincipal();
     },
 
     iniciarBuclePrincipal() {
+        if (this.intervalId) clearInterval(this.intervalId);
+
         this.intervalId = setInterval(async () => {
+            if (!this.isSessionActive) return;
+
             const textBuffer = Speech.getAndClearBuffer();
-            if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
+            
+            if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) {
+                // Si no hi ha prou text, simplement ens assegurem que l'estat visual és correcte.
+                UI.updateStatus("Escoltant...", true);
+                return;
+            }
 
             UI.updateStatus("Analitzant narració...");
+            
+            // PAS CLAU: Enviem el text a la IA per a l'anàlisi.
             const nouContext = await AI.analisarContext(this.apiKey, textBuffer);
             
-            if (nouContext && nouContext.mood && nouContext.mood !== this.contextActual.mood) {
-                UI.updateStatus(`Nou ambient detectat: ${nouContext.mood}. Preparant música...`);
-                this.contextActual = nouContext;
-                
-                const contextKey = `${nouContext.mood}_${nouContext.location.replace(/\s+/g, '_')}`;
-                
-                if (this.bibliotecaSessio[contextKey]) {
-                    UI.updateStatus(`Reutilitzant música per a: ${nouContext.mood}`);
-                    await AudioManager.carregarPistes(this.bibliotecaSessio[contextKey]);
-                } else {
-                    UI.updateStatus(`Generant nova música per a: ${nouContext.mood}...`);
-                    const prompt = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} en ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera un loop instrumental d'un minut.`;
-                    const novesPistes = await AI.generarMusica(this.apiKey, prompt);
-                    
-                    if (novesPistes) {
-                        this.bibliotecaSessio[contextKey] = novesPistes;
-                        await AudioManager.carregarPistes(novesPistes);
-                    } else {
-                        UI.updateStatus("Error en la generació de música.");
-                    }
-                }
-                AudioManager.reproduirTot();
+            if (nouContext && nouContext.mood) {
+                console.log("Director: Nou context rebut de la IA:", nouContext);
+                UI.updateStatus(`Nou ambient detectat: ${nouContext.mood}`);
+
+                // --- PAS FUTUR: AQUÍ CRIDAREM LA GENERACIÓ DE MÚSICA ---
+                // if (nouContext.mood !== this.contextActual.mood) {
+                //    ...lògica per canviar de música...
+                // }
             } else {
-                UI.updateStatus("Escoltant la partida...");
+                console.log("Director: La IA no ha pogut determinar un context clar.");
             }
+            
+            // Després d'analitzar, tornem a l'estat d'escolta.
+            setTimeout(() => {
+                 if (this.isSessionActive) {
+                    UI.updateStatus("Escoltant...", true);
+                 }
+            }, 2000); // Una petita pausa per llegir l'estat abans que torni a "Escoltant..."
+
         }, DIRECTOR_CONFIG.analysisInterval);
     },
 
     aturarSessio() {
-        if(this.intervalId) {
+        if (!this.isSessionActive) return;
+
+        if (this.intervalId) {
             clearInterval(this.intervalId);
             this.intervalId = null;
         }
+        this.isSessionActive = false;
         Speech.stopListening();
         AudioManager.aturarTot();
         this.contextActual = { mood: 'inici' };
