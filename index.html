@@ -14,20 +14,41 @@
     <div id="main-app-content" class="w-full max-w-xl">
         <header class="mb-6 text-left">
             <h1 class="text-3xl font-bold text-purple-400">Harmonia Arcana</h1>
-            <p id="status-display" class="text-gray-400 text-sm">Benvingut. Si us plau, configura la teva API Key.</p>
+            <p id="status-display" class="text-gray-400 text-sm">Benvingut a Harmonia Arcana.</p>
         </header>
 
         <main id="main-content">
             <section id="api-key-screen" class="hidden">
-                <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
-                    <h2 class="text-xl font-semibold text-purple-300 mb-4">Configuració Inicial</h2>
-                    <p class="text-sm text-gray-400 mb-4">Per funcionar, Harmonia Arcana necessita una clau (Token) gratuïta de Hugging Face. Aquesta clau es guardarà només al teu navegador i mai serà compartida.</p>
-                    <a href="https://huggingface.co/docs/hub/security-tokens" target="_blank" class="text-blue-400 hover:text-blue-300 text-sm mb-4 block">Com obtenir un Token d'Accés?</a>
-                    <div class="mb-6">
-                        <label for="api-key-input" class="block text-sm font-medium text-gray-300 mb-1">El teu Token d'Accés de Hugging Face</label>
-                        <input type="password" id="api-key-input" class="input-styled" placeholder="Enganxa aquí el teu token (comença per hf_)...">
+                <div class="bg-gray-800 p-6 sm:p-8 rounded-xl shadow-xl">
+                    <div id="onboarding-container">
+                        <div data-slide="1" class="onboarding-slide">
+                            <h2 class="text-2xl font-bold text-purple-300 mb-2">Benvingut a Harmonia Arcana</h2>
+                            <p class="text-gray-400">El teu company musical per a partides de rol. Aquesta eina crea una banda sonora única en temps real per a les teves històries.</p>
+                            <p class="text-sm text-gray-500 mt-4">Per connectar amb la intel·ligència artificial, farem una <strong>configuració inicial única</strong> que només hauràs de fer un cop. Comencem?</p>
+                        </div>
+                        <div data-slide="2" class="onboarding-slide hidden">
+                            <h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 1: El teu Compte a Hugging Face</h3>
+                            <p class="text-gray-400 mb-4">Harmonia Arcana utilitza models d'IA de <strong>codi obert (Llama 3.1)</strong> a través de Hugging Face. Això ens permet oferir l'experiència de manera <strong>100% gratuïta</strong>.</p>
+                            <p class="text-gray-400">Si no tens un compte, registra't. És ràpid i només ho faràs una vegada.</p>
+                            <a href="https://huggingface.co/join" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la pàgina de registre</a>
+                        </div>
+                        <div data-slide="3" class="onboarding-slide hidden">
+                            <h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 2: Aconsegueix la Clau d'Accés</h3>
+                            <p class="text-gray-400 mb-4">L'Access Token és la teva clau personal i gratuïta. Crea'n una nova amb el rol <strong>"write"</strong> i copia-la. Tracta-la com una contrasenya.</p>
+                             <a href="https://huggingface.co/settings/tokens" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la teva pàgina per generar tokens</a>
+                        </div>
+                        <div data-slide="4" class="onboarding-slide hidden">
+                           <h3 class="text-xl font-semibold text-purple-300 mb-4">Pas 3: Activa Harmonia Arcana!</h3>
+                           <p class="text-gray-400 mb-4">Enganxa la teva clau (comença per `hf_...`) al camp de sota i desa-la per començar la teva aventura musical.</p>
+                           <input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí el teu Access Token...">
+                           <button id="save-api-key-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg text-md">Desar Token i Començar</button>
+                        </div>
                     </div>
-                    <button id="save-api-key-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-lg text-md">Desar i Continuar</button>
+                    <div class="flex justify-between items-center mt-6">
+                        <button id="onboarding-prev" class="text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">&larr; Enrere</button>
+                        <div id="onboarding-dots" class="flex justify-center items-center space-x-2"></div>
+                        <button id="onboarding-next" class="text-gray-400 hover:text-white">Següent &rarr;</button>
+                    </div>
                 </div>
             </section>
 
