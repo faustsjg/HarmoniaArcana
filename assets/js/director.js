@@ -15,8 +15,10 @@ export const Director = {
     isProcessing: false,
     fullTranscript: "",
 
-    async init(apiKey, inspiracio) {
+    // La funció d'inicialització ara només prepara la pantalla, no genera música.
+    init(apiKey, inspiracio) {
         if (this.isSessionActive) return;
+
         this.apiKey = apiKey;
         this.inspiracioMestra = inspiracio.trim() || "Música èpica d'aventures de fantasia";
         this.isSessionActive = true;
@@ -35,27 +37,15 @@ export const Director = {
             UI.updateStatus("Error: El reconeixement de veu no és compatible.");
             return;
         }
-
-        await this.generarMusicaInicial();
-    },
-
-    async generarMusicaInicial() {
-        UI.updateStatus("Creant la primera peça musical...");
-        const prompt = `Estil musical: ${this.inspiracioMestra}. Genera una peça d'introducció atmosfèrica i acollidora, un loop instrumental d'un minut.`;
-        const novesPistes = await AI.generarMusica(this.apiKey, prompt);
-        if (novesPistes) {
-            await AudioManager.carregarPistes(novesPistes);
-            AudioManager.reproduirTot();
-            UI.updateMusicStatus(true, "Introducció");
-            this.contextActual.mood = "introducció";
-            UI.updateStatus("Sessió iniciada. Fes clic a 'Començar a Escoltar'.");
-        } else {
-            UI.updateStatus("Error creant la música inicial. Comprova la teva API Key o la connexió.");
-        }
+        
+        // Missatge inicial clar per a l'usuari.
+        UI.updateStatus("Sessió preparada. Fes clic a 'Començar a Escoltar'.");
+        // Hem eliminat la crida a generar música des d'aquí per evitar errors a l'inici.
     },
 
     toggleListening() {
         if (!this.isSessionActive) return;
+
         if (Speech.isListening) {
             Speech.stopListening();
             UI.toggleListeningBtn.textContent = "Començar a Escoltar";
@@ -68,8 +58,32 @@ export const Director = {
         }
     },
 
+    // El bucle principal ara gestionarà la primera generació de música.
     iniciarBuclePrincipal() {
         if (this.intervalId) clearInterval(this.intervalId);
+
+        // Funció per generar música
+        const canviarMusicaPerContext = async (nouContext) => {
+            this.isProcessing = true;
+            UI.updateStatus(`Nou ambient: ${nouContext.mood}. Generant música...`);
+            this.contextActual = nouContext;
+            
+            const prompt = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} en ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera un loop instrumental d'un minut atmosfèric.`;
+            const novesPistes = await AI.generarMusica(this.apiKey, prompt);
+            
+            if (novesPistes) {
+                await AudioManager.carregarPistes(novesPistes);
+                AudioManager.reproduirTot();
+                UI.updateMusicStatus(true, `${nouContext.mood}`);
+            } else {
+                 UI.updateStatus("Error en la generació. Comprova la consola.");
+            }
+            this.isProcessing = false;
+        };
+        
+        // Generem música d'introducció la primera vegada que s'activa l'escolta.
+        canviarMusicaPerContext({ mood: "introducció", location: "inici de l'aventura", keywords: ["expectació"] });
+
         this.intervalId = setInterval(async () => {
             if (!this.isSessionActive || !Speech.isListening || this.isProcessing) return;
             const textBuffer = Speech.getAndClearBuffer();
@@ -77,22 +91,13 @@ export const Director = {
                 UI.updateStatus("Escoltant...", true);
                 return;
             }
-            this.isProcessing = true;
+            
             UI.updateStatus("Analitzant narració...");
             const nouContext = await AI.analisarContext(this.apiKey, textBuffer);
-            console.log("Resposta de la IA:", nouContext);
+            
             if (nouContext && nouContext.mood && nouContext.mood !== this.contextActual.mood) {
-                UI.updateStatus(`Nou ambient: ${nouContext.mood}. Generant música...`);
-                this.contextActual = nouContext;
-                const prompt = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} en ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera un loop instrumental d'un minut atmosfèric.`;
-                const novesPistes = await AI.generarMusica(this.apiKey, prompt);
-                if (novesPistes) {
-                    await AudioManager.carregarPistes(novesPistes);
-                    AudioManager.reproduirTot();
-                    UI.updateMusicStatus(true, `${nouContext.mood}`);
-                }
+                await canviarMusicaPerContext(nouContext);
             }
-            this.isProcessing = false;
         }, DIRECTOR_CONFIG.analysisInterval);
     },
     
@@ -105,7 +110,7 @@ export const Director = {
         if (!this.isSessionActive) return;
         if (this.intervalId) { clearInterval(this.intervalId); this.intervalId = null; }
         this.isSessionActive = false;
-        Speech.stopListening();
+        if (Speech.isListening) this.toggleListening(); // Atura l'escolta si està activa
         this.stopMusic();
         UI.updateStatus("Sessió finalitzada.");
         UI.showScreen('setup-screen');
