@@ -7,89 +7,96 @@ import { Director } from './director.js';
 document.addEventListener('DOMContentLoaded', () => {
     
     UI.init(APP_VERSION);
+    let apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
+    let inspiracio = ""; // Guardarem la inspiració aquí
 
-    // --- SETUP DE TOTS ELS EVENT LISTENERS ---
-    // Definim tots els listeners aquí per assegurar que sempre estiguin disponibles.
+    // --- FUNCIÓ PER CONFIGURAR LISTENERS ---
+    // Aquesta funció s'assegura que tots els listeners estiguin actius des del principi
+    function setupAllListeners() {
+        // --- Onboarding ---
+        const onboardingContainer = document.getElementById('onboarding-container');
+        if (onboardingContainer) {
+            const slides = onboardingContainer.querySelectorAll('.onboarding-slide');
+            const prevBtn = document.getElementById('onboarding-prev');
+            const nextBtn = document.getElementById('onboarding-next');
+            const dotsContainer = document.getElementById('onboarding-dots');
+            let currentSlide = 0;
+            
+            if (dotsContainer.children.length === 0) {
+                for(let i = 0; i < slides.length; i++) {
+                    const dot = document.createElement('div');
+                    dot.classList.add('progress-dot');
+                    dotsContainer.appendChild(dot);
+                }
+            }
+            const dots = dotsContainer.querySelectorAll('.progress-dot');
+            
+            const updateOnboardingUI = () => {
+                slides.forEach((s, i) => s.classList.toggle('hidden', i !== parseInt(s.dataset.slide) || currentSlide !== i));
+                dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+                
+                const isFirstSlide = currentSlide === 0;
+                const isLastSlide = currentSlide === slides.length - 1;
+                
+                prevBtn.style.display = isFirstSlide ? 'none' : 'inline-block';
+                nextBtn.style.display = isLastSlide ? 'none' : 'inline-block';
+                dotsContainer.style.display = isLastSlide ? 'none' : 'flex';
+                // Mostrem el botó Enrere a l'última slide, però no el Següent
+                if (isLastSlide) prevBtn.style.display = 'inline-block';
+            };
 
-    // Onboarding
-    const onboardingContainer = document.getElementById('onboarding-container');
-    const slides = onboardingContainer.querySelectorAll('.onboarding-slide');
-    const prevBtn = document.getElementById('onboarding-prev');
-    const nextBtn = document.getElementById('onboarding-next');
-    const dotsContainer = document.getElementById('onboarding-dots');
-    let currentSlide = 0;
-
-    if (dotsContainer.children.length === 0) {
-        for(let i = 0; i < slides.length; i++) {
-            const dot = document.createElement('div');
-            dot.classList.add('progress-dot');
-            dotsContainer.appendChild(dot);
+            nextBtn.addEventListener('click', () => { if (currentSlide < slides.length - 1) { currentSlide++; updateOnboardingUI(); }});
+            prevBtn.addEventListener('click', () => { if (currentSlide > 0) { currentSlide--; updateOnboardingUI(); }});
+            updateOnboardingUI(); // Estat inicial
         }
+        
+        // --- Pantalla API Key ---
+        UI.saveApiKeyBtn.addEventListener('click', () => {
+            const keyInput = UI.apiKeyInput.value.trim();
+            if (keyInput.startsWith('hf_')) {
+                apiKey = keyInput;
+                localStorage.setItem(API_KEY_STORAGE_ID, apiKey);
+                UI.showScreen('setup-screen');
+            } else { alert("La clau de l'API no és vàlida."); }
+        });
+
+        // --- Pantalla de Setup ---
+        UI.changeApiKeyBtn.addEventListener('click', () => {
+            if (confirm("Vols esborrar la teva API Key?")) {
+                localStorage.removeItem(API_KEY_STORAGE_ID);
+                window.location.reload();
+            }
+        });
+
+        UI.setupContinueBtn.addEventListener('click', () => {
+            inspiracio = UI.masterInspirationInput.value;
+            UI.showScreen('how-to-screen');
+        });
+
+        // --- Pantalla de Sessió i How-to ---
+        UI.startSessionBtn.addEventListener('click', async () => {
+            apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
+            if (!apiKey) { UI.showScreen('api-key-screen'); return; }
+            await AudioManager.init();
+            Director.init(apiKey, inspiracio);
+        });
+
+        UI.toggleListeningBtn.addEventListener('click', () => Director.toggleListening());
+        UI.stopMusicBtn.addEventListener('click', () => Director.stopMusic());
+        UI.stopSessionBtn.addEventListener('click', () => Director.aturarSessio());
+        
+        UI.soundboard.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (button && button.dataset.sound) AudioManager.playSoundEffect(button.dataset.sound);
+        });
     }
-    const dots = dotsContainer.querySelectorAll('.progress-dot');
     
-    function updateOnboardingUI() {
-        slides.forEach((s, i) => s.classList.toggle('hidden', i !== currentSlide));
-        dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
-        const isFirstSlide = currentSlide === 0;
-        const isLastSlide = currentSlide === slides.length - 1;
-        prevBtn.style.display = isFirstSlide ? 'none' : 'inline-block';
-        nextBtn.style.display = isLastSlide ? 'none' : 'inline-block';
-        dotsContainer.style.display = isLastSlide ? 'none' : 'flex';
-    }
+    // --- LÒGICA D'INICI ---
+    setupAllListeners();
 
-    nextBtn.addEventListener('click', () => { if (currentSlide < slides.length - 1) { currentSlide++; updateOnboardingUI(); }});
-    prevBtn.addEventListener('click', () => { if (currentSlide > 0) { currentSlide--; updateOnboardingUI(); }});
-    
-    // Botó de desar Token
-    UI.saveApiKeyBtn.addEventListener('click', () => {
-        console.log("Botó 'Desar Token' clicat!"); // Missatge de depuració
-        const keyInput = UI.apiKeyInput.value.trim();
-        if (keyInput.startsWith('hf_')) {
-            localStorage.setItem(API_KEY_STORAGE_ID, keyInput);
-            alert("Clau API desada correctament!"); // Alerta visual per confirmar
-            UI.showScreen('setup-screen');
-        } else {
-            alert("La clau de l'API no és vàlida. Ha de començar per 'hf_'.");
-        }
-    });
-    
-    // Altres botons principals
-    UI.changeApiKeyBtn.addEventListener('click', () => {
-        if (confirm("Vols esborrar la teva API Key?")) {
-            localStorage.removeItem(API_KEY_STORAGE_ID);
-            if (Director.isSessionActive) Director.aturarSessio();
-            window.location.reload(); // Recarreguem per assegurar un estat net
-        }
-    });
-
-    UI.startSessionBtn.addEventListener('click', async () => {
-        const inspiracio = UI.masterInspirationInput.value;
-        const apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
-        if (!apiKey) {
-            UI.showScreen('api-key-screen');
-            return;
-        }
-        await AudioManager.init();
-        Director.init(apiKey, inspiracio);
-    });
-
-    // Botons de la sessió activa
-    UI.toggleListeningBtn.addEventListener('click', () => Director.toggleListening());
-    UI.stopMusicBtn.addEventListener('click', () => Director.stopMusic());
-    UI.stopSessionBtn.addEventListener('click', () => Director.aturarSessio());
-    
-    UI.soundboard.addEventListener('click', (e) => {
-        const button = e.target.closest('button');
-        if (button && button.dataset.sound) AudioManager.playSoundEffect(button.dataset.sound);
-    });
-
-    // --- LÒGICA INICIAL PER MOSTRAR PANTALLA ---
-    const apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
     if (apiKey) {
         UI.showScreen('setup-screen');
     } else {
         UI.showScreen('api-key-screen');
-        updateOnboardingUI(); // Assegurem que l'onboarding es mostra correctament
     }
 });
