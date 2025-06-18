@@ -10,14 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
 
     // Funció per configurar NOMÉS els listeners de l'onboarding.
-    // Només es cridarà si és necessari.
     const setupOnboardingListeners = () => {
         const onboardingContainer = document.getElementById('onboarding-container');
         if (!onboardingContainer) return;
+        
         const slides = onboardingContainer.querySelectorAll('.onboarding-slide');
         const prevBtn = document.getElementById('onboarding-prev');
         const nextBtn = document.getElementById('onboarding-next');
         const dotsContainer = document.getElementById('onboarding-dots');
+        const navigationContainer = prevBtn.parentElement; // El div que conté els botons i els punts
         let currentSlide = 0;
         
         if (dotsContainer && dotsContainer.children.length === 0) {
@@ -30,15 +31,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const dots = dotsContainer.querySelectorAll('.progress-dot');
         
         const updateOnboardingUI = () => {
-            if (!slides.length || !dots.length || !prevBtn || !nextBtn) return;
+            if (!slides.length || !dots.length || !navigationContainer) return;
+            
             slides.forEach((s, i) => s.classList.toggle('hidden', i !== currentSlide));
             dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
-            prevBtn.disabled = currentSlide === 0;
-            nextBtn.disabled = currentSlide === slides.length - 1;
+
+            const isLastSlide = currentSlide === slides.length - 1;
+            
+            // Amaguem tota la barra de navegació a l'últim pas
+            navigationContainer.style.display = isLastSlide ? 'none' : 'flex';
+            
+            // Fem invisible el botó 'Enrere' al primer pas, en lloc de només desactivar-lo
+            prevBtn.style.visibility = currentSlide === 0 ? 'hidden' : 'visible';
         };
-        
-        nextBtn.addEventListener('click', () => { if (currentSlide < slides.length - 1) { currentSlide++; updateOnboardingUI(); }});
-        prevBtn.addEventListener('click', () => { if (currentSlide > 0) { currentSlide--; updateOnboardingUI(); }});
+
+        if(nextBtn) nextBtn.addEventListener('click', () => { if (currentSlide < slides.length - 1) { currentSlide++; updateOnboardingUI(); }});
+        if(prevBtn) prevBtn.addEventListener('click', () => { if (currentSlide > 0) { currentSlide--; updateOnboardingUI(); }});
         
         updateOnboardingUI();
     };
@@ -51,18 +59,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 apiKey = keyInput;
                 localStorage.setItem(API_KEY_STORAGE_ID, apiKey);
                 UI.showScreen('setup-screen');
+                UI.updateStatus("API Key desada. Llest per començar.");
             } else {
                 alert("La clau de l'API no és vàlida.");
             }
         });
-        
+    
         if(UI.changeApiKeyBtn) UI.changeApiKeyBtn.addEventListener('click', () => {
             if (confirm("Vols esborrar la teva API Key?")) {
                 apiKey = null;
                 localStorage.removeItem(API_KEY_STORAGE_ID);
                 if (Director.isSessionActive) Director.aturarSessio();
                 UI.showScreen('api-key-screen');
-                setupOnboardingListeners(); 
+                // Tornem a configurar l'onboarding per si de cas.
+                setupOnboardingListeners();
             }
         });
 
@@ -88,16 +98,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- LÒGICA PRINCIPAL D'INICI ---
-    
-    // Configurem sempre els listeners de l'aplicació.
     setupMainAppListeners();
 
-    // I ara decidim quina pantalla mostrar.
     if (apiKey) {
         UI.showScreen('setup-screen');
     } else {
         UI.showScreen('api-key-screen');
-        // Només configurem els botons de l'onboarding si mostrarem aquesta pantalla.
         setupOnboardingListeners();
     }
 });
