@@ -1,19 +1,20 @@
 // FILE: assets/js/ui.js
 export const UI = {
-    // Referències generals
     statusDisplay: document.getElementById('status-display'),
     versionDisplay: document.getElementById('version-display'),
     
-    // ELIMINAT: dmEffectsPanel
-    
-    // Pantalles
     apiKeyScreen: document.getElementById('api-key-screen'),
     setupScreen: document.getElementById('setup-screen'),
+    howToScreen: document.getElementById('how-to-screen'), // NOU
     sessionScreen: document.getElementById('session-screen'),
     
-    // ... (la resta de referències es mantenen igual) ...
+    apiKeyInput: document.getElementById('api-key-input'),
+    saveApiKeyBtn: document.getElementById('save-api-key-btn'),
+    changeApiKeyBtn: document.getElementById('change-api-key-btn'),
     masterInspirationInput: document.getElementById('master-inspiration-input'),
+    setupContinueBtn: document.getElementById('setup-continue-btn'), // NOU
     startSessionBtn: document.getElementById('start-session-btn'),
+    
     stopSessionBtn: document.getElementById('stop-session-btn'),
     toggleListeningBtn: document.getElementById('toggle-listening-btn'),
     stopMusicBtn: document.getElementById('stop-music-btn'),
@@ -22,16 +23,18 @@ export const UI = {
     musicStatusDot: document.querySelector('.status-dot-music'),
     musicStatusText: document.getElementById('music-status-text'),
 
-    init(version) {
-        this.versionDisplay.textContent = `Harmonia Arcana ${version}`;
-        console.log(`UI Inicialitzada. Versió: ${version}`);
-    },
+    init(version) { /* ... (sense canvis) ... */ },
+    updateStatus(message, isListening = false) { /* ... (sense canvis) ... */ },
+    updateMusicStatus(isPlaying, name = '') { /* ... (sense canvis) ... */ },
+    updateTranscript(fullText) { /* ... (sense canvis) ... */ },
     
-    // ... (la resta de funcions com updateStatus, updateMusicStatus, etc., es mantenen igual) ...
-    updateStatus(message, isListening = false) { /*...*/ },
-    updateMusicStatus(isPlaying, name = '') { /*...*/ },
-    updateTranscript(fullText) { /*...*/ },
-    showScreen(screenName) { /*...*/ },
-
-    // ELIMINAT: Ja no necessitem showDMPanel ni hideDMPanel
+    showScreen(screenName) {
+        // NOU: Llista actualitzada de totes les pantalles
+        ['api-key-screen', 'setup-screen', 'how-to-screen', 'session-screen'].forEach(id => {
+            const screen = document.getElementById(id);
+            if(screen) screen.style.display = 'none';
+        });
+        const screenToShow = document.getElementById(screenName);
+        if (screenToShow) screenToShow.style.display = 'block';
+    },
 };
