@@ -10,17 +10,12 @@ body { font-family: 'Inter', sans-serif; }
 .status-dot-music { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; transition: background-color 0.3s ease; }
 .btn-sound { transition: transform 0.1s ease, box-shadow 0.1s ease; }
 .btn-sound:active { transform: scale(0.95); box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); }
+.instruction-number { background-color: #4f46e5; color: white; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.875rem; }
 
-/* NOU ESTIL PER A LA PANTALLA D'INSTRUCCIONS */
-.instruction-number {
-    background-color: #4f46e5;
-    color: white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 0.875rem;
+/* NOU: Estils per al Modal d'Ajuda */
+#help-modal-overlay {
+    display: none; /* Amagat per defecte */
+}
+#help-modal-overlay.visible {
+    display: flex; /* El fem visible amb flex per centrar el contingut */
 }
