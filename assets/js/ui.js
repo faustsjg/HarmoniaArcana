@@ -1,25 +1,70 @@
 // FILE: assets/js/ui.js
 export const UI = {
-    statusDisplay: document.getElementById('status-display'),
-    versionDisplay: document.getElementById('version-display'),
-    
-    // Pantalles
-    apiKeyScreen: document.getElementById('api-key-screen'),
-    setupScreen: document.getElementById('setup-screen'),
-    sessionScreen: document.getElementById('session-screen'),
-    
-    // Botons principals
-    startSessionBtn: document.getElementById('start-session-btn'),
-    changeApiKeyBtn: document.getElementById('change-api-key-btn'),
-    
-    // NOU: Elements del Modal d'Ajuda
-    helpModalOverlay: document.getElementById('help-modal-overlay'),
-    showHelpBtn: document.getElementById('show-help-btn'),
-    closeHelpBtn: document.getElementById('close-help-btn'),
+    // Les propietats comencen buides.
+    statusDisplay: null,
+    versionDisplay: null,
+    apiKeyScreen: null,
+    setupScreen: null,
+    sessionScreen: null,
+    apiKeyInput: null,
+    saveApiKeyBtn: null,
+    changeApiKeyBtn: null,
+    masterInspirationInput: null,
+    startSessionBtn: null,
+    stopSessionBtn: null,
+    toggleListeningBtn: null,
+    stopMusicBtn: null,
+    transcriptPreview: null,
+    soundboard: null,
+    musicStatusDot: null,
+    musicStatusText: null,
 
+    // La funció init ARA SÍ que assigna els elements del DOM.
+    // Com que es crida DESPRÉS del DOMContentLoaded, ens assegurem que tot existeix.
     init(version) {
-        this.versionDisplay.textContent = `Harmonia Arcana ${version}`;
+        // Assignació d'elements
+        this.statusDisplay = document.getElementById('status-display');
+        this.versionDisplay = document.getElementById('version-display');
+        this.apiKeyScreen = document.getElementById('api-key-screen');
+        this.setupScreen = document.getElementById('setup-screen');
+        this.sessionScreen = document.getElementById('session-screen');
+        this.apiKeyInput = document.getElementById('api-key-input');
+        this.saveApiKeyBtn = document.getElementById('save-api-key-btn');
+        this.changeApiKeyBtn = document.getElementById('change-api-key-btn');
+        this.masterInspirationInput = document.getElementById('master-inspiration-input');
+        this.startSessionBtn = document.getElementById('start-session-btn');
+        this.stopSessionBtn = document.getElementById('stop-session-btn');
+        this.toggleListeningBtn = document.getElementById('toggle-listening-btn');
+        this.stopMusicBtn = document.getElementById('stop-music-btn');
+        this.transcriptPreview = document.getElementById('transcript-preview');
+        this.soundboard = document.getElementById('soundboard');
+        this.musicStatusDot = document.querySelector('.status-dot-music');
+        this.musicStatusText = document.getElementById('music-status-text');
+
+        // Lògica que ja teníem
+        if (this.versionDisplay) {
+            this.versionDisplay.textContent = `Harmonia Arcana ${version}`;
+        }
         console.log(`UI Inicialitzada. Versió: ${version}`);
+    },
+    
+    updateStatus(message, isListening = false) {
+        if (!this.statusDisplay) return;
+        this.statusDisplay.innerHTML = isListening 
+            ? `<span class="inline-block w-2 h-2 mr-2 bg-red-500 rounded-full animate-pulse"></span> ${message}` 
+            : message;
+    },
+
+    updateMusicStatus(isPlaying, name = '') {
+        if(this.musicStatusDot) this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
+        if(this.musicStatusText) this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
+    },
+
+    updateTranscript(fullText) {
+        if(this.transcriptPreview) {
+            this.transcriptPreview.textContent = fullText;
+            this.transcriptPreview.scrollTop = this.transcriptPreview.scrollHeight;
+        }
     },
     
     showScreen(screenName) {
@@ -28,16 +73,8 @@ export const UI = {
             if(screen) screen.style.display = 'none';
         });
         const screenToShow = document.getElementById(screenName);
-        if (screenToShow) screenToShow.style.display = 'block';
-    },
-
-    // NOU: Funcions per controlar la visibilitat del modal
-    showHelpModal() {
-        if (this.helpModalOverlay) this.helpModalOverlay.classList.add('visible');
-    },
-    hideHelpModal() {
-        if (this.helpModalOverlay) this.helpModalOverlay.classList.remove('visible');
-    },
-    
-    // ... la resta de funcions d'UI (updateStatus, etc.) es mantenen igual.
+        if (screenToShow) {
+            screenToShow.style.display = 'block';
+        }
+    }
 };
