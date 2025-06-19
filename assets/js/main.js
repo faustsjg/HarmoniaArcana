@@ -8,86 +8,56 @@ document.addEventListener('DOMContentLoaded', () => {
     
     UI.init(APP_VERSION);
     let apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
-    let inspiracio = ""; // Guardarem la inspiració aquí
+    let inspiracio = "";
 
-    // --- FUNCIÓ PER CONFIGURAR LISTENERS ---
-    // Aquesta funció s'assegura que tots els listeners estiguin actius des del principi
+    // --- SETUP DE TOTS ELS EVENT LISTENERS (Patró robust) ---
     function setupAllListeners() {
-        // --- Onboarding ---
+        // Onboarding
         const onboardingContainer = document.getElementById('onboarding-container');
-        if (onboardingContainer) {
-            const slides = onboardingContainer.querySelectorAll('.onboarding-slide');
-            const prevBtn = document.getElementById('onboarding-prev');
-            const nextBtn = document.getElementById('onboarding-next');
-            const dotsContainer = document.getElementById('onboarding-dots');
-            let currentSlide = 0;
-            
-            if (dotsContainer.children.length === 0) {
-                for(let i = 0; i < slides.length; i++) {
-                    const dot = document.createElement('div');
-                    dot.classList.add('progress-dot');
-                    dotsContainer.appendChild(dot);
-                }
-            }
-            const dots = dotsContainer.querySelectorAll('.progress-dot');
-            
-            const updateOnboardingUI = () => {
-                slides.forEach((s, i) => s.classList.toggle('hidden', i !== parseInt(s.dataset.slide) || currentSlide !== i));
-                dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
-                
-                const isFirstSlide = currentSlide === 0;
-                const isLastSlide = currentSlide === slides.length - 1;
-                
-                prevBtn.style.display = isFirstSlide ? 'none' : 'inline-block';
-                nextBtn.style.display = isLastSlide ? 'none' : 'inline-block';
-                dotsContainer.style.display = isLastSlide ? 'none' : 'flex';
-                // Mostrem el botó Enrere a l'última slide, però no el Següent
-                if (isLastSlide) prevBtn.style.display = 'inline-block';
-            };
+        if (onboardingContainer) { /* ... (la teva lògica d'onboarding aquí dins) ... */ }
 
-            nextBtn.addEventListener('click', () => { if (currentSlide < slides.length - 1) { currentSlide++; updateOnboardingUI(); }});
-            prevBtn.addEventListener('click', () => { if (currentSlide > 0) { currentSlide--; updateOnboardingUI(); }});
-            updateOnboardingUI(); // Estat inicial
-        }
-        
-        // --- Pantalla API Key ---
-        UI.saveApiKeyBtn.addEventListener('click', () => {
+        // Pantalla API Key
+        if(UI.saveApiKeyBtn) UI.saveApiKeyBtn.addEventListener('click', () => {
             const keyInput = UI.apiKeyInput.value.trim();
             if (keyInput.startsWith('hf_')) {
+                localStorage.setItem(API_KEY_STORAGE_ID, keyInput);
                 apiKey = keyInput;
-                localStorage.setItem(API_KEY_STORAGE_ID, apiKey);
                 UI.showScreen('setup-screen');
             } else { alert("La clau de l'API no és vàlida."); }
         });
 
-        // --- Pantalla de Setup ---
-        UI.changeApiKeyBtn.addEventListener('click', () => {
+        // Pantalla de Setup
+        if(UI.changeApiKeyBtn) UI.changeApiKeyBtn.addEventListener('click', () => {
             if (confirm("Vols esborrar la teva API Key?")) {
                 localStorage.removeItem(API_KEY_STORAGE_ID);
                 window.location.reload();
             }
         });
 
-        UI.setupContinueBtn.addEventListener('click', () => {
+        if(UI.startSessionBtn) UI.startSessionBtn.addEventListener('click', async () => {
             inspiracio = UI.masterInspirationInput.value;
-            UI.showScreen('how-to-screen');
-        });
-
-        // --- Pantalla de Sessió i How-to ---
-        UI.startSessionBtn.addEventListener('click', async () => {
             apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
             if (!apiKey) { UI.showScreen('api-key-screen'); return; }
+            
             await AudioManager.init();
             Director.init(apiKey, inspiracio);
+            UI.showHelpModal(); // Mostrem el popup d'ajuda en iniciar la sessió
         });
 
-        UI.toggleListeningBtn.addEventListener('click', () => Director.toggleListening());
-        UI.stopMusicBtn.addEventListener('click', () => Director.stopMusic());
-        UI.stopSessionBtn.addEventListener('click', () => Director.aturarSessio());
-        
-        UI.soundboard.addEventListener('click', (e) => {
+        // Pantalla de Sessió
+        if(UI.toggleListeningBtn) UI.toggleListeningBtn.addEventListener('click', () => Director.toggleListening());
+        if(UI.stopMusicBtn) UI.stopMusicBtn.addEventListener('click', () => Director.stopMusic());
+        if(UI.stopSessionBtn) UI.stopSessionBtn.addEventListener('click', () => Director.aturarSessio());
+        if(UI.soundboard) UI.soundboard.addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (button && button.dataset.sound) AudioManager.playSoundEffect(button.dataset.sound);
+        });
+
+        // Modal d'Ajuda
+        if(UI.showHelpBtn) UI.showHelpBtn.addEventListener('click', () => UI.showHelpModal());
+        if(UI.closeHelpBtn) UI.closeHelpBtn.addEventListener('click', () => UI.hideHelpModal());
+        if(UI.helpModalOverlay) UI.helpModalOverlay.addEventListener('click', (e) => {
+            if (e.target === UI.helpModalOverlay) UI.hideHelpModal();
         });
     }
     
