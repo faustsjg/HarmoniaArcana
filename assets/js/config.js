@@ -1,5 +1,5 @@
 // FILE: assets/js/config.js
-export const APP_VERSION = "v4.4.1-HTMLRestore";
+export const APP_VERSION = "v4.4.2-DOMTimingFix";
 export const API_KEY_STORAGE_ID = 'harmoniaArcana_huggingFaceApiKey';
 export const MODELS = {
     analyst: "meta-llama/Llama-3.1-8B-Instruct",
