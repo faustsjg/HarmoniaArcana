@@ -1,28 +1,15 @@
 // FILE: assets/js/ui.js
 export const UI = {
-    // Les propietats comencen buides.
-    statusDisplay: null,
-    versionDisplay: null,
-    apiKeyScreen: null,
-    setupScreen: null,
-    sessionScreen: null,
-    apiKeyInput: null,
-    saveApiKeyBtn: null,
-    changeApiKeyBtn: null,
-    masterInspirationInput: null,
-    startSessionBtn: null,
-    stopSessionBtn: null,
-    toggleListeningBtn: null,
-    stopMusicBtn: null,
-    transcriptPreview: null,
-    soundboard: null,
-    musicStatusDot: null,
-    musicStatusText: null,
+    // Propietats inicialitzades a null
+    statusDisplay: null, versionDisplay: null, apiKeyScreen: null,
+    setupScreen: null, sessionScreen: null, apiKeyInput: null,
+    saveApiKeyBtn: null, changeApiKeyBtn: null, masterInspirationInput: null,
+    startSessionBtn: null, stopSessionBtn: null, toggleListeningBtn: null,
+    stopMusicBtn: null, transcriptPreview: null, soundboard: null,
+    musicStatusDot: null, musicStatusText: null,
 
-    // La funció init ARA SÍ que assigna els elements del DOM.
-    // Com que es crida DESPRÉS del DOMContentLoaded, ens assegurem que tot existeix.
+    // La funció init assigna tots els elements del DOM d'una sola vegada.
     init(version) {
-        // Assignació d'elements
         this.statusDisplay = document.getElementById('status-display');
         this.versionDisplay = document.getElementById('version-display');
         this.apiKeyScreen = document.getElementById('api-key-screen');
@@ -31,8 +18,8 @@ export const UI = {
         this.apiKeyInput = document.getElementById('api-key-input');
         this.saveApiKeyBtn = document.getElementById('save-api-key-btn');
         this.changeApiKeyBtn = document.getElementById('change-api-key-btn');
-        this.masterInspirationInput = document.getElementById('master-inspiration-input');
         this.startSessionBtn = document.getElementById('start-session-btn');
+        this.masterInspirationInput = document.getElementById('master-inspiration-input');
         this.stopSessionBtn = document.getElementById('stop-session-btn');
         this.toggleListeningBtn = document.getElementById('toggle-listening-btn');
         this.stopMusicBtn = document.getElementById('stop-music-btn');
@@ -41,10 +28,7 @@ export const UI = {
         this.musicStatusDot = document.querySelector('.status-dot-music');
         this.musicStatusText = document.getElementById('music-status-text');
 
-        // Lògica que ja teníem
-        if (this.versionDisplay) {
-            this.versionDisplay.textContent = `Harmonia Arcana ${version}`;
-        }
+        if (this.versionDisplay) this.versionDisplay.textContent = `Harmonia Arcana ${version}`;
         console.log(`UI Inicialitzada. Versió: ${version}`);
     },
     
@@ -73,8 +57,6 @@ export const UI = {
             if(screen) screen.style.display = 'none';
         });
         const screenToShow = document.getElementById(screenName);
-        if (screenToShow) {
-            screenToShow.style.display = 'block';
-        }
+        if (screenToShow) screenToShow.style.display = 'block';
     }
 };
