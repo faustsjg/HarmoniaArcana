@@ -1,5 +1,5 @@
 // FILE: assets/js/config.js
-export const APP_VERSION = "v5.0.0-StableBase";
+export const APP_VERSION = "v5.1.0-SessionLogic";
 export const API_KEY_STORAGE_ID = 'harmoniaArcana_huggingFaceApiKey';
 export const MODELS = {
     analyst: "meta-llama/Llama-3.1-8B-Instruct",
