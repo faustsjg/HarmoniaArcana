@@ -6,12 +6,11 @@ import { Speech } from './speech.js';
 import { AudioManager } from './audioManager.js';
 
 export const Director = {
-    // ... (propietats com apiKey, etc. es mantenen igual) ...
     apiKey: null, inspiracioMestra: "", contextActual: { mood: 'inici' },
     bibliotecaSessio: {}, intervalId: null, isSessionActive: false,
     isProcessing: false, fullTranscript: "",
 
-    async init(apiKey, inspiracio) {
+    init(apiKey, inspiracio) {
         if (this.isSessionActive) return;
         this.apiKey = apiKey;
         this.inspiracioMestra = inspiracio.trim() || "Música èpica d'aventures de fantasia";
@@ -23,73 +22,82 @@ export const Director = {
         UI.updateMusicStatus(false);
         UI.toggleListeningBtn.textContent = "Començar a Escoltar";
         
-        // Ara passem dues funcions a Speech.init
         const speechSupported = Speech.init(
-            (interimText) => { // Per a resultats ràpids
-                UI.updateTranscript(this.fullTranscript + interimText);
-            },
-            (finalText) => { // Per a resultats finals
-                this.fullTranscript += finalText;
-                UI.updateTranscript(this.fullTranscript);
-            }
+            (interimText) => { UI.updateTranscript(this.fullTranscript + interimText); },
+            (finalText) => { this.fullTranscript += finalText; }
         );
         
         if (!speechSupported) UI.updateStatus("Error: El reconeixement de veu no és compatible.");
-        else UI.updateStatus("Sessió preparada. Fes clic a 'Començar a Escoltar'.");
+        else UI.updateStatus("Sessió preparada. Fes clic a 'Començar a Escoltar' per generar la música inicial.");
+    },
+
+    toggleListening() {
+        if (!this.isSessionActive) return;
+        if (Speech.isListening) {
+            Speech.stopListening();
+            UI.toggleListeningBtn.textContent = "Començar a Escoltar";
+            UI.updateStatus("Escolta en pausa.", false);
+            if (this.intervalId) clearInterval(this.intervalId);
+        } else {
+            Speech.startListening();
+            UI.toggleListeningBtn.textContent = "Aturar Escolta";
+            UI.updateStatus("Escoltant...", true);
+            // Si és la primera vegada, generem la música. Si no, simplement continuem l'anàlisi.
+            if (this.contextActual.mood === 'inici') {
+                this.iniciarBuclePrincipal(true); // true = forçar generació
+            } else {
+                this.iniciarBuclePrincipal(false); // false = només analitzar
+            }
+        }
+    },
+
+    async canviarMusicaPerContext(nouContext) {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+        UI.logToActionPanel(`Director: Canvi de 'mood' detectat a '${nouContext.mood}'. Generant noves capes...`, 'info');
+        
+        const promptHarmonia = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} a ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera només la base harmònica i atmosfèrica, notes llargues, sense percussió ni melodia principal.`;
+        const promptRitme = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} a ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera només la percussió i el ritme, sense harmonia ni melodia.`;
+
+        // Generem les dues capes en paral·lel per estalviar temps.
+        const [pistaHarmonia, pistaRitme] = await Promise.all([
+            AI.generarMusica(this.apiKey, promptHarmonia, 'harmonia'),
+            AI.generarMusica(this.apiKey, promptRitme, 'ritme')
+        ]);
+        
+        if (pistaHarmonia && pistaRitme) {
+            UI.logToActionPanel("Director: Totes les capes generades. Carregant a l'AudioManager...", 'info');
+            this.contextActual = nouContext;
+            const capesNoves = { ...pistaHarmonia, ...pistaRitme };
+            this.bibliotecaSessio[nouContext.mood] = capesNoves; // Guardem les capes a la biblioteca
+            await AudioManager.carregarPistes(capesNoves);
+            AudioManager.reproduirTot();
+            UI.updateMusicStatus(true, `${nouContext.mood} (capes)`);
+        } else {
+            UI.logToActionPanel("Director: Error en la generació d'una o més capes.", 'error');
+        }
+        this.isProcessing = false;
     },
     
-    // ... (toggleListening es manté pràcticament igual) ...
-    toggleListening() { /* ... */ },
-
-    async iniciarBuclePrincipal() {
+    iniciarBuclePrincipal(forcarMusicaInicial = false) {
         if (this.intervalId) clearInterval(this.intervalId);
 
-        const canviarMusicaPerContext = async (nouContext) => {
-            if (this.isProcessing) return;
-            this.isProcessing = true;
-            UI.updateStatus(`Canvi de mood detectat a '${nouContext.mood}'. Generant música...`, true);
-            
-            const prompt = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} a ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera un loop instrumental d'un minut.`;
-            const novesPistes = await AI.generarMusica(this.apiKey, prompt);
-            
-            if (novesPistes) {
-                UI.updateStatus(`Música generada. Carregant pistes...`, true);
-                this.contextActual = nouContext;
-                await AudioManager.carregarPistes(novesPistes);
-                AudioManager.reproduirTot();
-                UI.updateMusicStatus(true, `${nouContext.mood}`);
-            } else {
-                UI.updateStatus("Error en la generació de música. Comprova la API Key o la connexió.", true);
-            }
-            this.isProcessing = false;
-        };
-        
-        // Generem la música inicial
-        await canviarMusicaPerContext({ mood: "introducció", location: "el principi de l'aventura", keywords: ["calma", "misteri"] });
+        if (forcarMusicaInicial) {
+            this.canviarMusicaPerContext({ mood: "introducció", location: "el principi de l'aventura", keywords: ["calma", "misteri"] });
+        }
 
         this.intervalId = setInterval(async () => {
             if (!this.isSessionActive || !Speech.isListening || this.isProcessing) return;
             const textBuffer = Speech.getAndClearBuffer();
-            if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) {
-                UI.updateStatus("Escoltant...", true);
-                return;
-            }
+            if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
             
-            UI.updateStatus("Analitzant narració...", true);
             const nouContext = await AI.analisarContext(this.apiKey, textBuffer);
-            
-            if (nouContext && nouContext.mood) {
-                UI.updateStatus(`IA ha detectat el mood: '${nouContext.mood}'. Comparant amb '${this.contextActual.mood}'...`, true);
-                if (nouContext.mood !== this.contextActual.mood) {
-                    await canviarMusicaPerContext(nouContext);
-                }
-            } else {
-                 UI.updateStatus(`La IA no ha pogut determinar un context clar.`, true);
+            if (nouContext && nouContext.mood && nouContext.mood !== this.contextActual.mood) {
+                await this.canviarMusicaPerContext(nouContext);
             }
         }, DIRECTOR_CONFIG.analysisInterval);
     },
     
-    // ... (stopMusic i aturarSessio es mantenen igual) ...
-    stopMusic() { /*...*/ },
-    aturarSessio() { /*...*/ }
+    stopMusic() { /* ... */ },
+    aturarSessio() { /* ... */ }
 };
