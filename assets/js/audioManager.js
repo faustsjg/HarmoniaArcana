@@ -1,25 +1,32 @@
 // FILE: assets/js/audioManager.js
 export const AudioManager = {
     isInitialized: false,
-    aiMusicPlayers: {}, // Canviem el nom per a més claredat
+    aiMusicPlayers: {},
     standbyPlayer: null,
 
-    async init() { /* ... */ },
+    async init() {
+        if (this.isInitialized) return;
+        try {
+            await Tone.start();
+            Tone.Transport.start();
+            this.isInitialized = true;
+        } catch (error) { console.error("Error inicialitzant l'AudioManager:", error); }
+    },
 
-    // NOU: Funció per a la música d'espera
     playStandbyMusic() {
-        if (!this.isInitialized) return;
-        const standbyUrl = 'assets/sounds/standby-music.mp3'; // HAS DE TENIR AQUEST FITXER
+        if (!this.isInitialized || this.standbyPlayer) return;
+        // Assegura't que tens aquest fitxer a la teva carpeta assets/sounds/
+        const standbyUrl = 'assets/sounds/standby-music.mp3'; 
         this.standbyPlayer = new Tone.Player({
             url: standbyUrl,
             loop: true,
-            volume: -10, // Volum més baix que la música principal
-            fadeIn: 1,
+            volume: -12,
+            fadeIn: 2,
         }).toDestination();
         this.standbyPlayer.autostart = true;
     },
 
-    stopStandbyMusic(fadeOutTime = 1) {
+    stopStandbyMusic(fadeOutTime = 2) {
         if (this.standbyPlayer && this.standbyPlayer.state === "started") {
             this.standbyPlayer.volume.rampTo(-Infinity, fadeOutTime);
             this.standbyPlayer.stop(`+${fadeOutTime}`);
@@ -28,10 +35,45 @@ export const AudioManager = {
 
     async carregarPistes(pistes) {
         if (!this.isInitialized) return;
-        this.stopStandbyMusic(); // Aturem la música d'espera
+        this.stopStandbyMusic(1); // Aturem la música d'espera amb un fade-out
         this.aturarTot(0.1);
-        // ... (la resta de la funció es manté igual, però utilitza this.aiMusicPlayers)
+        
+        const loadingPromises = Object.keys(pistes).map(key => {
+            return new Promise(resolve => {
+                this.aiMusicPlayers[key] = new Tone.Player({
+                    url: pistes[key],
+                    loop: true,
+                    fadeIn: 2, // Afegim un fade-in suau
+                    onload: resolve,
+                }).toDestination();
+            });
+        });
+        await Promise.all(loadingPromises);
+    },
+
+    reproduirTot() {
+        if (!this.isInitialized || Object.keys(this.aiMusicPlayers).length === 0) return;
+        const ara = Tone.now() + 0.1;
+        Object.values(this.aiMusicPlayers).forEach(player => player.start(ara));
     },
     
-    // ... (la resta de funcions es mantenen igual, però utilitzen this.aiMusicPlayers)
+    aturarTot(tempsFadeOut = 1) {
+        if (!this.isInitialized) return;
+        Object.values(this.aiMusicPlayers).forEach(player => {
+            if (player && player.state === "started") {
+                player.volume.rampTo(-Infinity, tempsFadeOut);
+                player.stop(`+${tempsFadeOut + 0.1}`);
+            }
+        });
+    },
+
+    playSoundEffect(soundFile) {
+        if (!this.isInitialized) return;
+        const soundUrl = `assets/sounds/${soundFile}`;
+        try {
+            const player = new Tone.Player(soundUrl).toDestination();
+            player.autostart = true;
+            player.onstop = () => player.dispose();
+        } catch (error) { console.error(`Error reproduint so: ${soundFile}`, error); }
+    }
 };
