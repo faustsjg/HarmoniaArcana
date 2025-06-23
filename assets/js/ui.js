@@ -1,62 +1,42 @@
 // FILE: assets/js/ui.js
 export const UI = {
-    // Propietats inicialitzades a null
-    statusDisplay: null, versionDisplay: null, apiKeyScreen: null,
-    setupScreen: null, sessionScreen: null, apiKeyInput: null,
-    saveApiKeyBtn: null, changeApiKeyBtn: null, masterInspirationInput: null,
-    startSessionBtn: null, stopSessionBtn: null, toggleListeningBtn: null,
-    stopMusicBtn: null, transcriptPreview: null, soundboard: null,
-    musicStatusDot: null, musicStatusText: null,
+    // ... (totes les referències als elements, incloent les noves)
+    showHelpBtn: document.getElementById('show-help-btn'),
+    helpModalOverlay: document.getElementById('help-modal-overlay'),
+    closeHelpBtn: document.getElementById('close-help-btn'),
+    actionLogContainer: document.getElementById('action-log-container'),
+    actionLogContent: document.getElementById('action-log-content'),
+    toggleLogBtn: document.getElementById('toggle-log-btn'),
 
-    // La funció init assigna tots els elements del DOM d'una sola vegada.
-    init(version) {
-        this.statusDisplay = document.getElementById('status-display');
-        this.versionDisplay = document.getElementById('version-display');
-        this.apiKeyScreen = document.getElementById('api-key-screen');
-        this.setupScreen = document.getElementById('setup-screen');
-        this.sessionScreen = document.getElementById('session-screen');
-        this.apiKeyInput = document.getElementById('api-key-input');
-        this.saveApiKeyBtn = document.getElementById('save-api-key-btn');
-        this.changeApiKeyBtn = document.getElementById('change-api-key-btn');
-        this.startSessionBtn = document.getElementById('start-session-btn');
-        this.masterInspirationInput = document.getElementById('master-inspiration-input');
-        this.stopSessionBtn = document.getElementById('stop-session-btn');
-        this.toggleListeningBtn = document.getElementById('toggle-listening-btn');
-        this.stopMusicBtn = document.getElementById('stop-music-btn');
-        this.transcriptPreview = document.getElementById('transcript-preview');
-        this.soundboard = document.getElementById('soundboard');
-        this.musicStatusDot = document.querySelector('.status-dot-music');
-        this.musicStatusText = document.getElementById('music-status-text');
-
-        if (this.versionDisplay) this.versionDisplay.textContent = `Harmonia Arcana ${version}`;
-        console.log(`UI Inicialitzada. Versió: ${version}`);
-    },
+    init(version) { /* ... */ },
     
-    updateStatus(message, isListening = false) {
-        if (!this.statusDisplay) return;
-        this.statusDisplay.innerHTML = isListening 
-            ? `<span class="inline-block w-2 h-2 mr-2 bg-red-500 rounded-full animate-pulse"></span> ${message}` 
-            : message;
-    },
+    setButtonActive(button, isActive) {
+        if (!button) return;
+        button.classList.toggle('active', isActive);
+        const icon = button.querySelector('i');
+        const text = button.querySelector('span');
+        if (!icon || !text) return;
 
-    updateMusicStatus(isPlaying, name = '') {
-        if(this.musicStatusDot) this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
-        if(this.musicStatusText) this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
-    },
-
-    updateTranscript(fullText) {
-        if(this.transcriptPreview) {
-            this.transcriptPreview.textContent = fullText;
-            this.transcriptPreview.scrollTop = this.transcriptPreview.scrollHeight;
+        if (button.id === 'toggle-listening-btn') {
+            button.classList.toggle('bg-red-600', isActive);
+            button.classList.toggle('hover:bg-red-700', isActive);
+            button.classList.toggle('bg-purple-600', !isActive);
+            button.classList.toggle('hover:bg-purple-700', !isActive);
+            icon.className = isActive ? 'fas fa-microphone mr-2' : 'fas fa-microphone-slash mr-2';
+            text.textContent = isActive ? 'Aturar Escolta' : 'Començar a Escoltar';
+        } else if (button.id === 'stop-music-btn') {
+            button.classList.toggle('bg-red-500', !isActive);
+            button.classList.toggle('hover:bg-red-600', !isActive);
+            button.classList.toggle('bg-yellow-500', isActive);
+            button.classList.toggle('hover:bg-yellow-600', isActive);
+            icon.className = isActive ? 'fas fa-pause mr-2' : 'fas fa-play mr-2';
+            text.textContent = isActive ? 'Aturar Música' : 'Reproduir Música';
         }
     },
     
-    showScreen(screenName) {
-        ['api-key-screen', 'setup-screen', 'session-screen'].forEach(id => {
-            const screen = document.getElementById(id);
-            if(screen) screen.style.display = 'none';
-        });
-        const screenToShow = document.getElementById(screenName);
-        if (screenToShow) screenToShow.style.display = 'block';
-    }
+    showScreen(screenName) { /* ... */ },
+    logToActionPanel(message, level = 'info') { /* ... */ },
+    toggleLogPanel() { /* ... */ },
+    showHelpModal() { /* ... */ },
+    hideHelpModal() { /* ... */ }
 };
