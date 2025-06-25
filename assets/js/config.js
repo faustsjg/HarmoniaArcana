@@ -1,10 +1,9 @@
 // FILE: assets/js/config.js
-export const APP_VERSION = "v6.1.0-Resilience";
+export const APP_VERSION = "v7.0.0-GoldenMaster";
 export const API_KEY_STORAGE_ID = 'harmoniaArcana_huggingFaceApiKey';
 export const MODELS = {
     analyst: "meta-llama/Llama-3.1-8B-Instruct",
-    // CANVI: Provem un altre model de la família MusicGen.
-    musicgen: "facebook/musicgen-chorus" 
+    musicgen: "facebook/musicgen-melody" 
 };
 export const DIRECTOR_CONFIG = {
     analysisInterval: 20000,
