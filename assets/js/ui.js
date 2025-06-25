@@ -1,27 +1,25 @@
 // FILE: assets/js/ui.js
 export const UI = {
+    // Propietats inicialitzades a null
     statusDisplay: null, versionDisplay: null, apiKeyScreen: null,
-    setupScreen: null, sessionScreen: null, apiKeyInput: null,
-    saveApiKeyBtn: null, changeApiKeyBtn: null, masterInspirationInput: null,
-    startSessionBtn: null, stopSessionBtn: null, toggleListeningBtn: null,
-    stopMusicBtn: null, transcriptPreview: null, soundboard: null,
-    musicStatusDot: null, musicStatusText: null, showHelpBtn: null,
-    helpModalOverlay: null, closeHelpBtn: null, actionLogContainer: null,
-    actionLogContent: null, toggleLogBtn: null,
+    setupScreen: null, sessionScreen: null, howToScreen: null,
+    apiKeyInput: null, saveApiKeyBtn: null, changeApiKeyBtn: null,
+    masterInspirationInput: null, startSessionBtn: null, stopSessionBtn: null,
+    toggleListeningBtn: null, stopMusicBtn: null, transcriptPreview: null,
+    soundboard: null, musicStatusDot: null, musicStatusText: null,
+    showHelpBtn: null, helpModalOverlay: null, closeHelpBtn: null,
+    actionLogContainer: null, actionLogContent: null, toggleLogBtn: null,
 
     init(version) {
-        // Assignació d'elements
-        const ids = [
-            'status-display', 'version-display', 'api-key-screen', 'setup-screen',
-            'session-screen', 'api-key-input', 'save-api-key-btn', 'change-api-key-btn',
-            'master-inspiration-input', 'start-session-btn', 'stop-session-btn',
-            'toggle-listening-btn', 'stop-music-btn', 'transcript-preview', 'soundboard',
-            'show-help-btn', 'help-modal-overlay', 'close-help-btn', 'action-log-container',
+        const ids = ['status-display', 'version-display', 'api-key-screen', 'setup-screen',
+            'session-screen', 'how-to-screen', 'api-key-input', 'save-api-key-btn', 'change-api-key-btn',
+            'master-inspiration-input', 'start-session-btn', 'stop-session-btn', 'toggle-listening-btn',
+            'stop-music-btn', 'transcript-preview', 'soundboard', 'show-help-btn',
+            'help-modal-overlay', 'close-help-btn', 'action-log-container',
             'action-log-content', 'toggle-log-btn'
         ];
-        // Converteix els IDs a camelCase per a les propietats de l'objecte
         ids.forEach(id => {
-            const propName = id.replace(/-(\w)/g, (match, letter) => letter.toUpperCase());
+            const propName = id.replace(/-(\w)/g, (_, letter) => letter.toUpperCase());
             this[propName] = document.getElementById(id);
         });
         
@@ -32,10 +30,30 @@ export const UI = {
         console.log(`UI Inicialitzada. Versió: ${version}`);
     },
     
-    updateStatus(message, isListening = false) { /* ... (sense canvis) ... */ },
-    updateMusicStatus(isPlaying, name = '') { /* ... (sense canvis) ... */ },
-    updateTranscript(fullText) { /* ... (sense canvis) ... */ },
-    showScreen(screenName) { /* ... (sense canvis) ... */ },
+    updateStatus(message) { if (this.statusDisplay) this.statusDisplay.textContent = message; },
+
+    updateMusicStatus(isPlaying, name = '') {
+        if(this.musicStatusDot) this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
+        if(this.musicStatusText) this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
+        if(this.stopMusicBtn) this.stopMusicBtn.dataset.playing = isPlaying;
+        this.setButtonActive(this.stopMusicBtn, isPlaying);
+    },
+
+    updateTranscript(fullText) {
+        if(this.transcriptPreview) {
+            this.transcriptPreview.textContent = fullText;
+            this.transcriptPreview.scrollTop = this.transcriptPreview.scrollHeight;
+        }
+    },
+    
+    showScreen(screenName) {
+        ['api-key-screen', 'setup-screen', 'session-screen'].forEach(id => {
+            const screen = document.getElementById(id);
+            if(screen) screen.style.display = 'none';
+        });
+        const screenToShow = document.getElementById(screenName);
+        if (screenToShow) screenToShow.style.display = 'block';
+    },
 
     logToActionPanel(message, level = 'info') {
         if (!this.actionLogContent) return;
@@ -53,13 +71,8 @@ export const UI = {
         this.toggleLogBtn.textContent = isVisible ? 'Amagar Registre' : 'Mostrar Registre';
     },
 
-    showHelpModal() {
-        if (this.helpModalOverlay) this.helpModalOverlay.classList.add('visible');
-    },
-
-    hideHelpModal() {
-        if (this.helpModalOverlay) this.helpModalOverlay.classList.remove('visible');
-    },
+    showHelpModal() { if (this.helpModalOverlay) this.helpModalOverlay.classList.add('visible'); },
+    hideHelpModal() { if (this.helpModalOverlay) this.helpModalOverlay.classList.remove('visible'); },
 
     setButtonActive(button, isActive) {
         if (!button) return;
