@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     UI.init(APP_VERSION);
     
     function setupEventListeners() {
-        // Onboarding
         const onboardingContainer = document.getElementById('onboarding-container');
         if (onboardingContainer) {
             const slides = onboardingContainer.querySelectorAll('.onboarding-slide');
@@ -17,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const nextBtn = document.getElementById('onboarding-next');
             const dotsContainer = document.getElementById('onboarding-dots');
             let currentSlide = 0;
-            if (dotsContainer && dotsContainer.children.length === 0) {
+            if(dotsContainer && dotsContainer.children.length === 0) {
                 for(let i = 0; i < slides.length; i++) {
                     const dot = document.createElement('div'); dot.classList.add('progress-dot'); dotsContainer.appendChild(dot);
                 }
@@ -34,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updateOnboardingUI();
         }
         
-        // Listeners principals
         if(UI.saveApiKeyBtn) UI.saveApiKeyBtn.addEventListener('click', () => {
             const keyInput = UI.apiKeyInput.value.trim();
             if (keyInput.startsWith('hf_')) {
@@ -59,9 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if(UI.toggleListeningBtn) UI.toggleListeningBtn.addEventListener('click', () => Director.toggleListening());
-        if(UI.stopMusicBtn) UI.stopMusicBtn.addEventListener('click', () => Director.stopMusic());
+        if(UI.toggleMusicBtn) UI.toggleMusicBtn.addEventListener('click', () => Director.toggleMusicPlayback());
         if(UI.stopSessionBtn) UI.stopSessionBtn.addEventListener('click', () => Director.aturarSessio());
-        
         if(UI.soundboard) UI.soundboard.addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (button && button.dataset.sound) AudioManager.playSoundEffect(button.dataset.sound);
@@ -72,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(UI.toggleLogBtn) UI.toggleLogBtn.addEventListener('click', () => UI.toggleLogPanel());
         if(UI.helpModalOverlay) UI.helpModalOverlay.addEventListener('click', (e) => { if (e.target === UI.helpModalOverlay) UI.hideHelpModal(); });
     }
-
+    
     setupEventListeners();
     
     if (localStorage.getItem(API_KEY_STORAGE_ID)) {
