@@ -15,5 +15,5 @@ body { font-family: 'Inter', sans-serif; }
 .log-error { color: #f87171; background-color: rgba(239, 68, 68, 0.1); }
 .log-ai { color: #a78bfa; }
 #help-modal-overlay.visible { display: flex; }
-.btn-control { display: flex; align-items: center; justify-content: center; text-sm text-white transition-all duration-200; }
+.btn-control { display: flex; align-items: center; justify-content: center; font-semibold py-2.5 px-4 rounded-lg text-sm text-white transition-all duration-200; }
 .btn-control.active { filter: brightness(1.25) saturate(1.5); box-shadow: 0 0 10px rgba(255, 255, 255, 0.15); }
