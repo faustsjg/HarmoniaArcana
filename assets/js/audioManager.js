@@ -17,18 +17,24 @@ export const AudioManager = {
     },
 
     playStandbyMusic() {
-        if (!this.isInitialized || this.standbyPlayer) return;
-        const standbyUrl = 'assets/sounds/standby-music.mp3';
+        if (!this.isInitialized || (this.standbyPlayer && this.standbyPlayer.state === "started")) return;
+        
+        // CANVI: Utilitzem el nom del teu fitxer.
+        const standbyUrl = './assets/sounds/despertar_de_somnis.mp3'; 
+        
         UI.logToActionPanel(`Carregant música d'espera: ${standbyUrl}`);
+        
+        if (this.standbyPlayer) this.standbyPlayer.dispose();
+
         this.standbyPlayer = new Tone.Player({
             url: standbyUrl, loop: true, volume: -12, fadeIn: 2,
             onload: () => {
                 UI.logToActionPanel("Música d'espera carregada i reproduint.", "success");
                 UI.updateMusicStatus(true, "Música d'espera");
+                this.standbyPlayer.start();
             },
-            onerror: (err) => UI.logToActionPanel(`Error carregant la música d'espera: ${err}`, "error"),
+            onerror: (err) => UI.logToActionPanel(`Error carregant la música d'espera. Assegura't que el fitxer '${standbyUrl}' existeix.`, "error"),
         }).toDestination();
-        this.standbyPlayer.autostart = true;
     },
 
     stopStandbyMusic(fadeOutTime = 1.5) {
@@ -47,9 +53,9 @@ export const AudioManager = {
         UI.logToActionPanel(`Carregant ${Object.keys(pistes).length} capes de música IA...`);
         const loadingPromises = Object.keys(pistes).map(key => {
             return new Promise(resolve => {
+                if (this.aiMusicPlayers[key]) this.aiMusicPlayers[key].dispose();
                 this.aiMusicPlayers[key] = new Tone.Player({
-                    url: pistes[key], loop: true, fadeIn: 2,
-                    onload: resolve,
+                    url: pistes[key], loop: true, fadeIn: 2, onload: resolve,
                 }).toDestination();
             });
         });
@@ -66,7 +72,6 @@ export const AudioManager = {
     
     aturarTot(tempsFadeOut = 1) {
         if (!this.isInitialized) return;
-        UI.logToActionPanel("Aturant totes les pistes de la IA...");
         Object.values(this.aiMusicPlayers).forEach(player => {
             if (player && player.state === "started") {
                 player.volume.rampTo(-Infinity, tempsFadeOut);
@@ -77,7 +82,7 @@ export const AudioManager = {
 
     playSoundEffect(soundFile) {
         if (!this.isInitialized) return;
-        const soundUrl = `assets/sounds/${soundFile}`;
+        const soundUrl = `./assets/sounds/${soundFile}`;
         try {
             const player = new Tone.Player(soundUrl).toDestination();
             player.autostart = true;
