@@ -18,12 +18,10 @@ export const Director = {
         
         UI.showScreen('session-screen');
         UI.logToActionPanel("Sessió inicialitzada.", "success");
-        if(UI.showHelpBtn) UI.showHelpBtn.classList.remove('hidden');
+        UI.currentInspirationDisplay.textContent = `Inspiració: ${this.inspiracioMestra}`;
+        UI.showHelpBtn.classList.remove('hidden');
         UI.updateTranscript("");
         UI.setButtonActive(UI.toggleListeningBtn, false);
-        UI.setButtonActive(UI.toggleMusicBtn, false);
-        
-        AudioManager.playStandbyMusic();
         
         const speechSupported = Speech.init(
             (interimText) => { UI.updateTranscript(this.fullTranscript + interimText); },
@@ -31,32 +29,37 @@ export const Director = {
         );
         if (!speechSupported) UI.logToActionPanel("Error: Reconeixement de veu no compatible.", "error");
         
-        UI.updateStatus("Generant tema principal en segon pla...");
+        UI.updateStatus("Preparant la teva aventura...");
+        AudioManager.playStandbyMusic();
+        
         this.canviarMusicaPerContext({ mood: "tema principal", location: "inici de l'aventura", keywords: ["èpic"] });
     },
     
     toggleListening() {
         if (!this.isSessionActive) return;
         const isCurrentlyListening = Speech.isListening;
+        UI.setButtonActive(UI.toggleListeningBtn, !isCurrentlyListening);
         if (isCurrentlyListening) {
             Speech.stopListening();
-            UI.updateStatus("Escolta en pausa.", false);
+            UI.updateStatus("Escolta en pausa.");
             if (this.intervalId) clearInterval(this.intervalId);
         } else {
             Speech.startListening();
-            UI.updateStatus("Escoltant...", true);
+            UI.updateStatus("Escoltant...");
             this.iniciarBuclePrincipal();
         }
-        UI.setButtonActive(UI.toggleListeningBtn, !isCurrentlyListening);
     },
+
+    toggleMusicPlayback() { AudioManager.toggleAiMusicPlayback(); },
 
     async canviarMusicaPerContext(nouContext) {
         if (this.isProcessing) return;
         this.isProcessing = true;
         UI.logToActionPanel(`Director: Generant capes per a '${nouContext.mood}'...`, 'info');
-        
-        const promptHarmonia = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} a ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera només la base harmònica i atmosfèrica, notes llargues, sense percussió.`;
-        const promptRitme = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} a ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera només la percussió i el ritme, sense melodia.`;
+        UI.updateMusicStatus({isPlaying: true, title: `Generant: ${nouContext.mood}`, subtitle: "Contactant amb la IA..."});
+
+        const promptHarmonia = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} a ${nouContext.location}. Genera només la base harmònica i atmosfèrica, notes llargues, sense percussió. loop instrumental d'un minut.`;
+        const promptRitme = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} a ${nouContext.location}. Genera només la percussió i el ritme, sense melodia. loop instrumental d'un minut.`;
 
         const [pistaHarmonia, pistaRitme] = await Promise.all([
             AI.generarMusica(this.apiKey, promptHarmonia, 'harmonia'),
@@ -67,13 +70,12 @@ export const Director = {
             this.contextActual = nouContext;
             await AudioManager.carregarPistes({ ...pistaHarmonia, ...pistaRitme });
             AudioManager.reproduirAITot();
-            UI.updateMusicStatus(true, `${nouContext.mood} (capes)`);
+            UI.updateMusicStatus({isPlaying: true, title: `${nouContext.mood}`.replace(/^\w/, c => c.toUpperCase()), subtitle: this.inspiracioMestra});
         } else {
             UI.logToActionPanel("Director: Error generant capes. La música d'espera continuarà.", 'error');
+            UI.updateMusicStatus({isPlaying: true, title: "Música d'espera", subtitle: "Hi ha hagut un error amb la IA"});
         }
         this.isProcessing = false;
-        if(Speech.isListening) UI.updateStatus("Escoltant...", true);
-        else UI.updateStatus("Tema principal llest. Fes clic a 'Començar a Escoltar'.");
     },
     
     iniciarBuclePrincipal() {
@@ -82,14 +84,13 @@ export const Director = {
             if (!this.isSessionActive || !Speech.isListening || this.isProcessing) return;
             const textBuffer = Speech.getAndClearBuffer();
             if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
+            
             const nouContext = await AI.analisarContext(this.apiKey, textBuffer);
             if (nouContext && nouContext.mood && nouContext.mood !== this.contextActual.mood) {
                 await this.canviarMusicaPerContext(nouContext);
             }
         }, DIRECTOR_CONFIG.analysisInterval);
     },
-    
-    toggleMusicPlayback() { AudioManager.toggleAiMusicPlayback(); },
 
     aturarSessio() {
         if (!this.isSessionActive) return;
