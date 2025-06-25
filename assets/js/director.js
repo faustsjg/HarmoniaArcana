@@ -17,16 +17,17 @@ export const Director = {
         this.fullTranscript = "";
         
         UI.showScreen('session-screen');
-        UI.logToActionPanel("Director: Sessió inicialitzada.", "success");
-        UI.showHelpBtn.classList.remove('hidden');
+        UI.logToActionPanel("Sessió inicialitzada.", "success");
+        if(UI.showHelpBtn) UI.showHelpBtn.classList.remove('hidden');
         UI.updateTranscript("");
         UI.setButtonActive(UI.toggleListeningBtn, false);
+        UI.setButtonActive(UI.toggleMusicBtn, false);
         
         AudioManager.playStandbyMusic();
         
         const speechSupported = Speech.init(
-            (interimText) => UI.updateTranscript(this.fullTranscript + interimText),
-            (finalText) => this.fullTranscript += finalText
+            (interimText) => { UI.updateTranscript(this.fullTranscript + interimText); },
+            (finalText) => { this.fullTranscript += finalText; }
         );
         if (!speechSupported) UI.logToActionPanel("Error: Reconeixement de veu no compatible.", "error");
         
@@ -54,8 +55,8 @@ export const Director = {
         this.isProcessing = true;
         UI.logToActionPanel(`Director: Generant capes per a '${nouContext.mood}'...`, 'info');
         
-        const promptHarmonia = `Estil: ${this.inspiracioMestra}. Escena: ${nouContext.mood}. Només base harmònica i atmosfèrica, notes llargues, sense percussió.`;
-        const promptRitme = `Estil: ${this.inspiracioMestra}. Escena: ${nouContext.mood}. Només percussió i ritme, sense melodia.`;
+        const promptHarmonia = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} a ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera només la base harmònica i atmosfèrica, notes llargues, sense percussió.`;
+        const promptRitme = `Estil musical: ${this.inspiracioMestra}. Escena: ${nouContext.mood} a ${nouContext.location}. Paraules clau: ${nouContext.keywords.join(', ')}. Genera només la percussió i el ritme, sense melodia.`;
 
         const [pistaHarmonia, pistaRitme] = await Promise.all([
             AI.generarMusica(this.apiKey, promptHarmonia, 'harmonia'),
@@ -65,15 +66,14 @@ export const Director = {
         if (pistaHarmonia && pistaRitme) {
             this.contextActual = nouContext;
             await AudioManager.carregarPistes({ ...pistaHarmonia, ...pistaRitme });
-            AudioManager.reproduirTot();
+            AudioManager.reproduirAITot();
             UI.updateMusicStatus(true, `${nouContext.mood} (capes)`);
-            UI.setButtonActive(UI.stopMusicBtn, true);
         } else {
             UI.logToActionPanel("Director: Error generant capes. La música d'espera continuarà.", 'error');
         }
         this.isProcessing = false;
-        if (Speech.isListening) UI.updateStatus("Escoltant...", true);
-        else UI.updateStatus("Sessió preparada. Fes clic a 'Començar a Escoltar'.");
+        if(Speech.isListening) UI.updateStatus("Escoltant...", true);
+        else UI.updateStatus("Tema principal llest. Fes clic a 'Començar a Escoltar'.");
     },
     
     iniciarBuclePrincipal() {
@@ -82,7 +82,6 @@ export const Director = {
             if (!this.isSessionActive || !Speech.isListening || this.isProcessing) return;
             const textBuffer = Speech.getAndClearBuffer();
             if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
-            
             const nouContext = await AI.analisarContext(this.apiKey, textBuffer);
             if (nouContext && nouContext.mood && nouContext.mood !== this.contextActual.mood) {
                 await this.canviarMusicaPerContext(nouContext);
@@ -90,21 +89,17 @@ export const Director = {
         }, DIRECTOR_CONFIG.analysisInterval);
     },
     
-    stopMusic() {
-        AudioManager.stopStandbyMusic(1);
-        AudioManager.aturarTot();
-        UI.updateMusicStatus(false);
-        UI.setButtonActive(UI.stopMusicBtn, false);
-    },
+    toggleMusicPlayback() { AudioManager.toggleAiMusicPlayback(); },
 
     aturarSessio() {
         if (!this.isSessionActive) return;
-        if (this.intervalId) clearInterval(this.intervalId);
+        if (this.intervalId) { clearInterval(this.intervalId); this.intervalId = null; }
         this.isSessionActive = false;
-        if (Speech.isListening) this.toggleListening();
-        this.stopMusic();
+        if (Speech.isListening) Speech.stopListening();
+        AudioManager.stopStandbyMusic(0.1);
+        AudioManager.aturarAITot(0.1, true);
         UI.updateStatus("Sessió finalitzada.");
         UI.showScreen('setup-screen');
-        UI.showHelpBtn.classList.add('hidden');
+        if(UI.showHelpBtn) UI.showHelpBtn.classList.add('hidden');
     }
 };
