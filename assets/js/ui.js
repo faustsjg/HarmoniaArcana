@@ -1,22 +1,20 @@
 // FILE: assets/js/ui.js
 export const UI = {
-    // Propietats inicialitzades a null
     statusDisplay: null, versionDisplay: null, apiKeyScreen: null,
-    setupScreen: null, sessionScreen: null, howToScreen: null,
+    setupScreen: null, sessionScreen: null,
     apiKeyInput: null, saveApiKeyBtn: null, changeApiKeyBtn: null,
     masterInspirationInput: null, startSessionBtn: null, stopSessionBtn: null,
-    toggleListeningBtn: null, stopMusicBtn: null, transcriptPreview: null,
+    toggleListeningBtn: null, toggleMusicBtn: null, transcriptPreview: null,
     soundboard: null, musicStatusDot: null, musicStatusText: null,
     showHelpBtn: null, helpModalOverlay: null, closeHelpBtn: null,
     actionLogContainer: null, actionLogContent: null, toggleLogBtn: null,
 
     init(version) {
-        const ids = ['status-display', 'version-display', 'api-key-screen', 'setup-screen',
-            'session-screen', 'how-to-screen', 'api-key-input', 'save-api-key-btn', 'change-api-key-btn',
-            'master-inspiration-input', 'start-session-btn', 'stop-session-btn', 'toggle-listening-btn',
-            'stop-music-btn', 'transcript-preview', 'soundboard', 'show-help-btn',
-            'help-modal-overlay', 'close-help-btn', 'action-log-container',
-            'action-log-content', 'toggle-log-btn'
+        const ids = ['status-display','version-display','api-key-screen','setup-screen','session-screen',
+            'api-key-input','save-api-key-btn','change-api-key-btn','master-inspiration-input',
+            'start-session-btn','stop-session-btn','toggle-listening-btn','toggle-music-btn',
+            'transcript-preview','soundboard','show-help-btn','help-modal-overlay','close-help-btn',
+            'action-log-container','action-log-content','toggle-log-btn'
         ];
         ids.forEach(id => {
             const propName = id.replace(/-(\w)/g, (_, letter) => letter.toUpperCase());
@@ -35,8 +33,8 @@ export const UI = {
     updateMusicStatus(isPlaying, name = '') {
         if(this.musicStatusDot) this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
         if(this.musicStatusText) this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
-        if(this.stopMusicBtn) this.stopMusicBtn.dataset.playing = isPlaying;
-        this.setButtonActive(this.stopMusicBtn, isPlaying);
+        if(this.toggleMusicBtn) this.toggleMusicBtn.dataset.playing = isPlaying;
+        this.setButtonActive(this.toggleMusicBtn, isPlaying);
     },
 
     updateTranscript(fullText) {
@@ -67,8 +65,8 @@ export const UI = {
     
     toggleLogPanel() {
         if (!this.actionLogContainer) return;
-        const isVisible = this.actionLogContainer.classList.toggle('visible');
-        this.toggleLogBtn.textContent = isVisible ? 'Amagar Registre' : 'Mostrar Registre';
+        this.actionLogContainer.classList.toggle('visible');
+        this.toggleLogBtn.textContent = this.actionLogContainer.classList.contains('visible') ? 'Amagar Registre' : 'Mostrar Registre';
     },
 
     showHelpModal() { if (this.helpModalOverlay) this.helpModalOverlay.classList.add('visible'); },
@@ -82,19 +80,11 @@ export const UI = {
         if (!icon || !text) return;
 
         if (button.id === 'toggle-listening-btn') {
-            button.classList.toggle('bg-red-600', isActive);
-            button.classList.toggle('hover:bg-red-700', isActive);
-            button.classList.toggle('bg-purple-600', !isActive);
-            button.classList.toggle('hover:bg-purple-700', !isActive);
             icon.className = isActive ? 'fas fa-microphone mr-2' : 'fas fa-microphone-slash mr-2';
             text.textContent = isActive ? 'Aturar Escolta' : 'Començar a Escoltar';
-        } else if (button.id === 'stop-music-btn') {
+        } else if (button.id === 'toggle-music-btn') {
             const isPlaying = button.dataset.playing === 'true';
-            button.classList.toggle('bg-red-500', isPlaying);
-            button.classList.toggle('hover:bg-red-600', isPlaying);
-            button.classList.toggle('bg-yellow-500', !isPlaying);
-            button.classList.toggle('hover:bg-yellow-600', !isPlaying);
-            icon.className = isPlaying ? 'fas fa-stop mr-2' : 'fas fa-play mr-2';
+            icon.className = isPlaying ? 'fas fa-pause mr-2' : 'fas fa-play mr-2';
             text.textContent = isPlaying ? 'Aturar Música' : 'Reproduir Música';
         }
     }
