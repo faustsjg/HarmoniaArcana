@@ -1,15 +1,15 @@
 // FILE: assets/js/ui.js
 export const UI = {
     statusDisplay: null, versionDisplay: null, apiKeyScreen: null,
-    setupScreen: null, sessionScreen: null, masterInspirationInput: null,
-    startSessionBtn: null, changeApiKeyBtn: null, showHelpBtn: null,
-    helpModalOverlay: null, closeHelpBtn: null, actionLogContainer: null,
-    actionLogContent: null, toggleLogBtn: null, toggleListeningBtn: null,
-    toggleMusicBtn: null, stopSessionBtn: null, soundboard: null,
-    apiKeyInput: null, saveApiKeyBtn: null,
+    setupScreen: null, sessionScreen: null,
+    apiKeyInput: null, saveApiKeyBtn: null, changeApiKeyBtn: null,
+    masterInspirationInput: null, startSessionBtn: null, stopSessionBtn: null,
+    toggleListeningBtn: null, toggleMusicBtn: null, transcriptPreview: null,
+    soundboard: null, musicStatusDot: null, musicStatusText: null,
+    showHelpBtn: null, helpModalOverlay: null, closeHelpBtn: null,
+    actionLogContainer: null, actionLogContent: null, toggleLogBtn: null,
     currentInspirationDisplay: null, musicTitle: null, musicSubtitle: null,
-    transcriptPreview: null,
-    
+
     init(version) {
         const ids = ['status-display','version-display','api-key-screen','setup-screen','session-screen',
             'api-key-input','save-api-key-btn','change-api-key-btn','master-inspiration-input',
@@ -22,6 +22,7 @@ export const UI = {
             const propName = id.replace(/-(\w)/g, (_, letter) => letter.toUpperCase());
             this[propName] = document.getElementById(id);
         });
+        
         if (this.versionDisplay) this.versionDisplay.textContent = `Harmonia Arcana ${version}`;
     },
     
@@ -72,17 +73,16 @@ export const UI = {
     setButtonActive(button, isActive) {
         if (!button) return;
         button.classList.toggle('active', isActive);
+        const icon = button.querySelector('i');
+        const text = button.querySelector('span');
+        if (!icon || !text) return;
         if (button.id === 'toggle-listening-btn') {
-            const icon = button.querySelector('i');
-            const text = button.querySelector('span');
-            if(icon) icon.className = isActive ? 'fas fa-microphone mr-2' : 'fas fa-microphone-slash mr-2';
-            if(text) text.textContent = isActive ? 'Escoltant' : 'Escoltar';
+            icon.className = isActive ? 'fas fa-microphone mr-2' : 'fas fa-microphone-slash mr-2';
+            text.textContent = isActive ? 'Escoltant' : 'Escoltar';
         } else if (button.id === 'toggle-music-btn') {
-            const icon = button.querySelector('i');
-            const text = button.querySelector('span');
             const isPlaying = button.dataset.playing === 'true';
-            if(icon) icon.className = isPlaying ? 'fas fa-pause mr-2' : 'fas fa-play mr-2';
-            if(text) text.textContent = isPlaying ? 'Pausa' : 'Play';
+            icon.className = isPlaying ? 'fas fa-pause mr-2' : 'fas fa-play mr-2';
+            text.textContent = isPlaying ? 'Pausa' : 'Play';
         }
     }
 };
