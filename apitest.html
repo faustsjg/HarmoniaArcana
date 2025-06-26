@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Space Personal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-md p-8 bg-gray-800 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-4">Test de Connexió al teu Space</h1>
+        
+        <div class="mb-4">
+            <label for="api-key" class="block text-sm font-medium text-gray-300 mb-1">La teva API Key de Hugging Face</label>
+            <input type="password" id="api-key" class="w-full p-2 bg-gray-700 rounded border border-gray-600" placeholder="hf_...">
+        </div>
+
+        <div class="mb-4">
+            <label for="prompt" class="block text-sm font-medium text-gray-300 mb-1">Prompt per a la música</label>
+            <input type="text" id="prompt" class="w-full p-2 bg-gray-700 rounded border border-gray-600" value="a calm piano melody, loop">
+        </div>
+
+        <button id="test-btn" class="w-full bg-green-600 hover:bg-green-700 p-3 rounded font-bold">Generar Música des del MEU Space</button>
+
+        <div id="result-container" class="mt-6">
+            <p id="status" class="text-gray-400 break-words">Introdueix la teva clau API i fes clic per començar la prova.</p>
+            <audio id="audio-player" controls class="w-full mt-4 hidden"></audio>
+        </div>
+    </div>
+
+    <script>
+        const testBtn = document.getElementById('test-btn');
+        const apiKeyInput = document.getElementById('api-key');
+        const promptInput = document.getElementById('prompt');
+        const statusEl = document.getElementById('status');
+        const audioPlayer = document.getElementById('audio-player');
+        
+        // =======================================================================
+        // CANVIA AQUESTA LÍNIA PER LA URL DEL TEU NOU SPACE!
+        // Ha de ser com "https://el-teu-usuari-el-nom-del-teu-space.hf.space"
+        const YOUR_SPACE_URL = "https://faustsjg-MusicGen.hf.space"; 
+        // =======================================================================
+
+        const API_URL = `${YOUR_SPACE_URL}/run/predict`;
+
+        testBtn.addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
+            const prompt = promptInput.value.trim();
+
+            if (!apiKey.startsWith('hf_')) {
+                statusEl.textContent = "Error: La clau API ha de començar per 'hf_'";
+                statusEl.style.color = '#f87171';
+                return;
+            }
+
+            statusEl.textContent = `Contactant amb el teu Space... Aquesta operació serà LENTA (pot trigar molts minuts) perquè utilitza una CPU. Si us plau, tingues molta paciència.`;
+            statusEl.style.color = '#facc15';
+            audioPlayer.classList.add('hidden');
+
+            try {
+                const requestBody = { "data": [prompt, null, null] };
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                statusEl.textContent = `Resposta rebuda del servidor. Estat: ${response.status} ${response.statusText}. Processant...`;
+                if (!response.ok) { throw new Error(`Error del servidor: ${await response.text()}`); }
+                const result = await response.json();
+                const audioData = result.data[0];
+                if (!audioData || !audioData.startsWith('data:audio')) { throw new Error("La resposta no conté dades d'àudio vàlides."); }
+
+                statusEl.textContent = "ÈXIT! Àudio generat. Pots reproduir-lo.";
+                statusEl.style.color = '#34d399';
+                audioPlayer.src = audioData;
+                audioPlayer.classList.remove('hidden');
+
+            } catch (error) {
+                statusEl.textContent = `ERROR: ${error.message}`;
+                statusEl.style.color = '#f87171';
+                console.error(error);
+            }
+        });
+    </script>
+
+</body>
+</html>
