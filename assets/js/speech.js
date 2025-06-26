@@ -5,9 +5,7 @@ export const Speech = {
     init(onResult, onFinalResult) {
         if (!SpeechRecognition) { alert("El reconeixement de veu no és compatible."); return false; }
         this.recognition = new SpeechRecognition();
-        this.recognition.lang = 'ca-ES';
-        this.recognition.interimResults = true;
-        this.recognition.continuous = true;
+        this.recognition.lang = 'ca-ES'; this.recognition.interimResults = true; this.recognition.continuous = true;
         this.recognition.onresult = (event) => {
             let interim_transcript = ''; let final_transcript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -20,19 +18,7 @@ export const Speech = {
         this.recognition.onend = () => { if (this.isListening) this.recognition.start(); };
         return true;
     },
-    startListening() {
-        if (this.recognition && !this.isListening) {
-            this.transcriptBuffer = ""; this.isListening = true; this.recognition.start();
-        }
-    },
-    stopListening() {
-        if (this.recognition && this.isListening) {
-            this.isListening = false; this.recognition.stop();
-        }
-    },
-    getAndClearBuffer() {
-        const buffer = this.transcriptBuffer || "";
-        this.transcriptBuffer = "";
-        return buffer;
-    }
+    startListening() { if (this.recognition && !this.isListening) { this.transcriptBuffer = ""; this.isListening = true; this.recognition.start(); }},
+    stopListening() { if (this.recognition && this.isListening) { this.isListening = false; this.recognition.stop(); }},
+    getAndClearBuffer() { const buffer = this.transcriptBuffer || ""; this.transcriptBuffer = ""; return buffer; }
 };
