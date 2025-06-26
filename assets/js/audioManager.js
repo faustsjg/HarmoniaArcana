@@ -18,14 +18,13 @@ export const AudioManager = {
         if (!this.isInitialized || this.standbyPlayer) return;
         const standbyUrl = './assets/sounds/despertar_de_somnis.mp3';
         UI.logToActionPanel(`Carregant música d'espera: ${standbyUrl}`);
+        if (this.standbyPlayer) this.standbyPlayer.dispose();
         this.standbyPlayer = new Tone.Player({
             url: standbyUrl, loop: true, volume: -8, fadeIn: 2,
             onload: () => {
-                this.standbyPlayer.start();
-                this.isStandbyPlaying = true;
+                this.standbyPlayer.start(); this.isStandbyPlaying = true;
                 UI.logToActionPanel("Música d'espera carregada i reproduint.", "success");
-                UI.updateMusicStatus(true, "Música d'espera");
-                UI.setButtonActive(UI.toggleMusicBtn, true);
+                UI.updateMusicStatus({ isPlaying: true, title: "Música d'Espera", subtitle: "Tema d'Harmonia Arcana" });
             },
             onerror: (err) => UI.logToActionPanel(`Error carregant standby-music: Assegura't que el fitxer existeix a assets/sounds/`, "error"),
         }).toDestination();
@@ -53,22 +52,20 @@ export const AudioManager = {
     },
     toggleAiMusicPlayback() {
         let anyPlayerActive = this.isAiPlaying || this.isStandbyPlaying;
-        if (Object.keys(this.aiMusicPlayers).length > 0) {
-            this.isAiPlaying = !this.isAiPlaying;
-            if(this.isAiPlaying) { this.reproduirAITot(); this.stopStandbyMusic(); } 
-            else { this.aturarAITot(0.5); }
-            UI.updateMusicStatus(this.isAiPlaying, Director.contextActual.mood);
-            UI.setButtonActive(UI.toggleMusicBtn, this.isAiPlaying);
-        } else if (this.standbyPlayer) {
-            this.isStandbyPlaying = !this.isStandbyPlaying;
-            if (this.isStandbyPlaying) {
+        if (!anyPlayerActive) {
+            if (Object.keys(this.aiMusicPlayers).length > 0) {
+                this.reproduirAITot();
+                UI.updateMusicStatus({ isPlaying: true, title: Director.contextActual.mood, subtitle: Director.inspiracioMestra });
+            } else if (this.standbyPlayer) {
                 this.standbyPlayer.start(); this.standbyPlayer.volume.rampTo(-8, 0.5);
-            } else {
-                this.standbyPlayer.volume.rampTo(-Infinity, 0.5); this.standbyPlayer.stop("+0.6");
+                this.isStandbyPlaying = true;
+                UI.updateMusicStatus({ isPlaying: true, title: "Música d'Espera", subtitle: "Tema d'Harmonia Arcana" });
             }
-            UI.updateMusicStatus(this.isStandbyPlaying, "Música d'espera");
-            UI.setButtonActive(UI.toggleMusicBtn, this.isStandbyPlaying);
+        } else {
+            this.stopStandbyMusic(0.5); this.aturarAITot(0.5);
+            UI.updateMusicStatus({ isPlaying: false, title: "En pausa", subtitle: "" });
         }
+        UI.setButtonActive(UI.toggleMusicBtn, !anyPlayerActive);
     },
     reproduirAITot() {
         if (!this.isInitialized || Object.keys(this.aiMusicPlayers).length === 0) return;
