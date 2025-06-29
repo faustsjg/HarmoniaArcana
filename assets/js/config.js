@@ -1,4 +1,4 @@
-export const APP_VERSION = "v10.0.0-IntelligentDJ";
+export const APP_VERSION = "v10.0.0-IntelligentDJ-Final";
 export const API_KEY_STORAGE_ID = 'harmoniaArcana_huggingFaceApiKey';
 export const MODELS = {
     // Només necessitem l'analista de text per determinar el 'mood'
