@@ -15,55 +15,39 @@
     <div id="main-app-content" class="w-full max-w-md">
         <header class="mb-6 text-center relative">
             <h1 class="text-3xl font-bold text-white tracking-wider">Harmonia Arcana</h1>
-            <p id="status-display" class="text-purple-300 text-sm mt-1">Benvingut</p>
+            <div id="timeline-header" class="mt-2 text-purple-300 cursor-pointer">
+                <span id="status-display">Benvingut</span> <i class="fas fa-chevron-down text-xs ml-1"></i>
+            </div>
             <button id="show-help-btn" class="hidden absolute top-0 right-0 text-gray-400 hover:text-white text-2xl p-1"><i class="fas fa-question-circle"></i></button>
         </header>
 
         <main id="main-content">
-            <section id="api-key-screen" class="card-bg p-6 sm:p-8 rounded-3xl">
-                <div id="onboarding-container">
-                    <div data-slide="0" class="onboarding-slide text-center"><h2 class="text-2xl font-bold text-white mb-3">El Teu Bard Personal</h2><p class="text-gray-300">Narra la teva aventura i deixa que la IA compon-gui una banda sonora única en temps real que s'adapti a cada moment de la teva història.</p></div>
-                    <div data-slide="1" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-white mb-4">Pas 1: Compte a Hugging Face</h3><p class="text-gray-300">Aquesta eina utilitza models d'IA gratuïts a través de Hugging Face.</p><a href="https://huggingface.co/join" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la pàgina de registre</a></div>
-                    <div data-slide="2" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-white mb-4">Pas 2: Accepta Termes de Llama</h3><p class="text-gray-300">Per poder generar música, la teva clau necessita permís. Visita la pàgina de Llama 3 i accepta les seves condicions (un sol cop).</p><a href="https://huggingface.co/meta-llama/Meta-Llama-3-8B" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la pàgina de Llama 3</a></div>
-                    <div data-slide="3" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-white mb-4">Pas 3: Aconsegueix la teva Clau</h3><p class="text-gray-300">Ara, genera el teu Access Token personal. Crea'n un amb el rol **"write"** i copia'l.</p><a href="https://huggingface.co/settings/tokens" target="_blank" class="link-styled text-sm block mt-6 text-center">» Anar a la teva pàgina de tokens</a></div>
-                    <div data-slide="4" class="onboarding-slide hidden"><h3 class="text-xl font-semibold text-white mb-4">Pas 4: Activa Harmonia Arcana</h3><p class="text-gray-300">Enganxa la teva clau (comença per `hf_...`) per finalitzar.</p><input type="password" id="api-key-input" class="input-styled mb-4" placeholder="Enganxa aquí el teu Access Token..."><button id="save-api-key-btn" class="w-full btn-action-primary">Desar Token i Continuar</button></div>
+            <div id="timeline-container" class="hidden card-bg rounded-2xl p-4 mb-4 max-h-48 overflow-y-auto">
                 </div>
-                <div class="flex justify-between items-center mt-6"><button id="onboarding-prev" class="btn-onboarding-nav">&larr; Enrere</button><div id="onboarding-dots" class="flex space-x-2"></div><button id="onboarding-next" class="btn-onboarding-nav">Següent &rarr;</button></div>
-            </section>
-            <section id="setup-screen" class="hidden card-bg p-6 sm:p-8 rounded-3xl">
-                <h2 class="text-2xl font-bold text-white mb-4 text-center">Prepara la Simfonia</h2>
-                <div class="mb-6"><label for="master-inspiration-input" class="block text-sm font-medium text-gray-300 mb-2">Inspiració Mestra (opcional)</label><input type="text" id="master-inspiration-input" class="input-styled" placeholder="Ex: Star Wars, John Williams..."></div>
-                <div class="text-center"><button id="start-session-btn" class="w-full btn-action-primary">Començar la Partida!</button><button id="change-api-key-btn" class="text-xs text-gray-500 hover:text-gray-300 mt-4">Canviar API Key</button></div>
-            </section>
+
             <section id="session-screen" class="hidden">
                  <div class="card-bg p-6 rounded-3xl mb-4">
-                    <p id="current-inspiration-display" class="text-purple-300 text-xs text-center mb-4 italic h-4"></p>
-                    <div id="music-status-display" class="text-center mb-6"><p class="text-lg text-white font-semibold" id="music-title">Música d'Espera</p><p class="text-sm text-purple-400" id="music-subtitle">Preparant la teva aventura...</p></div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div id="bard-animation" class="h-40 w-full flex items-center justify-center mb-4"><span class="text-gray-500 text-5xl opacity-50"><i class="fa-solid fa-hat-wizard"></i></span></div>
+                    <p id="current-inspiration-display" class="text-purple-300 text-sm text-center mb-4 italic h-4"></p>
+                </div>
+                <div class="card-bg p-6 rounded-3xl">
+                    <h2 class="text-lg font-semibold text-white mb-4">Controls</h2>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
                         <button id="toggle-listening-btn" class="btn-control"><i class="fas fa-microphone-slash"></i><span>Escoltar</span></button>
                         <button id="toggle-music-btn" class="btn-control" data-playing="false"><i class="fas fa-play"></i><span>Música</span></button>
                     </div>
-                </div>
-                <div class="card-bg p-6 rounded-3xl">
-                    <div class="mb-4"><label class="block text-sm font-semibold text-white mb-2">Transcripció</label><div id="transcript-preview" class="p-3 bg-brand-dark rounded-lg h-24 overflow-y-auto text-sm text-gray-300 border border-gray-700"></div></div>
-                    <div><h3 class="text-sm font-semibold text-white mb-2">Efectes Sonors</h3><div id="soundboard" class="grid grid-cols-3 gap-3"><button data-sound="espasa.mp3" class="btn-sound">Espasa</button><button data-sound="rugit.mp3" class="btn-sound">Rugit</button><button data-sound="encanteri.mp3" class="btn-sound">Encanteri</button><button data-sound="porta.mp3" class="btn-sound">Porta</button><button data-sound="llampec.mp3" class="btn-sound">Llampec</button><button data-sound="misil.mp3" class="btn-sound">Míssil</button></div></div>
+                    <h3 class="text-lg font-semibold text-white mb-4">Efectes Sonors</h3>
+                    <div id="soundboard" class="grid grid-cols-3 gap-3">
+                         </div>
                 </div>
                  <button id="stop-session-btn" class="w-full text-center text-gray-500 hover:text-red-400 text-sm mt-6 py-2">Finalitzar Sessió</button>
             </section>
         </main>
     </div>
 
-    <div id="help-modal-overlay" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4"><div class="card-bg p-6 rounded-2xl shadow-xl w-full max-w-md relative"><button id="close-help-btn" class="absolute top-3 right-4 text-gray-400 hover:text-white"><i class="fas fa-times"></i></button><h2 class="text-xl font-semibold text-white mb-4">Com Utilitzar el teu Bard</h2><div class="space-y-4 text-gray-300"><div><span class="instruction-number">1</span><strong class="ml-2">Inicia la Sessió:</strong> Comença la partida per activar la música d'espera.</div><div><span class="instruction-number">2</span><strong class="ml-2">Activa l'Escolta:</strong> Fes clic al botó del micròfon perquè el bard analitzi la teva narració.</div><div><span class="instruction-number">3</span><strong class="ml-2">Gaudeix de la Simfonia:</strong> La banda sonora evolucionarà automàticament.</div></div></div></div>
-    <div id="action-log-container" class="fixed bottom-0 left-0 right-0 bg-gray-800 bg-opacity-95 backdrop-blur-sm border-t border-gray-700 h-48 transform translate-y-full transition-transform duration-300 z-40"><button id="toggle-log-btn" class="absolute -top-8 right-2 bg-purple-600 text-white px-3 py-1 rounded-t-lg text-xs">Mostrar Registre</button><h4 class="text-sm font-semibold text-purple-300 mb-1 px-2">Registre d'Accions</h4><div id="action-log-content" class="h-full overflow-y-auto text-xs space-y-1 px-2 pb-2"></div></div>
+    <div id="help-modal-overlay" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4"> </div>
 
     <footer class="mt-10 text-center"><p id="version-display" class="text-xs text-gray-600"></p></footer>
     
-    <script src="assets/js/config.js" type="module"></script>
-    <script src="assets/js/ui.js" type="module"></script>
-    <script src="assets/js/ai.js" type="module"></script>
-    <script src="assets/js/speech.js" type="module"></script>
-    <script src="assets/js/audioManager.js" type="module"></script>
-    <script src="assets/js/director.js" type="module"></script>
-    <script src="assets/js/main.js" type="module"></script>
-</body>
+    </body>
 </html>
