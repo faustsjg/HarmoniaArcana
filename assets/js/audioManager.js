@@ -17,11 +17,13 @@ export const AudioManager = {
     
     reproduirPista(url, name) {
         if (!this.isInitialized) return;
+        
+        const fadeInDuration = 2.0;
+        const fadeOutDuration = 1.5;
 
-        // Aturem la pista anterior amb un fade-out
         if (this.player && this.player.state === "started") {
-            this.player.volume.rampTo(-Infinity, 1.5);
-            this.player.stop("+1.6");
+            this.player.volume.rampTo(-Infinity, fadeOutDuration);
+            this.player.stop(`+${fadeOutDuration}`);
         }
 
         this.currentTrackUrl = url;
@@ -31,10 +33,13 @@ export const AudioManager = {
             volume: -Infinity,
             onload: () => {
                 this.player.start();
-                this.player.volume.rampTo(0, 2.0); // Fade-in de 2 segons
+                this.player.volume.rampTo(0, fadeInDuration);
                 UI.updateMusicStatus(true, name);
             },
-            onerror: (err) => UI.updateMusicStatus(false, `Error: ${name}`),
+            onerror: (err) => {
+                UI.updateMusicStatus(false, `Error: ${name}`);
+                console.error(`Error carregant la pista ${url}:`, err);
+            },
         }).toDestination();
     },
 
