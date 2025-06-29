@@ -8,7 +8,6 @@ import { AudioManager } from './audioManager.js';
 const soundLibrary = {
     'inici': { url: './assets/sounds/tema_principal.mp3', name: 'Tema Principal' },
     'combat': { url: './assets/sounds/tema_combat.mp3', name: 'Combat' },
-    // Afegeix més moods i les seves pistes aquí
     'default': { url: './assets/sounds/tema_principal.mp3', name: 'Tema Principal' }
 };
 
@@ -23,27 +22,32 @@ export const Director = {
         if (this.isSessionActive) return;
         this.isSessionActive = true;
         this.apiKey = apiKey;
-        UI.showScreen('session-screen');
-        UI.updateStatus("Sessió preparada. Fes clic a 'Escoltar'.");
         
-        const speechSupported = Speech.init(
-            (text) => { this.fullTranscript += text; UI.updateTranscript(this.fullTranscript); }
-        );
-        if (!speechSupported) UI.updateStatus("Error: Reconeixement de veu no compatible.");
+        UI.showScreen('session-screen');
+        UI.updateStatus("Fes clic a 'Escoltar' per començar l'anàlisi.");
+        UI.updateTranscript("");
+        
+        Speech.init((text) => { 
+            this.fullTranscript = text;
+            UI.updateTranscript(this.fullTranscript);
+         });
         
         this.canviarMusicaPerContext({ mood: 'inici' });
     },
 
     canviarMusicaPerContext(nouContext) {
+        if (!nouContext || !nouContext.mood) return;
         const mood = nouContext.mood;
         const pista = soundLibrary[mood] || soundLibrary['default'];
-        if (pista.url === AudioManager.currentTrackUrl) return; // Evitem reiniciar la mateixa cançó
+        
+        if (pista.url === AudioManager.currentTrackUrl) return; 
         
         this.contextActual = nouContext;
         AudioManager.reproduirPista(pista.url, pista.name);
     },
 
     toggleListening() {
+        if (!this.isSessionActive) return;
         const isCurrentlyListening = Speech.isListening;
         UI.setButtonActive(UI.toggleListeningBtn, !isCurrentlyListening);
         if (isCurrentlyListening) {
@@ -60,6 +64,7 @@ export const Director = {
     iniciarBucleAnalisi() {
         this.intervalId = setInterval(async () => {
             if (!this.isSessionActive || !Speech.isListening) return;
+            
             const textBuffer = Speech.getAndClearBuffer();
             if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
             
@@ -76,7 +81,7 @@ export const Director = {
         if (this.intervalId) clearInterval(this.intervalId);
         if (Speech.isListening) Speech.stopListening();
         AudioManager.aturarTot(0.5);
-        UI.updateStatus("Sessió finalitzada.");
         UI.showScreen('setup-screen');
+        UI.updateStatus("Sessió finalitzada.");
     }
 };
