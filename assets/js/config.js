@@ -1,5 +1,4 @@
-// FILE: assets/js/config.js
-export const APP_VERSION = "v9.1.0-TimelineUI";
+export const APP_VERSION = "v12.0.0-IntelligentDJ-MVP";
 export const API_KEY_STORAGE_ID = 'harmoniaArcana_huggingFaceApiKey';
 export const MODELS = {
     analyst: "meta-llama/Llama-3.1-8B-Instruct"
