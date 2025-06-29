@@ -1,54 +1,46 @@
+// FILE: assets/js/director.js
 import { DIRECTOR_CONFIG } from './config.js';
 import { UI } from './ui.js';
 import { AI } from './ai.js';
 import { Speech } from './speech.js';
 import { AudioManager } from './audioManager.js';
 
-const musicLibrary = {
-    'principal': { url: './assets/sounds/tema_principal.mp3', name: 'Tema Principal' },
-    'combat':    { url: './assets/sounds/tema_combat.mp3', name: 'Tema de Combat' },
-    // Afegeix aquí més temes en el futur
-    // 'misteri': { url: './assets/sounds/tema_misteri.mp3', name: 'Tema de Misteri' },
+const soundLibrary = {
+    'inici': { url: './assets/sounds/tema_principal.mp3', name: 'Tema Principal' },
+    'combat': { url: './assets/sounds/tema_combat.mp3', name: 'Combat' },
+    // Afegeix més moods i les seves pistes aquí
+    'default': { url: './assets/sounds/tema_principal.mp3', name: 'Tema Principal' }
 };
 
 export const Director = {
     apiKey: null,
-    inspiracioMestra: "",
     contextActual: { mood: 'inici' },
     isSessionActive: false,
     intervalId: null,
     fullTranscript: "",
 
-    async init(apiKey, inspiracio) {
+    async init(apiKey) {
         if (this.isSessionActive) return;
         this.isSessionActive = true;
         this.apiKey = apiKey;
-        this.inspiracioMestra = inspiracio.trim() || "Aventura de Fantasia";
-        
         UI.showScreen('session-screen');
-        UI.currentInspirationDisplay.textContent = `Inspiració: ${this.inspiracioMestra}`;
-        UI.updateStatus("Preparat. Fes clic a 'Escoltar' per començar.");
-
-        const speechSupported = Speech.init(
-            (interimText) => { UI.updateTranscript(this.fullTranscript + interimText); },
-            (finalText) => { this.fullTranscript += finalText; }
-        );
-        if (!speechSupported) alert("Error: Reconeixement de veu no compatible.");
+        UI.updateStatus("Sessió preparada. Fes clic a 'Escoltar'.");
         
-        // Comencem amb el tema principal
-        this.canviarMusicaPerContext({ mood: 'principal' });
+        const speechSupported = Speech.init(
+            (text) => { this.fullTranscript += text; UI.updateTranscript(this.fullTranscript); }
+        );
+        if (!speechSupported) UI.updateStatus("Error: Reconeixement de veu no compatible.");
+        
+        this.canviarMusicaPerContext({ mood: 'inici' });
     },
-    
+
     canviarMusicaPerContext(nouContext) {
         const mood = nouContext.mood;
-        const trackInfo = musicLibrary[mood] || musicLibrary['principal'];
+        const pista = soundLibrary[mood] || soundLibrary['default'];
+        if (pista.url === AudioManager.currentTrackUrl) return; // Evitem reiniciar la mateixa cançó
         
-        if (trackInfo && trackInfo.url) {
-            this.contextActual = nouContext;
-            AudioManager.reproduirPista(trackInfo.url, trackInfo.name);
-        } else {
-            console.error(`No s'ha trobat música per a l'ambient '${mood}'.`);
-        }
+        this.contextActual = nouContext;
+        AudioManager.reproduirPista(pista.url, pista.name);
     },
 
     toggleListening() {
@@ -66,7 +58,6 @@ export const Director = {
     },
     
     iniciarBucleAnalisi() {
-        if (this.intervalId) clearInterval(this.intervalId);
         this.intervalId = setInterval(async () => {
             if (!this.isSessionActive || !Speech.isListening) return;
             const textBuffer = Speech.getAndClearBuffer();
@@ -79,16 +70,13 @@ export const Director = {
         }, DIRECTOR_CONFIG.analysisInterval);
     },
 
-    toggleMusicPlayback() {
-        AudioManager.togglePlayback();
-    },
-
     aturarSessio() {
         if (!this.isSessionActive) return;
         this.isSessionActive = false;
         if (this.intervalId) clearInterval(this.intervalId);
         if (Speech.isListening) Speech.stopListening();
         AudioManager.aturarTot(0.5);
+        UI.updateStatus("Sessió finalitzada.");
         UI.showScreen('setup-screen');
     }
 };
