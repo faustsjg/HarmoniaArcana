@@ -1,10 +1,27 @@
 /* FILE: assets/css/style.css */
-body { font-family: 'Inter', sans-serif; background-color: #1a1a2e; }
-.card-bg { background-color: #242444; border: 1px solid rgba(255, 255, 255, 0.1); }
+body { font-family: 'Inter', sans-serif; background-color: #1a1a2e; background-image: radial-gradient(circle at top right, rgba(124, 58, 237, 0.15), transparent 50%); }
+.font-serif-display { font-family: 'Merriweather', serif; }
+.card-bg { background-color: rgba(30, 30, 50, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .input-styled { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #f3f4f6; border-radius: 0.5rem; padding: 0.75rem 1rem; width: 100%; transition: all 0.2s ease; }
 .input-styled:focus { outline: none; border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.4); }
 .btn-action-primary { background: linear-gradient(90deg, #8b5cf6 0%, #d946ef 100%); color: white; font-weight: 600; padding: 0.75rem; border-radius: 0.75rem; transition: all 0.2s ease; border: none; }
 .btn-action-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4); }
-.btn-control { display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.75rem; border-radius: 0.75rem; font-weight: 600; color: #d1d5db; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease-in-out; }
-.btn-control:hover { background-color: rgba(255, 255, 255, 0.1); color: white; }
+.btn-action-primary:disabled { background: #4b5563; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-action-secondary { background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); transition: background-color 0.2s; }
+.btn-action-secondary:hover { background-color: rgba(255, 255, 255, 0.2); }
+.btn-control { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; font-weight: 600; color: #d1d5db; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease-in-out; }
 .btn-control.active { background-color: #8b5cf6; color: white; }
+.btn-sound { padding: 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; color: #9ca3af; background-color: rgba(255, 255, 255, 0.05); transition: background-color 0.2s; }
+.btn-sound:hover { background-color: rgba(139, 92, 246, 0.3); color: white; }
+.theme-card { cursor: pointer; border: 2px solid transparent; transition: all 0.2s ease-in-out; background-color: rgba(255, 255, 255, 0.05); }
+.theme-card:hover { border-color: rgba(167, 139, 250, 0.5); transform: translateY(-4px); }
+.theme-card.selected { border-color: #a78bfa; box-shadow: 0 0 15px rgba(167, 139, 250, 0.4); }
+#timeline-header { transition: color 0.2s ease; }
+#timeline-header:hover { color: white; }
+#timeline-container.hidden { display: none; }
+.timeline-event { display: flex; align-items: flex-start; gap: 1rem; padding-bottom: 0.5rem; border-left: 2px solid #4f46e5; position: relative; padding-left: 1.5rem; }
+.timeline-icon { position: absolute; left: -17px; top: 0; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: #1a1a2e; color: #a78bfa; }
+.timeline-content .message { font-weight: 500; color: #d1d5db; }
+.timeline-content .time { font-size: 0.75rem; color: #6b7280; }
+#help-modal-overlay.visible { display: flex; }
+.instruction-number { background-color: #8b5cf6; color: white; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.875rem; }
