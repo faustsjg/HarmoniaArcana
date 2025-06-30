@@ -5,47 +5,41 @@ import { AI } from './ai.js';
 import { Speech } from './speech.js';
 import { AudioManager } from './audioManager.js';
 
-const soundLibrary = {
-    'inici': { url: './assets/sounds/tema_principal.mp3', name: 'Tema Principal' },
-    'combat': { url: './assets/sounds/tema_combat.mp3', name: 'Combat' },
-    'default': { url: './assets/sounds/tema_principal.mp3', name: 'Tema Principal' }
-};
-
 export const Director = {
     apiKey: null,
-    contextActual: { mood: 'inici' },
+    inspiracioMestra: "",
+    soundLibrary: null,
+    contextActual: { mood: 'principal' },
     isSessionActive: false,
-    intervalId: null,
+    isProcessing: false,
     fullTranscript: "",
+    intervalId: null,
 
-    async init(apiKey) {
+    async init(apiKey, inspiracio, soundLibrary) {
         if (this.isSessionActive) return;
         this.isSessionActive = true;
         this.apiKey = apiKey;
+        this.inspiracioMestra = inspiracio;
+        this.soundLibrary = soundLibrary;
         
         UI.showScreen('session-screen');
-        UI.updateStatus("Fes clic a 'Escoltar' per començar l'anàlisi.");
+        UI.addTimelineEvent("Sessió inicialitzada.", "fa-solid fa-play", "success");
+        if(UI.currentInspirationDisplay) UI.currentInspirationDisplay.textContent = `Tema: ${inspiracio}`;
+        if(UI.showHelpBtn) UI.showHelpBtn.classList.remove('hidden');
         UI.updateTranscript("");
+        UI.setButtonActive(UI.toggleListeningBtn, false);
+        UI.setButtonActive(UI.toggleMusicBtn, false);
         
-        Speech.init((text) => { 
-            this.fullTranscript = text;
-            UI.updateTranscript(this.fullTranscript);
-         });
+        const speechSupported = Speech.init(
+            (interimText) => { UI.updateTranscript(this.fullTranscript + interimText); },
+            (finalText) => { this.fullTranscript += finalText; }
+        );
+        if (!speechSupported) UI.addTimelineEvent("Error: Reconeixement de veu no compatible.", "fa-solid fa-triangle-exclamation", "error");
         
-        this.canviarMusicaPerContext({ mood: 'inici' });
+        // Comencem amb el tema principal del pack seleccionat
+        this.canviarMusicaPerContext({ mood: 'principal' });
     },
-
-    canviarMusicaPerContext(nouContext) {
-        if (!nouContext || !nouContext.mood) return;
-        const mood = nouContext.mood;
-        const pista = soundLibrary[mood] || soundLibrary['default'];
-        
-        if (pista.url === AudioManager.currentTrackUrl) return; 
-        
-        this.contextActual = nouContext;
-        AudioManager.reproduirPista(pista.url, pista.name);
-    },
-
+    
     toggleListening() {
         if (!this.isSessionActive) return;
         const isCurrentlyListening = Speech.isListening;
@@ -57,14 +51,33 @@ export const Director = {
         } else {
             Speech.startListening();
             UI.updateStatus("Escoltant...");
-            this.iniciarBucleAnalisi();
+            this.iniciarBuclePrincipal();
+        }
+    },
+
+    toggleMusicPlayback() {
+        AudioManager.togglePlayback();
+    },
+
+    canviarMusicaPerContext(nouContext) {
+        if (!nouContext || !nouContext.mood) return;
+        const mood = nouContext.mood;
+        // Busquem la pista al nostre soundLibrary
+        const pistaUrl = this.soundLibrary[mood] || this.soundLibrary['principal'];
+        
+        if (pistaUrl && pistaUrl !== AudioManager.currentTrackUrl) {
+            this.contextActual = nouContext;
+            AudioManager.reproduirPista(pistaUrl, mood);
+            UI.addTimelineEvent(`Canviant a l'ambient: ${mood}`, 'fa-solid fa-music', 'info');
+        } else if (!pistaUrl) {
+            UI.addTimelineEvent(`No s'ha trobat música per a l'ambient '${mood}'.`, 'fa-solid fa-triangle-exclamation', 'error');
         }
     },
     
-    iniciarBucleAnalisi() {
+    iniciarBuclePrincipal() {
+        if (this.intervalId) clearInterval(this.intervalId);
         this.intervalId = setInterval(async () => {
-            if (!this.isSessionActive || !Speech.isListening) return;
-            
+            if (!this.isSessionActive || !Speech.isListening || this.isProcessing) return;
             const textBuffer = Speech.getAndClearBuffer();
             if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
             
@@ -74,14 +87,15 @@ export const Director = {
             }
         }, DIRECTOR_CONFIG.analysisInterval);
     },
-
+    
     aturarSessio() {
         if (!this.isSessionActive) return;
+        if (this.intervalId) { clearInterval(this.intervalId); this.intervalId = null; }
         this.isSessionActive = false;
-        if (this.intervalId) clearInterval(this.intervalId);
         if (Speech.isListening) Speech.stopListening();
         AudioManager.aturarTot(0.5);
-        UI.showScreen('setup-screen');
         UI.updateStatus("Sessió finalitzada.");
+        UI.showScreen('setup-screen');
+        if(UI.showHelpBtn) UI.showHelpBtn.classList.add('hidden');
     }
 };
