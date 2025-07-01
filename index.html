@@ -1,85 +1,119 @@
 <!DOCTYPE html>
 <html lang="ca">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harmonia Arcana</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harmonia Arcana - DJ Intel·ligent</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="bg-brand-dark text-gray-200">
-    <div id="app-container" class="min-h-screen flex flex-col items-center justify-center p-4">
-        
-        <section id="landing-screen" class="w-full max-w-md text-center">
-            <div class="bard-animation-placeholder mx-auto mb-6"><i class="fas fa-hat-wizard text-6xl text-purple-400"></i></div>
-            <h1 class="text-4xl sm:text-5xl font-bold text-white tracking-wider font-serif-display">Harmonia Arcana</h1>
-            <p class="text-lg text-purple-300 mt-2 mb-6">El teu bard personal per a partides de rol èpiques.</p>
-            <p class="max-w-xl mx-auto text-gray-300 mb-8">Narra la teva aventura i deixa que la IA analitzi les teves paraules per orquestrar una banda sonora dinàmica que evoluciona amb la teva història.</p>
-            <button id="go-to-setup-btn" class="btn-action-primary text-lg px-8 py-3">Començar l'Aventura</button>
-        </section>
+<body class="min-h-screen flex justify-center p-4 bg-brand-dark text-gray-200">
+  <div class="w-full max-w-sm">
+    <header class="my-6 text-center">
+      <h1 class="text-3xl font-bold text-white tracking-wide">Harmonia Arcana</h1>
+      <p id="status-display" class="text-purple-400 text-sm h-5 mt-1">Benvingut</p>
+    </header>
 
-        <section id="setup-screen" class="hidden w-full max-w-md">
-            <div id="api-key-container" class="card-bg p-6 rounded-2xl mb-6">
-                <h2 class="text-xl font-semibold text-white mb-2">Pas 1: La teva Clau d'Accés</h2>
-                <p class="text-sm text-gray-400 mb-4">Introdueix la teva clau de Hugging Face. Es desarà només al teu navegador.</p>
-                <input type="password" id="api-key-input" class="input-styled w-full mb-4" placeholder="Clau API (comença per hf_...)">
-                <button id="save-api-key-btn" class="w-full btn-action-secondary py-2 rounded-lg">Desar Clau</button>
-            </div>
-            <div id="theme-selection-container" class="card-bg p-6 rounded-2xl">
-                <h2 class="text-xl font-semibold text-white mb-4">Pas 2: Tria l'Univers Sonor</h2>
-                <div class="relative">
-                    <div id="theme-cards-container" class="flex overflow-x-auto space-x-4 pb-4 scroll-smooth"></div>
-                </div>
-                <button id="start-session-btn" class="w-full btn-action-primary mt-6" disabled>Començar Partida</button>
-            </div>
-            <button id="back-to-landing-btn" class="text-xs text-gray-500 hover:text-gray-300 mt-6 mx-auto block">Tornar a l'inici</button>
-        </section>
+    <main id="main-content">
+      <!-- Landing / Guia API -->
+      <section id="landing-screen" class="card-bg p-6 rounded-2xl">
+        <h2 class="text-2xl font-semibold text-white mb-4">Benvingut a Harmonia Arcana</h2>
+        <p class="text-sm text-gray-300 mb-4">
+          Aquesta aplicació reprodueix música segons el teu estat d’ànim detectat per IA.
+        </p>
+        <button id="landing-start-btn" class="w-full btn-action-primary mb-4">Començar</button>
+        <p class="text-xs text-gray-500">No tens clau més? Registra't a <a href="https://huggingface.co" target="_blank" class="underline">Hugging Face</a>.</p>
+      </section>
 
-        <section id="session-screen" class="hidden w-full max-w-md">
-             <header class="mb-4 text-center relative">
-                <h2 id="session-inspiration-display" class="text-2xl font-bold text-white tracking-wider"></h2>
-                <button id="show-help-btn" class="absolute top-0 right-0 text-gray-400 hover:text-white text-xl p-1"><i class="fas fa-question-circle"></i></button>
-            </header>
-             <div class="card-bg p-6 rounded-2xl">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-white">Controls de Sessió</h3>
-                    <div class="flex items-center text-sm text-gray-300">
-                        <span id="music-status-dot" class="w-2 h-2 rounded-full mr-2 bg-gray-500"></span>
-                        <span id="music-status-text">Aturada</span>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <button id="toggle-listening-btn" class="btn-control"><i class="fas fa-microphone-slash mr-2"></i><span>Escoltar</span></button>
-                    <button id="toggle-music-btn" class="btn-control" data-playing="false"><i class="fas fa-play mr-2"></i><span>Música</span></button>
-                </div>
-                <h3 class="text-lg font-semibold text-white mb-4">Efectes Sonors</h3>
-                <div id="soundboard" class="grid grid-cols-3 gap-3">
-                    <button data-sound="espasa.mp3" class="btn-sound">Espasa</button>
-                    <button data-sound="rugit.mp3" class="btn-sound">Rugit</button>
-                    <button data-sound="encanteri.mp3" class="btn-sound">Encanteri</button>
-                </div>
-            </div>
-            <button id="stop-session-btn" class="w-full text-center text-gray-500 hover:text-red-400 text-sm mt-6 py-2">Finalitzar Sessió</button>
-        </section>
+      <!-- API Key -->
+      <section id="api-key-screen" class="hidden card-bg p-6 rounded-2xl">
+        <h2 class="text-xl font-semibold text-white mb-4">Passa 1: Clau API</h2>
+        <p class="text-sm text-gray-400 mb-4">Introdueix la teva clau de Hugging Face (hf_...)</p>
+        <input type="password" id="api-key-input" class="input-styled w-full mb-4" placeholder="API Key">
+        <button id="save-api-key-btn" class="w-full btn-action-primary">Desa i continuar</button>
+      </section>
 
-        <div id="action-log-container" class="fixed bottom-0 left-0 right-0 bg-gray-800 bg-opacity-95 backdrop-blur-sm border-t border-gray-700 h-48 transform translate-y-full transition-transform duration-300 z-40">
-            <button id="toggle-log-btn" class="absolute -top-8 right-2 bg-purple-600 text-white px-3 py-1 rounded-t-lg text-xs">Mostrar Registre</button>
-            <h4 class="text-sm font-semibold text-purple-300 mb-1 px-2">Registre d'Accions</h4>
-            <div id="action-log-content" class="h-full overflow-y-auto text-xs space-y-1 px-2 pb-2"></div>
+      <!-- Selecció Univers -->
+      <section id="universe-selection-screen" class="hidden card-bg p-6 rounded-2xl">
+        <h2 class="text-xl font-semibold text-white mb-4">Tria un Univers Sonor</h2>
+        <div class="grid grid-cols-1 gap-4">
+          <div class="card-bg p-4 rounded-lg flex justify-between items-center">
+            <div>
+              <h3 class="font-semibold text-white">JRPG</h3>
+              <p class="text-sm text-gray-400">Música èpica i aventures.</p>
+            </div>
+            <button data-universe="jrpg" class="btn-action-primary">Selecciona</button>
+          </div>
+          <div class="card-bg p-4 rounded-lg flex justify-between items-center">
+            <div>
+              <h3 class="font-semibold text-white">Horror</h3>
+              <p class="text-sm text-gray-400">Ambients tensos i foscos.</p>
+            </div>
+            <button data-universe="horror" class="btn-action-primary">Selecciona</button>
+          </div>
+          <!-- Afegeix més universos aquí -->
         </div>
-    </div>
-    
-    <footer class="w-full text-center p-4 fixed bottom-0"><p id="version-display" class="text-xs text-gray-600 pointer-events-none"></p></footer>
-    
-    <script src="assets/js/config.js" type="module"></script>
-    <script src="assets/js/ui.js" type="module"></script>
-    <script src="assets/js/ai.js" type="module"></script>
-    <script src="assets/js/speech.js" type="module"></script>
-    <script src="assets/js/audioManager.js" type="module"></script>
-    <script src="assets/js/director.js" type="module"></script>
-    <script src="assets/js/main.js" type="module"></script>
+      </section>
+
+      <!-- Upload MP3 -->
+      <section id="upload-screen" class="hidden card-bg p-6 rounded-2xl">
+        <h2 class="text-xl font-semibold text-white mb-4">Carrega els teus MP3</h2>
+        <p class="text-sm text-gray-400 mb-4">Assigna un fitxer a cada mood detectat:</p>
+        <div class="space-y-2">
+          <label class="block text-sm text-gray-300">Combat: <input type="file" id="upload-combat" accept=".mp3"></label>
+          <label class="block text-sm text-gray-300">Calma: <input type="file" id="upload-calma" accept=".mp3"></label>
+          <label class="block text-sm text-gray-300">Misteri: <input type="file" id="upload-misteri" accept=".mp3"></label>
+          <!-- afegeix els moods que necessitis -->
+        </div>
+        <button id="upload-done-btn" class="w-full btn-action-primary mt-4">Puig finalitzada</button>
+      </section>
+
+      <!-- Pantalla Setup -->
+      <section id="setup-screen" class="hidden card-bg p-6 rounded-2xl">
+        <h2 class="text-xl font-semibold text-white mb-4">Preparat per començar</h2>
+        <button id="start-session-btn" class="w-full btn-action-primary">Començar sessió</button>
+        <button id="change-api-key-btn" class="text-xs text-gray-500 hover:text-gray-300 mt-4">Canviar API Key</button>
+      </section>
+
+      <!-- Session -->
+      <section id="session-screen" class="hidden card-bg p-6 rounded-2xl">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold text-white">Sessió Activa</h2>
+          <div class="flex items-center text-sm text-gray-300">
+            <span id="music-status-dot" class="w-3 h-3 rounded-full mr-2 bg-gray-500"></span>
+            <span id="music-status-text">Aturada</span>
+          </div>
+        </div>
+        <div id="transcript-preview" class="p-3 bg-brand-dark rounded-lg h-24 overflow-y-auto text-sm text-gray-300 border border-gray-700 mb-4">La transcripció apareixerà...</div>
+        <div id="session-log" class="p-3 bg-brand-dark rounded-lg h-48 overflow-y-auto text-xs text-gray-400 border mb-4 border-gray-700">
+          <p class="text-gray-500 italic">Registre de la sessió...</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <button id="toggle-listening-btn" class="btn-control bg-purple-600 hover:bg-purple-700">
+            <i class="fas fa-microphone-slash mr-2"></i><span>Escoltar</span>
+          </button>
+          <button id="stop-music-btn" class="btn-control bg-yellow-600 hover:bg-yellow-700">
+            <i class="fas fa-stop mr-2"></i><span>Aturar música</span>
+          </button>
+          <button id="stop-session-btn" class="btn-control bg-red-600/50 hover:bg-red-600/70">
+            <i class="fas fa-door-open mr-2"></i><span>Finalitzar sessió</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="mt-8 text-center"><p id="version-display" class="text-xs text-gray-600"></p></footer>
+  </div>
+
+  <script src="assets/js/config.js" type="module"></script>
+  <script src="assets/js/ui.js" type="module"></script>
+  <script src="assets/js/ai.js" type="module"></script>
+  <script src="assets/js/speech.js" type="module"></script>
+  <script src="assets/js/audioManager.js" type="module"></script>
+  <script src="assets/js/director.js" type="module"></script>
+  <script src="assets/js/main.js" type="module"></script>
 </body>
 </html>
