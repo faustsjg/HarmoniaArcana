@@ -1,101 +1,84 @@
-// FILE: assets/js/director.js
 import { DIRECTOR_CONFIG } from './config.js';
 import { UI } from './ui.js';
 import { AI } from './ai.js';
 import { Speech } from './speech.js';
 import { AudioManager } from './audioManager.js';
 
+const defaultSounds = {
+  inici:{url:'./assets/sounds/tema_principal.mp3',name:'Tema Principal'},
+  combat:{url:'./assets/sounds/tema_combat.mp3',name:'Combat'},
+  calma:{url:'./assets/sounds/tema_calma.mp3',name:'Calma'},
+  misteri:{url:'./assets/sounds/tema_misteri.mp3',name:'Misteri'},
+  default:{url:'./assets/sounds/tema_principal.mp3',name:'Tema Principal'}
+};
+
 export const Director = {
-    apiKey: null,
-    inspiracioMestra: "",
-    soundLibrary: null,
-    contextActual: { mood: 'principal' },
-    isSessionActive: false,
-    isProcessing: false,
-    fullTranscript: "",
-    intervalId: null,
+  apiKey:null, isActive:false, context:{mood:'inici'},
+  userSounds:{}, intervalId:null, fullTranscript:'',
 
-    async init(apiKey, inspiracio, soundLibrary) {
-        if (this.isSessionActive) return;
-        this.isSessionActive = true;
-        this.apiKey = apiKey;
-        this.inspiracioMestra = inspiracio;
-        this.soundLibrary = soundLibrary;
-        
-        UI.showScreen('session-screen');
-        UI.addTimelineEvent("Sessió inicialitzada.", "fa-solid fa-play", "success");
-        if(UI.currentInspirationDisplay) UI.currentInspirationDisplay.textContent = `Tema: ${inspiracio}`;
-        if(UI.showHelpBtn) UI.showHelpBtn.classList.remove('hidden');
-        UI.updateTranscript("");
-        UI.setButtonActive(UI.toggleListeningBtn, false);
-        UI.setButtonActive(UI.toggleMusicBtn, false);
-        
-        const speechSupported = Speech.init(
-            (interimText) => { UI.updateTranscript(this.fullTranscript + interimText); },
-            (finalText) => { this.fullTranscript += finalText; }
-        );
-        if (!speechSupported) UI.addTimelineEvent("Error: Reconeixement de veu no compatible.", "fa-solid fa-triangle-exclamation", "error");
-        
-        // Comencem amb el tema principal del pack seleccionat
-        this.canviarMusicaPerContext({ mood: 'principal' });
-    },
-    
-    toggleListening() {
-        if (!this.isSessionActive) return;
-        const isCurrentlyListening = Speech.isListening;
-        UI.setButtonActive(UI.toggleListeningBtn, !isCurrentlyListening);
-        if (isCurrentlyListening) {
-            Speech.stopListening();
-            UI.updateStatus("Escolta en pausa.");
-            if (this.intervalId) clearInterval(this.intervalId);
-        } else {
-            Speech.startListening();
-            UI.updateStatus("Escoltant...");
-            this.iniciarBuclePrincipal();
-        }
-    },
+  async init(apiKey) {
+    this.apiKey=apiKey;
+    this.isActive=true;
+    UI.showScreen('session-screen');
+    UI.updateStatus("Fes clic a Escoltar per començar");
+    UI.addLogEntry("Sessió iniciada");
+    Speech.init(text => {
+      this.fullTranscript=text;
+      UI.updateTranscript(text);
+    });
+    this.changeMusic({mood:'inici'});
+  },
 
-    toggleMusicPlayback() {
-        AudioManager.togglePlayback();
-    },
+  changeMusic(ctx) {
+    const mood = ctx.mood;
+    const snd = this.userSounds[mood] || defaultSounds[mood] || defaultSounds.default;
+    if (snd.url === AudioManager.currentTrackUrl) return;
+    this.context = ctx;
+    UI.addLogEntry(`Nova música per mood: <strong>${mood}</strong>`);
+    AudioManager.play(snd.url, snd.name);
+  },
 
-    canviarMusicaPerContext(nouContext) {
-        if (!nouContext || !nouContext.mood) return;
-        const mood = nouContext.mood;
-        // Busquem la pista al nostre soundLibrary
-        const pistaUrl = this.soundLibrary[mood] || this.soundLibrary['principal'];
-        
-        if (pistaUrl && pistaUrl !== AudioManager.currentTrackUrl) {
-            this.contextActual = nouContext;
-            AudioManager.reproduirPista(pistaUrl, mood);
-            UI.addTimelineEvent(`Canviant a l'ambient: ${mood}`, 'fa-solid fa-music', 'info');
-        } else if (!pistaUrl) {
-            UI.addTimelineEvent(`No s'ha trobat música per a l'ambient '${mood}'.`, 'fa-solid fa-triangle-exclamation', 'error');
-        }
-    },
-    
-    iniciarBuclePrincipal() {
-        if (this.intervalId) clearInterval(this.intervalId);
-        this.intervalId = setInterval(async () => {
-            if (!this.isSessionActive || !Speech.isListening || this.isProcessing) return;
-            const textBuffer = Speech.getAndClearBuffer();
-            if (textBuffer.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
-            
-            const nouContext = await AI.analisarContext(this.apiKey, textBuffer);
-            if (nouContext && nouContext.mood && nouContext.mood !== this.contextActual.mood) {
-                this.canviarMusicaPerContext(nouContext);
-            }
-        }, DIRECTOR_CONFIG.analysisInterval);
-    },
-    
-    aturarSessio() {
-        if (!this.isSessionActive) return;
-        if (this.intervalId) { clearInterval(this.intervalId); this.intervalId = null; }
-        this.isSessionActive = false;
-        if (Speech.isListening) Speech.stopListening();
-        AudioManager.aturarTot(0.5);
-        UI.updateStatus("Sessió finalitzada.");
-        UI.showScreen('setup-screen');
-        if(UI.showHelpBtn) UI.showHelpBtn.classList.add('hidden');
+  toggleListening() {
+    if (!this.isActive) return;
+    const listening = Speech.isListening;
+    if (listening) {
+      Speech.stopListening();
+      UI.setButtonActive(UI.toggleListeningBtn,false);
+      UI.updateStatus("Escolta pausada");
+      UI.addLogEntry("Escolta pausada");
+      clearInterval(this.intervalId);
+    } else {
+      Speech.startListening();
+      UI.setButtonActive(UI.toggleListeningBtn,true);
+      UI.updateStatus("Escoltant...");
+      UI.addLogEntry("Escolta activada");
+      this.startLoop();
     }
+  },
+
+  startLoop() {
+    this.intervalId = setInterval(async () => {
+      if (!this.isActive || !Speech.isListening) return;
+      const buf = Speech.getAndClearBuffer();
+      if (buf.trim().length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
+      const ctx = await AI.analitzar(this.apiKey, buf);
+      ctx && ctx.mood && ctx.mood !== this.context.mood && this.changeMusic(ctx);
+    }, DIRECTOR_CONFIG.analysisInterval);
+  },
+
+  stopMusic() {
+    if (!this.isActive) return;
+    AudioManager.stopAll(0.5);
+    UI.addLogEntry("Música aturada manualment");
+  },
+
+  endSession() {
+    this.isActive=false;
+    clearInterval(this.intervalId);
+    Speech.stopListening();
+    AudioManager.stopAll(0.5);
+    UI.addLogEntry("Sessió finalitzada");
+    UI.updateStatus("Sessió finalitzada");
+    UI.showScreen('setup-screen');
+  }
 };
