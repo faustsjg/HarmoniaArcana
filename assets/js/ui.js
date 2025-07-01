@@ -4,24 +4,28 @@ export const UI = {
     statusDisplay: null, versionDisplay: null, landingScreen: null, setupScreen: null,
     sessionScreen: null, apiKeyContainer: null, themeSelectionContainer: null,
     goToSetupBtn: null, saveApiKeyBtn: null, themeCardsContainer: null, 
-    startSessionBtn: null, stopSessionBtn: null, toggleListeningBtn: null,
-    toggleMusicBtn: null, transcriptPreview: null, soundboard: null, 
-    showHelpBtn: null, helpModalOverlay: null, closeHelpBtn: null,
-    timelineHeader: null, timelineContainer: null, backToLandingBtn: null,
-    currentInspirationDisplay: null, masterInspirationInput: null,
-    apiKeyInput: null, prepTitle: null, trackUploadList: null,
-    playSessionBtn: null, musicStatusDot: null, musicStatusText: null,
-
+    startSessionBtn: null, changeApiKeyBtn: null, backToLandingBtn: null,
+    apiKeyInput: null, masterInspirationInput: null, sessionInspirationDisplay: null,
+    prepTitle: null, trackUploadList: null, playSessionBtn: null,
+    timelineHeader: null, timelineStatusText: null, timelineContainer: null,
+    toggleListeningBtn: null, toggleMusicBtn: null, stopSessionBtn: null,
+    transcriptPreview: null, soundboard: null, showHelpBtn: null, 
+    helpModalOverlay: null, closeHelpBtn: null,
+    actionLogContainer: null, actionLogContent: null, toggleLogBtn: null,
+    musicStatusDot: null, musicStatusText: null,
+    
     init(version) {
         const ids = [
-            'status-display', 'version-display', 'landing-screen', 'setup-screen',
+            'status-display', 'version-display', 'landing-screen', 'setup-screen', 
             'session-screen', 'api-key-container', 'theme-selection-container',
             'go-to-setup-btn', 'save-api-key-btn', 'theme-cards-container', 'start-session-btn',
-            'change-api-key-btn', 'back-to-landing-btn', 'api-key-input', 'master-inspiration-input',
-            'prep-title', 'track-upload-list', 'play-session-btn',
-            'session-inspiration-display', 'show-help-btn', 'help-modal-overlay', 'close-help-btn',
-            'timeline-header', 'timeline-container', 'toggle-listening-btn', 'toggle-music-btn',
-            'stop-session-btn', 'soundboard', 'transcript-preview', 'music-status-text'
+            'change-api-key-btn', 'back-to-landing-btn', 'api-key-input',
+            'master-inspiration-input', 'session-inspiration-display', 
+            'prep-title', 'track-upload-list', 'play-session-btn', 'timeline-header',
+            'timeline-container', 'toggle-listening-btn', 'toggle-music-btn',
+            'stop-session-btn', 'soundboard', 'transcript-preview',
+            'show-help-btn', 'help-modal-overlay', 'close-help-btn',
+            'action-log-container', 'action-log-content', 'toggle-log-btn', 'music-status-text'
         ];
         ids.forEach(id => {
             const propName = id.replace(/-(\w)/g, (_, letter) => letter.toUpperCase());
@@ -29,6 +33,7 @@ export const UI = {
         });
         
         this.musicStatusDot = document.querySelector('.status-dot-music');
+        this.timelineStatusText = document.getElementById('timeline-status-text');
 
         if (this.versionDisplay) {
             this.versionDisplay.textContent = `Harmonia Arcana ${version}`;
@@ -42,18 +47,19 @@ export const UI = {
         });
         const screenToShow = document.getElementById(screenName);
         if (screenToShow) {
-            screenToShow.style.display = 'block';
-            if (screenToShow.id !== 'session-screen') {
-                screenToShow.style.display = 'flex';
-                screenToShow.style.flexDirection = 'column';
-                screenToShow.style.alignItems = 'center';
-                screenToShow.style.justifyContent = 'center';
-            }
+            screenToShow.style.display = 'flex';
+            screenToShow.style.flexDirection = 'column';
+            screenToShow.style.alignItems = 'center';
+            screenToShow.style.justifyContent = 'center';
         }
     },
 
     updateStatus(message) {
-        if (this.statusDisplay) this.statusDisplay.textContent = message;
+        if (this.timelineStatusText) {
+            this.timelineStatusText.textContent = message;
+        } else if (this.statusDisplay) {
+            this.statusDisplay.textContent = message;
+        }
     },
 
     setButtonActive(button, isActive) {
@@ -76,6 +82,8 @@ export const UI = {
     updateMusicStatus(status) {
         if(this.musicStatusDot) this.musicStatusDot.style.backgroundColor = status.isPlaying ? '#10b981' : '#6b7280';
         if(this.musicStatusText) this.musicStatusText.textContent = status.isPlaying ? status.title : 'Aturada';
+        if(this.toggleMusicBtn) this.toggleMusicBtn.dataset.playing = status.isPlaying;
+        this.setButtonActive(this.toggleMusicBtn, status.isPlaying);
     },
 
     toggleTimeline() {
@@ -100,4 +108,18 @@ export const UI = {
         this.timelineContainer.appendChild(eventElement);
         this.timelineContainer.scrollTop = this.timelineContainer.scrollHeight;
     },
+
+    showHelpModal() { 
+        if (this.helpModalOverlay) this.helpModalOverlay.classList.add('visible'); 
+    },
+    hideHelpModal() { 
+        if (this.helpModalOverlay) this.helpModalOverlay.classList.remove('visible'); 
+    },
+
+    updateTranscript(fullText) {
+        if(this.transcriptPreview) {
+            this.transcriptPreview.textContent = fullText;
+            this.transcriptPreview.scrollTop = this.transcriptPreview.scrollHeight;
+        }
+    }
 };
