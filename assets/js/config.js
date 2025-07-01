@@ -1,5 +1,4 @@
-// FILE: assets/js/config.js
-export const APP_VERSION = "v12.4.0-FinalPolish";
+export const APP_VERSION = "v12.5.0-FinalPolish";
 export const API_KEY_STORAGE_ID = 'harmoniaArcana_huggingFaceApiKey';
 export const MODELS = {
     analyst: "meta-llama/Llama-3.1-8B-Instruct"
