@@ -14,12 +14,10 @@
     <div id="app-container" class="min-h-screen flex flex-col items-center justify-center p-4">
         
         <section id="landing-screen" class="w-full max-w-md text-center">
-            <div class="bard-animation-placeholder mx-auto mb-6">
-                <i class="fas fa-hat-wizard text-6xl text-purple-400"></i>
-            </div>
+            <div class="bard-animation-placeholder mx-auto mb-6"><i class="fas fa-hat-wizard text-6xl text-purple-400"></i></div>
             <h1 class="text-4xl sm:text-5xl font-bold text-white tracking-wider font-serif-display">Harmonia Arcana</h1>
             <p class="text-lg text-purple-300 mt-2 mb-6">El teu bard personal per a partides de rol èpiques.</p>
-            <p class="max-w-xl mx-auto text-gray-300 mb-8">Narra la teva aventura i deixa que la IA analitzi les teves paraules per orquestrar una banda sonora dinàmica que evoluciona amb la teva història.</p>
+            <p class="max-w-xl mx-auto text-gray-300 mb-8">Narra la teva aventura i deixa que la IA analitzi les teves paraules per orquestrar una banda sonora dinàmàmica que evoluciona amb la teva història.</p>
             <button id="go-to-setup-btn" class="btn-action-primary text-lg px-8 py-3">Començar l'Aventura</button>
         </section>
 
@@ -31,12 +29,16 @@
                 <button id="save-api-key-btn" class="w-full btn-action-secondary py-2 rounded-lg">Desar Clau</button>
             </div>
             <div id="theme-selection-container" class="card-bg p-6 rounded-2xl">
-                <h2 class="text-xl font-semibold text-white mb-4">Pas 2: Tria l'Univers Sonor</h2>
-                <div id="theme-cards-container" class="space-y-3">
-                    </div>
-                <button id="start-session-btn" class="w-full btn-action-primary mt-6" disabled>Prepara la Partida</button>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-white">Tria l'Univers Sonor</h2>
+                    <button id="back-to-landing-btn" class="text-xs text-gray-500 hover:text-gray-300">Tornar a l'inici</button>
+                </div>
+                <div class="relative">
+                    <div id="theme-cards-container" class="flex overflow-x-auto space-x-4 pb-4 scroll-smooth">
+                        </div>
+                </div>
+                <button id="start-session-btn" class="w-full btn-action-primary mt-6" disabled>Inicia el Bard</button>
             </div>
-            <button id="change-api-key-btn" class="text-xs text-gray-500 hover:text-gray-300 mt-6 mx-auto block">Canviar API Key</button>
         </section>
 
         <section id="session-screen" class="hidden w-full max-w-md">
@@ -45,14 +47,14 @@
                 <p id="status-display" class="text-purple-300 text-sm h-5"></p>
                 <button id="show-help-btn" class="absolute top-0 right-0 text-gray-400 hover:text-white text-xl p-1"><i class="fas fa-question-circle"></i></button>
             </header>
-             <div class="card-bg p-6 rounded-2xl">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-white">Controls</h3>
-                    <div class="flex items-center text-sm text-gray-300">
-                        <span id="music-status-dot" class="w-2 h-2 rounded-full mr-2 bg-gray-500"></span>
-                        <span id="music-status-text">Aturada</span>
-                    </div>
+            <div class="card-bg p-6 rounded-3xl mb-4">
+                <div id="timeline-header" class="text-center text-purple-300 cursor-pointer pb-2 mb-2 border-b border-gray-700/50">
+                    <span>Estat Actual</span> <i class="fas fa-chevron-down text-xs ml-1"></i>
                 </div>
+                <div id="timeline-container" class="hidden mt-4 max-h-40 overflow-y-auto space-y-2"></div>
+            </div>
+             <div class="card-bg p-6 rounded-3xl">
+                <h3 class="text-lg font-semibold text-white mb-4">Controls</h3>
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <button id="toggle-listening-btn" class="btn-control"><i class="fas fa-microphone-slash"></i><span>Escoltar</span></button>
                     <button id="toggle-music-btn" class="btn-control" data-playing="false"><i class="fas fa-play"></i><span>Música</span></button>
@@ -73,27 +75,21 @@
             <button id="close-help-btn" class="absolute top-3 right-4 text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
             <h2 class="text-xl font-semibold text-white mb-4">Com Utilitzar el teu Bard</h2>
             <div class="space-y-4 text-gray-300">
-                <div><span class="instruction-number">1</span><strong class="ml-2">Música Base:</strong> L'aplicació comença amb un tema principal basat en la teva selecció.</div>
+                <div><span class="instruction-number">1</span><strong class="ml-2">Música Base:</strong> L'aplicació comença amb un tema principal basat en el teu univers.</div>
                 <div><span class="instruction-number">2</span><strong class="ml-2">Activa l'Escolta:</strong> Fes clic al botó del micròfon perquè el bard analitzi la teva narració i adapti la música.</div>
                 <div><span class="instruction-number">3</span><strong class="ml-2">Gaudeix de la Simfonia:</strong> La banda sonora evolucionarà automàticament amb la teva història.</div>
             </div>
         </div>
     </div>
-    
-    <div id="action-log-container" class="fixed bottom-0 left-0 right-0 bg-gray-800 bg-opacity-95 backdrop-blur-sm border-t border-gray-700 h-48 transform translate-y-full transition-transform duration-300 z-40">
-        <button id="toggle-log-btn" class="absolute -top-8 right-2 bg-purple-600 text-white px-3 py-1 rounded-t-lg text-xs">Mostrar Registre</button>
-        <h4 class="text-sm font-semibold text-purple-300 mb-1 px-2">Registre d'Accions</h4>
-        <div id="action-log-content" class="h-full overflow-y-auto text-xs space-y-1 px-2 pb-2"></div>
-    </div>
 
-    <footer class="w-full text-center p-4"><p id="version-display" class="text-xs text-gray-600"></p></footer>
+    <footer class="w-full text-center p-4 fixed bottom-0"><p id="version-display" class="text-xs text-gray-600"></p></footer>
     
     <script src="assets/js/config.js" type="module"></script>
     <script src="assets/js/ui.js" type="module"></script>
-    <script src="assets/js/ai.js" type="module"></script>
+    <script src="assets/js/main.js" type="module"></script>
+    <script src="assets/js/director.js" type="module"></script>
     <script src="assets/js/speech.js" type="module"></script>
     <script src="assets/js/audioManager.js" type="module"></script>
-    <script src="assets/js/director.js" type="module"></script>
-    <script src="assets/js/main.js" type="module"></script>
+    <script src="assets/js/ai.js" type="module"></script>
 </body>
 </html>
