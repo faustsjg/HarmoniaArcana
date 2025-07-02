@@ -1,69 +1,102 @@
 export const UI = {
-  statusDisplay: null, versionDisplay: null,
-  landingScreen: null, apiKeyScreen: null, universeSelectionScreen: null,
-  uploadScreen: null, setupScreen: null, sessionScreen: null,
-  landingStartBtn: null, saveApiKeyBtn: null, changeApiKeyBtn: null,
-  startSessionBtn: null, toggleListeningBtn: null,
-  stopMusicBtn: null, stopSessionBtn: null,
-  transcriptPreview: null, musicStatusDot: null,
-  musicStatusText: null, sessionLog: null,
-  uploadDoneBtn: null,
+  landingScreen: null, landingStartBtn: null,
+  carouselScreen: null, carouselPrev: null, carouselNext: null, apiKeyInput: null, saveApiKeyBtn: null,
+  universeSelectionScreen: null, uploadScreen: null, sessionScreen: null,
+  uploadCombat: null, uploadCalma: null, uploadMisteri: null, uploadDoneBtn: null,
+  toggleListeningBtn: null, stopMusicBtn: null, stopSessionBtn: null,
+  transcriptPreview: null, musicStatusDot: null, musicStatusText: null, sessionLog: null,
+  backUniversityBtn: null,
 
   init(version) {
-    [
-      'status-display','version-display',
-      'landing-screen','landing-start-btn',
-      'api-key-screen','save-api-key-btn','api-key-input',
-      'universe-selection-screen',
-      'upload-screen','upload-combat','upload-calma','upload-misteri','upload-done-btn',
-      'setup-screen','start-session-btn','change-api-key-btn',
-      'session-screen','toggle-listening-btn','stop-music-btn','stop-session-btn',
-      'transcript-preview','music-status-dot','music-status-text','session-log'
-    ].forEach(id => {
-      const prop = id.replace(/-(\w)/g, (_,c)=>c.toUpperCase());
-      this[prop] = document.getElementById(id);
+    this.landingScreen = document.getElementById('landing-screen');
+    this.landingStartBtn = document.getElementById('landing-start-btn');
+
+    this.carouselScreen = document.getElementById('carousel-screen');
+    this.carouselPrev = document.getElementById('carousel-prev');
+    this.carouselNext = document.getElementById('carousel-next');
+    this.apiKeyInput = document.getElementById('api-key-input');
+    this.saveApiKeyBtn = document.getElementById('save-api-key-btn');
+
+    this.universeSelectionScreen = document.getElementById('universe-selection-screen');
+
+    this.uploadScreen = document.getElementById('upload-screen');
+    this.uploadCombat = document.getElementById('upload-combat');
+    this.uploadCalma = document.getElementById('upload-calma');
+    this.uploadMisteri = document.getElementById('upload-misteri');
+    this.uploadDoneBtn = document.getElementById('upload-done-btn');
+    this.backUniversityBtn = document.getElementById('back-university-btn');
+
+    this.sessionScreen = document.getElementById('session-screen');
+    this.toggleListeningBtn = document.getElementById('toggle-listening-btn');
+    this.stopMusicBtn = document.getElementById('stop-music-btn');
+    this.stopSessionBtn = document.getElementById('stop-session-btn');
+    this.transcriptPreview = document.getElementById('transcript-preview');
+    this.musicStatusDot = document.getElementById('music-status-dot');
+    this.musicStatusText = document.getElementById('music-status-text');
+    this.sessionLog = document.getElementById('session-log');
+
+    document.querySelectorAll('.universe-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const wasExpanded = card.classList.contains('expanded');
+        document.querySelectorAll('.universe-card').forEach(c => {
+          c.classList.remove('expanded');
+          c.querySelector('.card-expanded').classList.add('hidden');
+        });
+        if (!wasExpanded) {
+          card.classList.add('expanded');
+          card.querySelector('.card-expanded').classList.remove('hidden');
+        }
+      });
+      card.querySelector('.back-universe').addEventListener('click', e => {
+        e.stopPropagation();
+        card.classList.remove('expanded');
+        card.querySelector('.card-expanded').classList.add('hidden');
+      });
     });
-    this.versionDisplay && (this.versionDisplay.textContent = `Harmonia Arcana ${version}`);
+
+    if (document.getElementById('carousel')) {
+      this.carouselPrev.addEventListener('click', () => shiftCarousel(-1));
+      this.carouselNext.addEventListener('click', () => shiftCarousel(1));
+    }
+
+    // text-control buttons
+    this.toggleListeningBtn.querySelector('i').classList.add('fa-microphone-slash');
   },
 
-  updateStatus(msg) {
-    this.statusDisplay && (this.statusDisplay.textContent = msg);
-  },
-
-  updateMusicStatus(isPlaying, name='') {
-    this.musicStatusDot && (this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280');
-    this.musicStatusText && (this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada');
+  showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
   },
 
   updateTranscript(text) {
-    if (!this.transcriptPreview) return;
-    this.transcriptPreview.textContent = text;
-    this.transcriptPreview.scrollTop = this.transcriptPreview.scrollHeight;
+    this.transcriptPreview.value = text;
+  },
+
+  updateMusicStatus(isPlaying, name='') {
+    this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
+    this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
   },
 
   addLogEntry(msg) {
-    if (!this.sessionLog) return;
-    const t = new Date().toLocaleTimeString('ca-ES',{hour:'2-digit',minute:'2-digit'});
+    const time = new Date().toLocaleTimeString('ca-ES', {hour: '2-digit', minute: '2-digit'});
     const div = document.createElement('div');
-    div.className = 'mb-1';
-    div.innerHTML = `<span class="text-purple-400">[${t}]</span> ${msg}`;
+    div.innerHTML = `<span class="text-purple-400">[${time}]</span> ${msg}`;
     this.sessionLog.appendChild(div);
     this.sessionLog.scrollTop = this.sessionLog.scrollHeight;
   },
 
-  showScreen(id) {
-    ['landing-screen','api-key-screen','universe-selection-screen','upload-screen','setup-screen','session-screen'].forEach(s => {
-      document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
-    });
-  },
-
-  setButtonActive(btn, active) {
-    if (!btn) return;
-    btn.classList.toggle('active',active);
-    const icon = btn.querySelector('i'), txt = btn.querySelector('span');
-    if (btn.id === 'toggle-listening-btn') {
-      icon.className = active? 'fas fa-microphone mr-2':'fas fa-microphone-slash mr-2';
-      txt.textContent = active? 'Escoltant':'Escoltar';
-    }
+  toggleListeningBtnState(active) {
+    this.toggleListeningBtn.classList.toggle('active', active);
+    this.toggleListeningBtn.querySelector('i').className = active ? 'fas fa-microphone' : 'fas fa-microphone-slash';
+    this.toggleListeningBtn.querySelector('span').textContent = active ? 'Escoltant' : 'Escoltar';
   }
 };
+
+// Carrusel logic
+let carouselIndex = 0;
+function shiftCarousel(dir) {
+  const slides = document.querySelectorAll('#carousel .slide');
+  carouselIndex = (carouselIndex + dir + slides.length) % slides.length;
+  document.querySelector('.carousel-slides').style.transform = `translateX(-${carouselIndex * 100}%)`;
+}
