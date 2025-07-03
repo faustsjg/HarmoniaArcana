@@ -53,43 +53,52 @@ export const UI = {
     let index = 0;
     const slides = document.querySelectorAll('#carousel .slide');
     const container = document.querySelector('.carousel-slides');
-    this.carouselPrev?.addEventListener('click', () => {
-      index = (index - 1 + slides.length) % slides.length;
-      container.style.transform = `translateX(-${index * 100}%)`;
-    });
-    this.carouselNext?.addEventListener('click', () => {
-      index = (index + 1) % slides.length;
-      container.style.transform = `translateX(-${index * 100}%)`;
-    });
+    if (this.carouselPrev && this.carouselNext && container) {
+      this.carouselPrev.addEventListener('click', () => {
+        index = (index - 1 + slides.length) % slides.length;
+        container.style.transform = `translateX(-${index * 100}%)`;
+      });
+      this.carouselNext.addEventListener('click', () => {
+        index = (index + 1) % slides.length;
+        container.style.transform = `translateX(-${index * 100}%)`;
+      });
+    }
 
     document.querySelectorAll('.universe-card').forEach(card => {
       card.addEventListener('click', () => {
         const already = card.classList.contains('expanded');
         document.querySelectorAll('.universe-card').forEach(c => {
           c.classList.remove('expanded');
-          c.querySelector('.card-expanded').classList.add('hidden');
+          const expanded = c.querySelector('.card-expanded');
+          if (expanded) expanded.classList.add('hidden');
         });
         if (!already) {
           card.classList.add('expanded');
-          card.querySelector('.card-expanded').classList.remove('hidden');
+          const expanded = card.querySelector('.card-expanded');
+          if (expanded) expanded.classList.remove('hidden');
         }
       });
       const closeBtn = card.querySelector('.back-universe');
-      closeBtn?.addEventListener('click', e => {
-        e.stopPropagation();
-        card.classList.remove('expanded');
-        card.querySelector('.card-expanded').classList.add('hidden');
-      });
+      if (closeBtn) {
+        closeBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          card.classList.remove('expanded');
+          const expanded = card.querySelector('.card-expanded');
+          if (expanded) expanded.classList.add('hidden');
+        });
+      }
     });
   },
 
   showScreen(id) {
     document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-    document.getElementById(id)?.classList.add('active');
+    const screen = document.getElementById(id);
+    if (screen) screen.classList.add('active');
   },
 
-  updateStatus(msg) {
-    document.getElementById('status-display')?.textContent = msg;
+  updateStatus(message) {
+    const el = document.getElementById('status-display');
+    if (el) el.textContent = message;
   },
 
   updateTranscript(text) {
@@ -99,20 +108,27 @@ export const UI = {
     }
   },
 
-  updateMusicStatus(isPlaying, name='') {
-    this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
-    this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
+  updateMusicStatus(isPlaying, name = '') {
+    if (this.musicStatusDot) {
+      this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
+    }
+    if (this.musicStatusText) {
+      this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
+    }
   },
 
-  addLogEntry(msg) {
+  addLogEntry(message) {
     const time = new Date().toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' });
     const div = document.createElement('div');
-    div.innerHTML = `<span class="text-purple-400">[${time}]</span> ${msg}`;
-    this.sessionLog?.appendChild(div);
-    this.sessionLog.scrollTop = this.sessionLog.scrollHeight;
+    div.innerHTML = `<span class="text-purple-400">[${time}]</span> ${message}`;
+    if (this.sessionLog) {
+      this.sessionLog.appendChild(div);
+      this.sessionLog.scrollTop = this.sessionLog.scrollHeight;
+    }
   },
 
   toggleListeningBtnState(active) {
+    if (!this.toggleListeningBtn) return;
     this.toggleListeningBtn.classList.toggle('active', active);
     const i = this.toggleListeningBtn.querySelector('i');
     const span = this.toggleListeningBtn.querySelector('span');
