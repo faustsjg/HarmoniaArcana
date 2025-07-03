@@ -1,7 +1,7 @@
 export const UI = {
   landingScreen: null, landingStartBtn: null,
   carouselScreen: null, carouselPrev: null, carouselNext: null, apiKeyInput: null, saveApiKeyBtn: null,
-  universeSelectionScreen: null, backToLandingBtn: null,
+  universeSelectionScreen: null, backToLandingBtn: null, changeApiKeyBtn: null,
   uploadScreen: null, uploadCombat: null, uploadCalma: null, uploadMisteri: null, uploadDoneBtn: null,
   sessionScreen: null, toggleListeningBtn: null, stopMusicBtn: null, stopSessionBtn: null,
   transcriptPreview: null, musicStatusDot: null, musicStatusText: null, sessionLog: null,
@@ -10,6 +10,7 @@ export const UI = {
   init(version) {
     const byId = id => document.getElementById(id);
 
+    // Assignació d'elements
     this.landingScreen = byId('landing-screen');
     this.landingStartBtn = byId('landing-start-btn');
 
@@ -21,6 +22,7 @@ export const UI = {
 
     this.universeSelectionScreen = byId('universe-selection-screen');
     this.backToLandingBtn = byId('back-to-landing-btn');
+    this.changeApiKeyBtn = byId('change-api-key-btn');
 
     this.uploadScreen = byId('upload-screen');
     this.uploadCombat = byId('upload-combat');
@@ -40,12 +42,23 @@ export const UI = {
     const versionDisplay = byId('version-display');
     if (versionDisplay) versionDisplay.textContent = `v${version}`;
 
+    const apiStatus = byId('api-status');
+    if (apiStatus) {
+      apiStatus.textContent = localStorage.getItem('harmoniaArcana_huggingFaceApiKey') ? 'Clau API detectada' : 'Sense clau API';
+    }
+
+    this.changeApiKeyBtn?.addEventListener('click', () => {
+      localStorage.removeItem('harmoniaArcana_huggingFaceApiKey');
+      this.showScreen('carousel-screen');
+      this.updateStatus('Clau API eliminada');
+    });
+
     ['encanteri', 'espasa', 'llampec', 'misil', 'porta', 'rugit'].forEach(name => {
       const btn = byId(`sound-${name}`);
       if (btn) {
-        this.soundButtons[name] = btn;
+        btn.textContent = name.charAt(0).toUpperCase() + name.slice(1);
         btn.addEventListener('click', () => {
-          import('./soundEffects.js').then(module => module.SoundEffects.play(name));
+          import('./soundEffects.js').then(m => m.SoundEffects.play(name));
         });
       }
     });
@@ -109,12 +122,8 @@ export const UI = {
   },
 
   updateMusicStatus(isPlaying, name = '') {
-    if (this.musicStatusDot) {
-      this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
-    }
-    if (this.musicStatusText) {
-      this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
-    }
+    if (this.musicStatusDot) this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
+    if (this.musicStatusText) this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
   },
 
   addLogEntry(message) {
