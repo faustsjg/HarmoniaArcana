@@ -1,5 +1,4 @@
 export const UI = {
-  // Referències a elements HTML
   landingScreen: null, landingStartBtn: null,
   carouselScreen: null, carouselPrev: null, carouselNext: null, apiKeyInput: null, saveApiKeyBtn: null,
   universeSelectionScreen: null, backToLandingBtn: null,
@@ -10,8 +9,7 @@ export const UI = {
 
   init(version) {
     const byId = id => document.getElementById(id);
-    
-    // Assignació de referències
+
     this.landingScreen = byId('landing-screen');
     this.landingStartBtn = byId('landing-start-btn');
 
@@ -39,11 +37,9 @@ export const UI = {
     this.musicStatusText = byId('music-status-text');
     this.sessionLog = byId('session-log');
 
-    // Footer amb versió
     const versionDisplay = byId('version-display');
     if (versionDisplay) versionDisplay.textContent = `v${version}`;
 
-    // Efectes de so
     ['encanteri', 'espasa', 'llampec', 'misil', 'porta', 'rugit'].forEach(name => {
       const btn = byId(`sound-${name}`);
       if (btn) {
@@ -54,20 +50,18 @@ export const UI = {
       }
     });
 
-    // Carrusel guia
     let index = 0;
     const slides = document.querySelectorAll('#carousel .slide');
     const container = document.querySelector('.carousel-slides');
-    if (this.carouselPrev) this.carouselPrev.addEventListener('click', () => {
+    this.carouselPrev?.addEventListener('click', () => {
       index = (index - 1 + slides.length) % slides.length;
       container.style.transform = `translateX(-${index * 100}%)`;
     });
-    if (this.carouselNext) this.carouselNext.addEventListener('click', () => {
+    this.carouselNext?.addEventListener('click', () => {
       index = (index + 1) % slides.length;
       container.style.transform = `translateX(-${index * 100}%)`;
     });
 
-    // Targetes universos expandibles
     document.querySelectorAll('.universe-card').forEach(card => {
       card.addEventListener('click', () => {
         const already = card.classList.contains('expanded');
@@ -81,25 +75,21 @@ export const UI = {
         }
       });
       const closeBtn = card.querySelector('.back-universe');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', e => {
-          e.stopPropagation();
-          card.classList.remove('expanded');
-          card.querySelector('.card-expanded').classList.add('hidden');
-        });
-      }
+      closeBtn?.addEventListener('click', e => {
+        e.stopPropagation();
+        card.classList.remove('expanded');
+        card.querySelector('.card-expanded').classList.add('hidden');
+      });
     });
   },
 
   showScreen(id) {
     document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-    const screen = document.getElementById(id);
-    if (screen) screen.classList.add('active');
+    document.getElementById(id)?.classList.add('active');
   },
 
-  updateStatus(message) {
-    const el = document.getElementById('status-display');
-    if (el) el.textContent = message;
+  updateStatus(msg) {
+    document.getElementById('status-display')?.textContent = msg;
   },
 
   updateTranscript(text) {
@@ -109,23 +99,20 @@ export const UI = {
     }
   },
 
-  updateMusicStatus(isPlaying, name = '') {
-    if (this.musicStatusDot) this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
-    if (this.musicStatusText) this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
+  updateMusicStatus(isPlaying, name='') {
+    this.musicStatusDot.style.backgroundColor = isPlaying ? '#10b981' : '#6b7280';
+    this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
   },
 
-  addLogEntry(message) {
+  addLogEntry(msg) {
     const time = new Date().toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' });
     const div = document.createElement('div');
-    div.innerHTML = `<span class="text-purple-400">[${time}]</span> ${message}`;
-    if (this.sessionLog) {
-      this.sessionLog.appendChild(div);
-      this.sessionLog.scrollTop = this.sessionLog.scrollHeight;
-    }
+    div.innerHTML = `<span class="text-purple-400">[${time}]</span> ${msg}`;
+    this.sessionLog?.appendChild(div);
+    this.sessionLog.scrollTop = this.sessionLog.scrollHeight;
   },
 
   toggleListeningBtnState(active) {
-    if (!this.toggleListeningBtn) return;
     this.toggleListeningBtn.classList.toggle('active', active);
     const i = this.toggleListeningBtn.querySelector('i');
     const span = this.toggleListeningBtn.querySelector('span');
