@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="ca">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Harmonia Arcana v13.2.0</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="assets/css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+  <link href="assets/css/style.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet"/>
 </head>
 <body class="bg-gray-900 text-gray-200 font-sans">
 
@@ -15,41 +15,36 @@
     <div class="w-full max-w-xl space-y-6">
 
       <!-- LANDING -->
-      <section id="landing-screen" class="screen active text-center space-y-6">
-        <h1 class="text-5xl font-bold">Harmonia Arcana</h1>
-        <p class="text-gray-400">DJ Intel·ligent per partides de rol</p>
-        <button id="landing-start-btn" class="btn-action-primary px-6 py-3 text-xl">Començar</button>
+      <section id="landing-screen" class="screen active text-center">
+        <h1 class="text-5xl font-bold mb-2">Harmonia Arcana</h1>
+        <p class="text-gray-400 mb-4">DJ Intel·ligent per a partides de rol</p>
+        <button id="landing-start-btn" class="btn-action-primary px-6 py-3">Començar</button>
       </section>
 
-      <!-- GUIA CARRUSEL -->
+      <!-- CARRUSEL GUIA -->
       <section id="carousel-screen" class="screen hidden">
         <div class="bg-gray-800 rounded-xl p-6 space-y-4">
-          <h2 class="text-2xl font-semibold">Configura el teu token</h2>
+          <h2 class="text-2xl font-semibold mb-2">Guia ràpida</h2>
           <div id="carousel" class="overflow-hidden relative">
             <div class="carousel-slides flex transition-transform duration-500">
-              <div class="slide w-full p-4">Pas 1: Crea un compte a Hugging Face</div>
-              <div class="slide w-full p-4">Pas 2: Accepta les condicions del model Llama 3</div>
-              <div class="slide w-full p-4">Pas 3: Crea i copia el teu token d’API</div>
+              <div class="slide w-full p-2">Pas 1: Obre Hugging Face</div>
+              <div class="slide w-full p-2">Pas 2: Accepta Llama 3.1</div>
+              <div class="slide w-full p-2">Pas 3: Crea i copia el teu token</div>
             </div>
-            <div class="absolute top-1/2 left-0 transform -translate-y-1/2">
-              <button id="carousel-prev" class="text-white px-3">←</button>
-            </div>
-            <div class="absolute top-1/2 right-0 transform -translate-y-1/2">
-              <button id="carousel-next" class="text-white px-3">→</button>
-            </div>
+            <button id="carousel-prev" class="absolute left-0 top-1/2 transform -translate-y-1/2 px-3">&#8592;</button>
+            <button id="carousel-next" class="absolute right-0 top-1/2 transform -translate-y-1/2 px-3">&#8594;</button>
           </div>
-          <input type="password" id="api-key-input" placeholder="hf_..." class="input-styled w-full" />
+          <input type="password" id="api-key-input" placeholder="Token (hf_...)" class="input-styled w-full"/>
           <button id="save-api-key-btn" class="btn-action-primary w-full">Desar i continuar</button>
         </div>
       </section>
 
       <!-- SELECCIÓ UNIVERS -->
       <section id="universe-selection-screen" class="screen hidden">
-        <h2 class="text-2xl font-bold mb-4">Escull un univers sonor</h2>
+        <h2 class="text-2xl font-bold mb-4">Selecciona un univers</h2>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="universe-card">
-            <h3 class="title">JRPG</h3>
-            <p class="subtitle">Música èpica</p>
+            <h3 class="title">JRPG</h3><p class="subtitle">Música èpica</p>
             <div class="card-expanded hidden mt-2">
               <p class="text-sm mb-2">Inclou pistes de batalla i exploració</p>
               <button data-universe="jrpg" class="btn-action-primary">Selecciona</button>
@@ -57,48 +52,46 @@
             <button class="btn-icon back-universe">✕</button>
           </div>
           <div class="universe-card">
-            <h3 class="title">Horror</h3>
-            <p class="subtitle">Ambient fosc i tensió</p>
+            <h3 class="title">Horror</h3><p class="subtitle">Ambient fosc</p>
             <div class="card-expanded hidden mt-2">
-              <p class="text-sm mb-2">Música de suspens i misteri</p>
+              <p class="text-sm mb-2">Música de tensió i misteri</p>
               <button data-universe="horror" class="btn-action-primary">Selecciona</button>
             </div>
             <button class="btn-icon back-universe">✕</button>
           </div>
           <div class="universe-card">
-            <h3 class="title">Crea el teu</h3>
-            <p class="subtitle">Personalitza els sons</p>
+            <h3 class="title">Crea el teu</h3><p class="subtitle">Personalitza els sons</p>
             <div class="card-expanded hidden mt-2">
-              <p class="text-sm mb-2">Puja els teus propis fitxers MP3</p>
+              <p class="text-sm mb-2">Puja els teus fitxers MP3</p>
               <button data-universe="custom" class="btn-action-primary">Comença</button>
             </div>
             <button class="btn-icon back-universe">✕</button>
           </div>
         </div>
-        <button id="back-to-landing-btn" class="mt-6 text-sm text-gray-400 hover:text-gray-200">← Torna</button>
+        <button id="back-to-landing-btn" class="mt-4 text-sm text-gray-400">← Torna</button>
       </section>
 
-      <!-- PUJADA FITXERS -->
+      <!-- UPLOAD UNIVERS PERSONALITZAT -->
       <section id="upload-screen" class="screen hidden">
-        <h2 class="text-2xl font-bold mb-4">Carrega les teves pistes</h2>
-        <input type="file" id="upload-combat" accept=".mp3" class="mb-2 w-full" />
-        <input type="file" id="upload-calma" accept=".mp3" class="mb-2 w-full" />
-        <input type="file" id="upload-misteri" accept=".mp3" class="mb-2 w-full" />
+        <h2 class="text-2xl font-bold mb-4">Carrega els teus sons</h2>
+        <input type="file" id="upload-combat" accept=".mp3" class="mb-2 w-full"/>
+        <input type="file" id="upload-calma" accept=".mp3" class="mb-2 w-full"/>
+        <input type="file" id="upload-misteri" accept=".mp3" class="mb-2 w-full"/>
         <button id="upload-done-btn" class="btn-action-primary w-full mt-4">Preparat!</button>
       </section>
 
       <!-- SESSIÓ ACTIVA -->
       <section id="session-screen" class="screen hidden">
         <div class="flex justify-between items-center">
-          <h2 class="text-2xl font-bold">Sessió Activa</h2>
+          <h2 class="text-2xl font-semibold">Sessió Activa</h2>
           <div class="flex items-center text-sm text-gray-300">
             <span id="music-status-dot" class="w-3 h-3 rounded-full bg-gray-500 mr-2"></span>
             <span id="music-status-text">Aturada</span>
           </div>
         </div>
         <textarea id="transcript-preview" class="h-24 w-full bg-gray-800 p-2 rounded text-sm" readonly></textarea>
-        <div id="session-log" class="h-32 overflow-y-auto bg-gray-800 p-2 text-sm rounded">Registre...</div>
-        <h3 class="text-md font-semibold mt-4">Efectes de so</h3>
+        <div id="session-log" class="h-32 overflow-y-auto bg-gray-800 p-2 rounded text-sm">Registre...</div>
+        <h3 class="mt-4 font-semibold">Efectes de so</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
           <button id="sound-encanteri" class="btn-control">✨ Encanteri</button>
           <button id="sound-espasa" class="btn-control">⚔️ Espasa</button>
@@ -108,29 +101,26 @@
           <button id="sound-rugit" class="btn-control">🦁 Rugit</button>
         </div>
         <div class="grid grid-cols-2 gap-4 mt-4">
-          <button id="toggle-listening-btn" class="btn-control bg-purple-600 hover:bg-purple-700"><i class="fas fa-microphone-slash mr-2"></i><span>Escoltar</span></button>
-          <button id="stop-music-btn" class="btn-control bg-blue-600 hover:bg-blue-700"><i class="fas fa-stop mr-2"></i><span>Atura música</span></button>
-          <button id="stop-session-btn" class="col-span-2 btn-control bg-red-600 hover:bg-red-700"><i class="fas fa-door-open mr-2"></i><span>Finalitza</span></button>
+          <button id="toggle-listening-btn" class="btn-control bg-purple-600"><i class="fas fa-microphone-slash mr-2"></i><span>Escoltar</span></button>
+          <button id="stop-music-btn" class="btn-control bg-blue-600"><i class="fas fa-stop mr-2"></i><span>Atura</span></button>
+          <button id="stop-session-btn" class="btn-control bg-red-600 col-span-2"><i class="fas fa-door-open mr-2"></i><span>Finalitza</span></button>
         </div>
       </section>
 
     </div>
   </main>
 
-  <!-- Footer versió -->
-  <footer class="text-center text-xs text-gray-500 py-2" id="version-display"></footer>
+  <footer id="version-display" class="text-center text-xs text-gray-500 py-2"></footer>
 
-  <!-- Banner errors -->
-  <div id="debug-banner" style="position: fixed; bottom: 0; left: 0; width:100%; background: rgba(200,0,0,0.8); color: white; padding:4px; font-size:12px; display:none; z-index:9999;"></div>
+  <div id="debug-banner" style="position:fixed;bottom:0;left:0;width:100%;background:rgba(200,0,0,0.8);color:white;padding:4px;font-size:12px;display:none;z-index:9999;"></div>
   <script>
-    window.onerror = function(msg, src, ln, col) {
+    window.onerror = (msg,src,ln,col) => {
       const b = document.getElementById('debug-banner');
       b.textContent = `${msg} (${src}:${ln}:${col})`;
       b.style.display = 'block';
     };
   </script>
 
-  <!-- Scripts -->
   <script type="module" src="assets/js/config.js"></script>
   <script type="module" src="assets/js/ui.js"></script>
   <script type="module" src="assets/js/main.js"></script>
