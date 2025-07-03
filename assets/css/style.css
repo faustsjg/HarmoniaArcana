@@ -1,100 +1,136 @@
-:root {
-  --brand-dark: #1a1a2e;
-  --brand-mid: #242444;
-  --brand-light: #3a3a5a;
-}
+/* FILE: assets/css/style.css */
+
 body {
-  margin: 0;
   font-family: 'Inter', sans-serif;
-  background-color: var(--brand-dark);
+  background-color: #1a1a2e;
 }
+
 .screen {
   display: none;
 }
 .screen.active {
   display: block;
 }
-.btn-action-primary {
-  background: linear-gradient(45deg, #6D5B9A, #B48EAD);
-  color: white; font-weight: bold; padding: 0.75rem 1rem;
-  border: none; border-radius: 0.75rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+
+.card-bg {
+  background-color: #242444;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
-.btn-action-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0,0,0,0.3);
-}
-.btn-control {
-  display: flex; align-items: center; justify-content: center; gap: .5rem;
-  padding: .75rem; border: none; border-radius: .75rem;
-  background-color: var(--brand-mid); color: #d1d5db;
-  transition: background-color .2s, color .2s;
-}
-.btn-control:hover {
-  background-color: var(--brand-light);
-  color: white;
-}
-.btn-control.active i, .btn-control.active span {
-  color: white;
-}
-.btn-icon {
-  background: rgba(0,0,0,0.3);
-  border-radius: 9999px;
-  padding: .5rem;
-  color: white;
-}
-.btn-back {
-  background: transparent;
-  border: none;
-  color: #d1d5db;
-}
+
 .input-styled {
-  background-color: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: .5rem;
-  padding: .75rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  transition: all 0.2s ease;
 }
 .input-styled:focus {
   outline: none;
   border-color: #a78bfa;
-  box-shadow: 0 0 0 3px rgba(167,139,250,0.4);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.4);
 }
-.carousel-slides {
-  display: flex;
-  width: 300%;
-}
-.slide {
-  flex-shrink: 0;
-  width: 100%;
-}
-.universe-card {
-  position: relative;
-  background: var(--brand-mid);
-  padding: 1rem;
+
+.btn-action-primary {
+  background: linear-gradient(90deg, #8b5cf6 0%, #d946ef 100%);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem;
   border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  border: none;
+}
+.btn-action-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+}
+
+.btn-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  color: #d1d5db;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease-in-out;
+  text-align: center;
+  white-space: nowrap;
+}
+.btn-control:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+.btn-control.active {
+  background-color: #8b5cf6;
+  color: white;
+}
+
+.universe-card {
+  background-color: #2a2a4f;
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  transition: all 0.3s ease;
   cursor: pointer;
-  transition: transform 0.3s;
 }
 .universe-card:hover {
   transform: scale(1.03);
 }
-.universe-card.expanded {
-  transform: scale(1.1);
-  z-index: 10;
-}
 .universe-card .title {
-  font-size: 1.25rem; font-weight: bold; color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 .universe-card .subtitle {
-  color: #a8a8a8;
+  font-size: 0.875rem;
+  color: #a1a1aa;
 }
 .universe-card .card-expanded {
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
 }
-.back-universe {
+.universe-card.expanded {
+  background-color: #3b3b5b;
+  transform: scale(1.05);
+}
+.btn-icon {
   position: absolute;
-  top: 0.5rem; right: 0.5rem;
-  background: transparent; border: none;
-  font-size: 1.25rem; color: #a8a8a8;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.btn-icon:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Scrollbar estilitzada */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #6b7280;
+  border-radius: 4px;
+}
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .universe-card {
+    padding: 0.75rem;
+  }
+  .btn-control {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
 }
