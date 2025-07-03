@@ -43,5 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   UI.toggleListeningBtn.addEventListener('click', () => Director.toggleListening());
   UI.stopMusicBtn.addEventListener('click', () => Director.stopMusic());
-  UI.stopSessionBtn.addEventListener('click', () => Director.endSession());
+
+  UI.stopSessionBtn.addEventListener('click', () => {
+    Director.endSession();
+    UI.showScreen('universe-selection-screen');
+  });
 });
