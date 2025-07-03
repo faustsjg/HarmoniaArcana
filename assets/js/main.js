@@ -5,20 +5,13 @@ import { Director } from './director.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   UI.init(APP_VERSION);
-
-  // Pantalla inicial
   UI.showScreen('landing-screen');
 
-  // Botó iniciar
   UI.landingStartBtn?.addEventListener('click', () => {
-    if (!localStorage.getItem(API_KEY_STORAGE_ID)) {
-      UI.showScreen('carousel-screen');
-    } else {
-      UI.showScreen('universe-selection-screen');
-    }
+    if (!localStorage.getItem(API_KEY_STORAGE_ID)) UI.showScreen('carousel-screen');
+    else UI.showScreen('universe-selection-screen');
   });
 
-  // Desa token API
   UI.saveApiKeyBtn?.addEventListener('click', () => {
     const key = UI.apiKeyInput.value.trim();
     if (!key.startsWith('hf_')) return alert("Token invàlid");
@@ -26,25 +19,19 @@ document.addEventListener('DOMContentLoaded', () => {
     UI.showScreen('universe-selection-screen');
   });
 
-  // Torna a landing
-  UI.backToLandingBtn?.addEventListener('click', () => {
-    UI.showScreen('landing-screen');
-  });
+  UI.backToLandingBtn?.addEventListener('click', () => UI.showScreen('landing-screen'));
 
-  // Selecció d'univers predefinit o personalitzat
   document.querySelectorAll('[data-universe]').forEach(btn => {
     btn.addEventListener('click', () => {
       const type = btn.dataset.universe;
-      if (type === 'custom') {
-        UI.showScreen('upload-screen');
-      } else {
+      if (type === 'custom') UI.showScreen('upload-screen');
+      else {
         Director.setUniversePredefinit(type);
         AudioManager.init().then(() => Director.init(localStorage.getItem(API_KEY_STORAGE_ID)));
       }
     });
   });
 
-  // Carrega fitxers personalitzats
   UI.uploadDoneBtn?.addEventListener('click', () => {
     Director.setUniverseCustom({
       combat: UI.uploadCombat.files[0],
@@ -54,9 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
     AudioManager.init().then(() => Director.init(localStorage.getItem(API_KEY_STORAGE_ID)));
   });
 
-  // Botons control de sessió
   UI.toggleListeningBtn?.addEventListener('click', () => Director.toggleListening());
   UI.stopMusicBtn?.addEventListener('click', () => Director.stopMusic());
+
   UI.stopSessionBtn?.addEventListener('click', () => {
     Director.endSession();
     UI.showScreen('universe-selection-screen');
