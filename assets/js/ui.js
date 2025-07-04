@@ -5,7 +5,6 @@ export const UI = {
   uploadScreen: null, uploadCombat: null, uploadCalma: null, uploadMisteri: null, uploadDoneBtn: null,
   sessionScreen: null, toggleListeningBtn: null, stopMusicBtn: null, stopSessionBtn: null,
   transcriptPreview: null, musicStatusDot: null, musicStatusText: null, sessionLog: null,
-  soundButtons: {},
 
   init(version) {
     const byId = id => document.getElementById(id);
@@ -32,35 +31,21 @@ export const UI = {
     this.musicStatusDot = byId('music-status-dot');
     this.musicStatusText = byId('music-status-text');
     this.sessionLog = byId('session-log');
+    
     const versionDisplay = byId('version-display');
     if (versionDisplay) versionDisplay.textContent = `v${version}`;
+
     const apiStatus = byId('api-status');
-    if (apiStatus) apiStatus.textContent = localStorage.getItem(API_KEY_STORAGE_ID) ? 'Clau API detectada' : 'Sense clau API';
-    this.changeApiKeyBtn?.addEventListener('click', () => {
-      localStorage.removeItem(API_KEY_STORAGE_ID);
-      this.showScreen('carousel-screen');
-      this.updateStatus('Clau API eliminada');
-    });
-    ['encanteri', 'espasa', 'llampec', 'misil', 'porta', 'rugit'].forEach(name => {
-      const btn = byId(`sound-${name}`);
-      if (btn) {
-        btn.textContent = name.charAt(0).toUpperCase() + name.slice(1);
-        btn.addEventListener('click', () => { import('./soundEffects.js').then(m => m.SoundEffects.play(name)); });
-      }
-    });
-    let index = 0;
-    const slides = document.querySelectorAll('#carousel .slide');
-    const container = document.querySelector('.carousel-slides');
-    if (this.carouselPrev && this.carouselNext && container) {
-      this.carouselPrev.addEventListener('click', () => {
-        index = (index - 1 + slides.length) % slides.length;
-        container.style.transform = `translateX(-${index * 100}%)`;
-      });
-      this.carouselNext.addEventListener('click', () => {
-        index = (index + 1) % slides.length;
-        container.style.transform = `translateX(-${index * 100}%)`;
+    if (apiStatus) apiStatus.textContent = localStorage.getItem('harmoniaArcana_huggingFaceApiKey') ? 'Clau API detectada' : 'Sense clau API';
+
+    if (this.changeApiKeyBtn) {
+      this.changeApiKeyBtn.addEventListener('click', () => {
+        localStorage.removeItem('harmoniaArcana_huggingFaceApiKey');
+        this.showScreen('carousel-screen');
+        this.updateStatus('Clau API eliminada');
       });
     }
+
     document.querySelectorAll('.universe-card').forEach(card => {
       card.addEventListener('click', () => {
         const was = card.classList.contains('expanded');
@@ -80,22 +65,28 @@ export const UI = {
         card.querySelector('.card-expanded')?.classList.add('hidden');
       });
     });
-    this.toggleListeningBtn?.addEventListener('click', () => {
-      const active = !this.toggleListeningBtn.classList.contains('active');
-      this.toggleListeningBtn.classList.toggle('active', active);
-      const i = this.toggleListeningBtn.querySelector('i');
-      const span = this.toggleListeningBtn.querySelector('span');
-      if (i) i.className = active ? 'fas fa-microphone' : 'fas fa-microphone-slash';
-      if (span) span.textContent = active ? 'Escoltant' : 'Escoltar';
-    });
-    this.stopMusicBtn?.addEventListener('click', () => {
-      const active = !this.stopMusicBtn.classList.contains('active');
-      this.stopMusicBtn.classList.toggle('active', active);
-      const i = this.stopMusicBtn.querySelector('i');
-      const span = this.stopMusicBtn.querySelector('span');
-      if (i) i.className = active ? 'fas fa-play' : 'fas fa-stop';
-      if (span) span.textContent = active ? 'Reprodueix' : 'Atura';
-    });
+
+    if (this.toggleListeningBtn) {
+      this.toggleListeningBtn.addEventListener('click', () => {
+        const active = !this.toggleListeningBtn.classList.contains('active');
+        this.toggleListeningBtn.classList.toggle('active', active);
+        const i = this.toggleListeningBtn.querySelector('i');
+        const span = this.toggleListeningBtn.querySelector('span');
+        if (i) i.className = active ? 'fas fa-microphone' : 'fas fa-microphone-slash';
+        if (span) span.textContent = active ? 'Escoltant' : 'Escoltar';
+      });
+    }
+
+    if (this.stopMusicBtn) {
+      this.stopMusicBtn.addEventListener('click', () => {
+        const active = !this.stopMusicBtn.classList.contains('active');
+        this.stopMusicBtn.classList.toggle('active', active);
+        const i = this.stopMusicBtn.querySelector('i');
+        const span = this.stopMusicBtn.querySelector('span');
+        if (i) i.className = active ? 'fas fa-play' : 'fas fa-stop';
+        if (span) span.textContent = active ? 'Reprodueix' : 'Atura música';
+      });
+    }
   },
 
   showScreen(id) {
