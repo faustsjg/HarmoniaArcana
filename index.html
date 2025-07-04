@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Harmonia Arcana v13.2.2</title>
+  <title>Harmonia Arcana v13.3.0</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body class="bg-gray-900 text-gray-200 font-sans">
@@ -27,7 +27,7 @@
         <h2 class="text-2xl font-semibold mb-2">Guia ràpida per configurar el token</h2>
         <div id="carousel" class="overflow-hidden relative">
           <div class="carousel-slides flex transition-transform duration-500">
-            <div class="slide w-full p-2">Pas 1: Crea compte a Hugging Face</div>
+            <div class="slide w-full p-2">Pas 1: Crea un compte a Hugging Face</div>
             <div class="slide w-full p-2">Pas 2: Accepta Llama 3.1</div>
             <div class="slide w-full p-2">Pas 3: Crea i copia el teu token</div>
           </div>
@@ -39,7 +39,7 @@
       </div>
     </section>
 
-    <!-- SELECCIÓ UNIVERSOS -->
+    <!-- SELECCIÓ D'UNIVERS -->
     <section id="universe-selection-screen" class="screen hidden">
       <div class="flex justify-between items-center mb-4">
         <span id="api-status" class="text-sm text-green-400">Clau API detectada</span>
@@ -47,47 +47,43 @@
       </div>
       <h2 class="text-2xl font-bold mb-4">Escull un univers sonor</h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        <!-- Targeta JRPG -->
         <div class="universe-card">
           <h3 class="title">JRPG</h3>
           <p class="subtitle">Música èpica</p>
           <div class="card-expanded hidden mt-2">
-            <p class="text-sm mb-2">Pistes de combat, calma i misteri</p>
+            <p class="text-sm mb-2">Pistes de combat, calma, misteri, tensió...</p>
             <button data-universe="jrpg" class="btn-action-primary">Selecciona</button>
           </div>
           <button class="btn-icon back-universe">✕</button>
         </div>
-        <div class="universe-card">
-          <h3 class="title">Horror</h3>
-          <p class="subtitle">Ambient fosc i tensió</p>
-          <div class="card-expanded hidden mt-2">
-            <p class="text-sm mb-2">Inclou misteri i ambientacions sinistres</p>
-            <button data-universe="horror" class="btn-action-primary">Selecciona</button>
-          </div>
-          <button class="btn-icon back-universe">✕</button>
-        </div>
+
+        <!-- Targeta Crea el teu -->
         <div class="universe-card">
           <h3 class="title">Crea el teu</h3>
-          <p class="subtitle">Personalitza els sons</p>
+          <p class="subtitle">Personalitza els teus sons</p>
           <div class="card-expanded hidden mt-2">
-            <p class="text-sm mb-2">Puja fitxers mp3 segons el mood</p>
-            <button data-universe="custom" class="btn-action-primary">Comença</button>
+            <p class="text-sm mb-2">Puja fitxers .mp3 segons el *mood*</p>
+            <button data-universe="custom" class="btn-action-primary">Crear univers</button>
           </div>
           <button class="btn-icon back-universe">✕</button>
         </div>
+
       </div>
       <button id="back-to-landing-btn" class="mt-4 text-sm text-gray-400 hover:text-gray-200">← Torna</button>
     </section>
 
-    <!-- PUJADA FITXERS -->
+    <!-- PUJADA DE FITXERS -->
     <section id="upload-screen" class="screen hidden">
       <h2 class="text-2xl font-bold mb-4">Carrega els teus sons</h2>
-      <input type="file" id="upload-combat" accept=".mp3" class="mb-2 w-full"/>
-      <input type="file" id="upload-calma" accept=".mp3" class="mb-2 w-full"/>
-      <input type="file" id="upload-misteri" accept=".mp3" class="mb-2 w-full"/>
+      <input type="file" id="upload-combat" accept=".mp3" class="mb-2 w-full" />
+      <input type="file" id="upload-calma" accept=".mp3" class="mb-2 w-full" />
+      <input type="file" id="upload-misteri" accept=".mp3" class="mb-2 w-full" />
       <button id="upload-done-btn" class="btn-action-primary w-full mt-4">Preparat!</button>
     </section>
 
-    <!-- SESSIÓ ACTIVA -->
+    <!-- PANTALLA DE SESSIÓ -->
     <section id="session-screen" class="screen hidden">
       <div class="flex justify-between items-center mb-2">
         <h2 class="text-2xl font-semibold">Sessió Activa</h2>
@@ -98,6 +94,7 @@
       </div>
       <textarea id="transcript-preview" class="h-24 w-full bg-gray-800 p-2 rounded text-sm" readonly></textarea>
       <div id="session-log" class="h-32 overflow-y-auto bg-gray-800 p-2 text-sm rounded mt-2">Registre...</div>
+
       <h3 class="mt-4 font-semibold">Efectes de so</h3>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
         <button id="sound-encanteri" class="btn-control">Encanteri</button>
@@ -107,6 +104,7 @@
         <button id="sound-porta" class="btn-control">Porta</button>
         <button id="sound-rugit" class="btn-control">Rugit</button>
       </div>
+
       <div class="grid grid-cols-2 gap-4 mt-4">
         <button id="toggle-listening-btn" class="btn-control bg-purple-600 hover:bg-purple-700">
           <i class="fas fa-microphone-slash mr-2"></i><span>Escoltar</span>
@@ -124,19 +122,21 @@
 </main>
 
 <!-- FOOTER -->
-<footer id="version-display" class="text-center text-xs text-gray-500 py-2">v13.2.2</footer>
+<footer id="version-display" class="text-center text-xs text-gray-500 py-2">v13.3.0</footer>
 
-<!-- DEBUG -->
-<div id="debug-banner" style="position:fixed;bottom:0;left:0;width:100%;background:rgba(200,0,0,0.8);color:white;padding:4px;font-size:12px;display:none;z-index:9999;"></div>
+<!-- DEBUG BANNER -->
+<div id="debug-banner"
+     style="position:fixed;bottom:0;left:0;width:100%;background:rgba(200,0,0,0.8);color:white;padding:4px;font-size:12px;display:none;z-index:9999;">
+</div>
 <script>
-  window.onerror = (msg,src,ln,col) => {
+  window.onerror = (msg, src, ln, col) => {
     const b = document.getElementById('debug-banner');
     b.textContent = `${msg} (${src}:${ln}:${col})`;
     b.style.display = 'block';
   };
 </script>
 
-<!-- SCRIPTS -->
+<!-- JS Modules -->
 <script type="module" src="assets/js/config.js"></script>
 <script type="module" src="assets/js/ui.js"></script>
 <script type="module" src="assets/js/main.js"></script>
