@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Harmonia Arcana v13.3.0</title>
+  <title>Harmonia Arcana v13.3.1</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
@@ -46,14 +46,14 @@
         <button id="change-api-key-btn" class="btn-control">Canvia Clau API</button>
       </div>
       <h2 class="text-2xl font-bold mb-4">Escull un univers sonor</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         <!-- Targeta JRPG -->
         <div class="universe-card">
           <h3 class="title">JRPG</h3>
-          <p class="subtitle">Música èpica</p>
+          <p class="subtitle">Música èpica i d’aventura</p>
           <div class="card-expanded hidden mt-2">
-            <p class="text-sm mb-2">Pistes de combat, calma, misteri, tensió...</p>
+            <p class="text-sm mb-2">Inclou sons de combat, misteri, emoció i més.</p>
             <button data-universe="jrpg" class="btn-action-primary">Selecciona</button>
           </div>
           <button class="btn-icon back-universe">✕</button>
@@ -62,9 +62,9 @@
         <!-- Targeta Crea el teu -->
         <div class="universe-card">
           <h3 class="title">Crea el teu</h3>
-          <p class="subtitle">Personalitza els teus sons</p>
+          <p class="subtitle">Personalitza amb els teus sons</p>
           <div class="card-expanded hidden mt-2">
-            <p class="text-sm mb-2">Puja fitxers .mp3 segons el *mood*</p>
+            <p class="text-sm mb-2">Puja els teus propis fitxers .mp3</p>
             <button data-universe="custom" class="btn-action-primary">Crear univers</button>
           </div>
           <button class="btn-icon back-universe">✕</button>
@@ -122,12 +122,13 @@
 </main>
 
 <!-- FOOTER -->
-<footer id="version-display" class="text-center text-xs text-gray-500 py-2">v13.3.0</footer>
+<footer id="version-display" class="text-center text-xs text-gray-500 py-2">v13.3.1</footer>
 
-<!-- DEBUG BANNER -->
+<!-- DEBUG BANNER (ara no tapa el footer) -->
 <div id="debug-banner"
-     style="position:fixed;bottom:0;left:0;width:100%;background:rgba(200,0,0,0.8);color:white;padding:4px;font-size:12px;display:none;z-index:9999;">
+     style="position:fixed;bottom:1.5rem;left:0;width:100%;background:rgba(200,0,0,0.8);color:white;padding:4px;font-size:12px;display:none;z-index:9999;">
 </div>
+
 <script>
   window.onerror = (msg, src, ln, col) => {
     const b = document.getElementById('debug-banner');
