@@ -33,7 +33,7 @@ export const UI = {
     this.sessionLog = byId('session-log');
 
     const versionDisplay = byId('version-display');
-    if (versionDisplay) versionDisplay.textContent = `v13.3.1`;
+    if (versionDisplay) versionDisplay.textContent = `v13.3.2`;
 
     const apiStatus = byId('api-status');
     if (apiStatus) apiStatus.textContent = localStorage.getItem('harmoniaArcana_huggingFaceApiKey') ? 'Clau API detectada' : 'Sense clau API';
@@ -87,7 +87,8 @@ export const UI = {
   },
 
   updateStatus(message) {
-    document.getElementById('status-display')?.textContent = message;
+    const el = document.getElementById('status-display');
+    if (el) el.textContent = message;
   },
 
   updateTranscript(text) {
