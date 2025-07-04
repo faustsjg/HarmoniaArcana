@@ -1,50 +1,43 @@
-import { APP_VERSION, API_KEY_STORAGE_ID } from './config.js';
+import { APP_VERSION } from './config.js';
 import { UI } from './ui.js';
-import { AudioManager } from './audioManager.js';
 import { Director } from './director.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   UI.init(APP_VERSION);
-  UI.showScreen('landing-screen');
 
-  UI.landingStartBtn?.addEventListener('click', () => {
-    if (!localStorage.getItem(API_KEY_STORAGE_ID)) UI.showScreen('carousel-screen');
-    else UI.showScreen('universe-selection-screen');
-  });
+  UI.landingStartBtn?.addEventListener('click', () => UI.showScreen('carousel-screen'));
 
   UI.saveApiKeyBtn?.addEventListener('click', () => {
     const key = UI.apiKeyInput.value.trim();
-    if (!key.startsWith('hf_')) return alert("Token invàlid");
-    localStorage.setItem(API_KEY_STORAGE_ID, key);
-    UI.showScreen('universe-selection-screen');
+    if (key.startsWith('hf_')) {
+      localStorage.setItem('harmoniaArcana_huggingFaceApiKey', key);
+      UI.showScreen('universe-selection-screen');
+    } else {
+      alert("Clau no vàlida");
+    }
   });
-
-  UI.backToLandingBtn?.addEventListener('click', () => UI.showScreen('landing-screen'));
 
   document.querySelectorAll('[data-universe]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const type = btn.dataset.universe;
-      if (type === 'custom') UI.showScreen('upload-screen');
-      else {
-        Director.setUniversePredefinit(type);
-        AudioManager.init().then(() => Director.init(localStorage.getItem(API_KEY_STORAGE_ID)));
-      }
+    btn.addEventListener('click', async e => {
+      const apiKey = localStorage.getItem('harmoniaArcana_huggingFaceApiKey');
+      if (btn.dataset.universe === 'custom') UI.showScreen('upload-screen');
+      else await Director.init(apiKey);
     });
   });
 
-  UI.uploadDoneBtn?.addEventListener('click', () => {
-    Director.setUniverseCustom({
-      combat: UI.uploadCombat.files[0],
-      calma: UI.uploadCalma.files[0],
-      misteri: UI.uploadMisteri.files[0],
-    });
-    AudioManager.init().then(() => Director.init(localStorage.getItem(API_KEY_STORAGE_ID)));
+  UI.uploadDoneBtn?.addEventListener('click', async () => {
+    const apiKey = localStorage.getItem('harmoniaArcana_huggingFaceApiKey');
+    await Director.init(apiKey);
   });
 
   UI.toggleListeningBtn?.addEventListener('click', () => Director.toggleListening());
   UI.stopMusicBtn?.addEventListener('click', () => Director.toggleMusic());
-  UI.stopSessionBtn?.addEventListener('click', () => {
-    Director.endSession();
-    UI.showScreen('universe-selection-screen');
+  UI.stopSessionBtn?.addEventListener('click', () => Director.endSession());
+
+  document.querySelectorAll('[id^=sound-]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.id.replace('sound-', '');
+      Director.playEffect(id);
+    });
   });
 });
