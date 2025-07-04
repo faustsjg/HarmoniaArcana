@@ -1,43 +1,43 @@
 import { UI } from './ui.js';
+import * as Tone from 'tone';
 
 export const AudioManager = {
-  initialized:false, player:null, currentTrackUrl:null,
+  isInitialized: false,
+  musicPlayer: null,
+  currentTrackUrl: null,
+  effects: {},
 
   async init() {
-    if (this.initialized) return;
+    if (this.isInitialized) return;
     await Tone.start();
     Tone.Transport.start();
-    this.initialized = true;
-  },
+    this.isInitialized = true;
 
-  play(url, name) {
-    if (!this.initialized) return;
-    const fadeIn = 2, fadeOut = 1.5;
-    if (this.player && this.player.state==="started") {
-      this.player.volume.rampTo(-Infinity,fadeOut);
-      this.player.stop(`+${fadeOut}`);
+    const effectIds = ['encanteri','espasa','llampec','misil','porta','rugit'];
+    for (const id of effectIds) {
+      this.effects[id] = new Tone.Player(`assets/sounds/${id}.mp3`).toDestination();
     }
-    this.currentTrackUrl = url;
-    this.player = new Tone.Player({
-      url, loop:true, volume:-Infinity,
-      onload: () => {
-        this.player.start();
-        this.player.volume.rampTo(0,fadeIn);
-        UI.updateMusicStatus(true,name);
-      },
-      onerror: err => {
-        UI.updateMusicStatus(false,`Error: ${name}`);
-        console.error(err);
-      }
-    }).toDestination();
   },
 
-  stopAll(fade=1) {
-    if (this.player && this.player.state==="started") {
-      this.player.volume.rampTo(-Infinity,fade);
-      this.player.stop(`+${fade}`);
+  playTrack(url, name) {
+    if (!this.isInitialized) return;
+    if (this.musicPlayer) this.musicPlayer.stop();
+    this.musicPlayer = new Tone.Player(url).toDestination();
+    this.musicPlayer.start();
+    this.currentTrackUrl = url;
+    UI.updateMusicStatus(true, name);
+  },
+
+  stopTrack() {
+    if (this.musicPlayer) {
+      this.musicPlayer.stop();
       this.currentTrackUrl = null;
       UI.updateMusicStatus(false);
     }
+  },
+
+  playEffect(id) {
+    const player = this.effects[id];
+    if (player) player.start();
   }
 };
