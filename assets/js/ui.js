@@ -9,27 +9,21 @@ export const UI = {
 
   init(version) {
     const byId = id => document.getElementById(id);
-
-    // Assignació d'elements
     this.landingScreen = byId('landing-screen');
     this.landingStartBtn = byId('landing-start-btn');
-
     this.carouselScreen = byId('carousel-screen');
     this.carouselPrev = byId('carousel-prev');
     this.carouselNext = byId('carousel-next');
     this.apiKeyInput = byId('api-key-input');
     this.saveApiKeyBtn = byId('save-api-key-btn');
-
     this.universeSelectionScreen = byId('universe-selection-screen');
     this.backToLandingBtn = byId('back-to-landing-btn');
     this.changeApiKeyBtn = byId('change-api-key-btn');
-
     this.uploadScreen = byId('upload-screen');
     this.uploadCombat = byId('upload-combat');
     this.uploadCalma = byId('upload-calma');
     this.uploadMisteri = byId('upload-misteri');
     this.uploadDoneBtn = byId('upload-done-btn');
-
     this.sessionScreen = byId('session-screen');
     this.toggleListeningBtn = byId('toggle-listening-btn');
     this.stopMusicBtn = byId('stop-music-btn');
@@ -38,31 +32,22 @@ export const UI = {
     this.musicStatusDot = byId('music-status-dot');
     this.musicStatusText = byId('music-status-text');
     this.sessionLog = byId('session-log');
-
     const versionDisplay = byId('version-display');
     if (versionDisplay) versionDisplay.textContent = `v${version}`;
-
     const apiStatus = byId('api-status');
-    if (apiStatus) {
-      apiStatus.textContent = localStorage.getItem('harmoniaArcana_huggingFaceApiKey') ? 'Clau API detectada' : 'Sense clau API';
-    }
-
+    if (apiStatus) apiStatus.textContent = localStorage.getItem(API_KEY_STORAGE_ID) ? 'Clau API detectada' : 'Sense clau API';
     this.changeApiKeyBtn?.addEventListener('click', () => {
-      localStorage.removeItem('harmoniaArcana_huggingFaceApiKey');
+      localStorage.removeItem(API_KEY_STORAGE_ID);
       this.showScreen('carousel-screen');
       this.updateStatus('Clau API eliminada');
     });
-
     ['encanteri', 'espasa', 'llampec', 'misil', 'porta', 'rugit'].forEach(name => {
       const btn = byId(`sound-${name}`);
       if (btn) {
         btn.textContent = name.charAt(0).toUpperCase() + name.slice(1);
-        btn.addEventListener('click', () => {
-          import('./soundEffects.js').then(m => m.SoundEffects.play(name));
-        });
+        btn.addEventListener('click', () => { import('./soundEffects.js').then(m => m.SoundEffects.play(name)); });
       }
     });
-
     let index = 0;
     const slides = document.querySelectorAll('#carousel .slide');
     const container = document.querySelector('.carousel-slides');
@@ -76,42 +61,50 @@ export const UI = {
         container.style.transform = `translateX(-${index * 100}%)`;
       });
     }
-
     document.querySelectorAll('.universe-card').forEach(card => {
       card.addEventListener('click', () => {
-        const already = card.classList.contains('expanded');
+        const was = card.classList.contains('expanded');
         document.querySelectorAll('.universe-card').forEach(c => {
           c.classList.remove('expanded');
-          const expanded = c.querySelector('.card-expanded');
-          if (expanded) expanded.classList.add('hidden');
+          c.querySelector('.card-expanded')?.classList.add('hidden');
         });
-        if (!already) {
+        if (!was) {
           card.classList.add('expanded');
-          const expanded = card.querySelector('.card-expanded');
-          if (expanded) expanded.classList.remove('hidden');
+          card.querySelector('.card-expanded')?.classList.remove('hidden');
         }
       });
-      const closeBtn = card.querySelector('.back-universe');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', e => {
-          e.stopPropagation();
-          card.classList.remove('expanded');
-          const expanded = card.querySelector('.card-expanded');
-          if (expanded) expanded.classList.add('hidden');
-        });
-      }
+      const close = card.querySelector('.back-universe');
+      close?.addEventListener('click', e => {
+        e.stopPropagation();
+        card.classList.remove('expanded');
+        card.querySelector('.card-expanded')?.classList.add('hidden');
+      });
+    });
+    this.toggleListeningBtn?.addEventListener('click', () => {
+      const active = !this.toggleListeningBtn.classList.contains('active');
+      this.toggleListeningBtn.classList.toggle('active', active);
+      const i = this.toggleListeningBtn.querySelector('i');
+      const span = this.toggleListeningBtn.querySelector('span');
+      if (i) i.className = active ? 'fas fa-microphone' : 'fas fa-microphone-slash';
+      if (span) span.textContent = active ? 'Escoltant' : 'Escoltar';
+    });
+    this.stopMusicBtn?.addEventListener('click', () => {
+      const active = !this.stopMusicBtn.classList.contains('active');
+      this.stopMusicBtn.classList.toggle('active', active);
+      const i = this.stopMusicBtn.querySelector('i');
+      const span = this.stopMusicBtn.querySelector('span');
+      if (i) i.className = active ? 'fas fa-play' : 'fas fa-stop';
+      if (span) span.textContent = active ? 'Reprodueix' : 'Atura';
     });
   },
 
   showScreen(id) {
     document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-    const screen = document.getElementById(id);
-    if (screen) screen.classList.add('active');
+    document.getElementById(id)?.classList.add('active');
   },
 
   updateStatus(message) {
-    const el = document.getElementById('status-display');
-    if (el) el.textContent = message;
+    document.getElementById('status-display')?.textContent = message;
   },
 
   updateTranscript(text) {
@@ -130,18 +123,7 @@ export const UI = {
     const time = new Date().toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' });
     const div = document.createElement('div');
     div.innerHTML = `<span class="text-purple-400">[${time}]</span> ${message}`;
-    if (this.sessionLog) {
-      this.sessionLog.appendChild(div);
-      this.sessionLog.scrollTop = this.sessionLog.scrollHeight;
-    }
-  },
-
-  toggleListeningBtnState(active) {
-    if (!this.toggleListeningBtn) return;
-    this.toggleListeningBtn.classList.toggle('active', active);
-    const i = this.toggleListeningBtn.querySelector('i');
-    const span = this.toggleListeningBtn.querySelector('span');
-    if (i) i.className = active ? 'fas fa-microphone' : 'fas fa-microphone-slash';
-    if (span) span.textContent = active ? 'Escoltant' : 'Escoltar';
+    this.sessionLog?.appendChild(div);
+    if (this.sessionLog) this.sessionLog.scrollTop = this.sessionLog.scrollHeight;
   }
 };
