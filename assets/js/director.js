@@ -7,6 +7,7 @@ import { AudioManager } from './audioManager.js';
 export const Director = {
   apiKey: null,
   isSessionActive: false,
+  moodLibrary: null,
   intervalId: null,
 
   async init(apiKey) {
@@ -14,8 +15,23 @@ export const Director = {
     this.isSessionActive = true;
     UI.showScreen('session-screen');
     await AudioManager.init();
+
+    // Load mood library
+    const res = await fetch('assets/sounds/univers/jrpg/jrpg.json');
+    this.moodLibrary = await res.json();
+
+    // Play theme
+    this.playRandomFromMood('tema');
+
     UI.updateStatus("Prem 'Escoltar' per començar");
     Speech.init(text => UI.updateTranscript(text));
+  },
+
+  playRandomFromMood(mood) {
+    const arr = this.moodLibrary?.[mood];
+    if (!arr || arr.length === 0) return;
+    const choice = arr[Math.floor(Math.random() * arr.length)];
+    AudioManager.playTrack(`assets/sounds/univers/jrpg/${choice}`, mood);
   },
 
   toggleListening() {
@@ -28,45 +44,34 @@ export const Director = {
     }
   },
 
-  toggleMusic() {
-    if (!this.isSessionActive) return;
-    const isActive = UI.stopMusicBtn.classList.toggle('active');
-    const i = UI.stopMusicBtn.querySelector('i');
-    const span = UI.stopMusicBtn.querySelector('span');
-    if (i) i.className = isActive ? 'fas fa-play' : 'fas fa-stop';
-    if (span) span.textContent = isActive ? 'Reprodueix' : 'Atura música';
-
-    if (isActive) {
-      AudioManager.stopTrack();
-    } else {
-      AudioManager.playTrack('./assets/sounds/tema_principal.mp3', 'Tema Principal');
-    }
-  },
-
-  playEffect(id) {
-    AudioManager.playEffect(id);
-    UI.addLogEntry(`🔊 efecte: ${id}`);
-  },
-
-  async startAnalysisLoop() {
+  startAnalysisLoop() {
     this.intervalId = setInterval(async () => {
-      const text = Speech.getAndClearBuffer();
-      if (text.length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
-      const context = await AI.analisarContext(this.apiKey, text);
-      if (context?.mood) {
-        const moodTrack = `assets/sounds/tema_${context.mood}.mp3`;
-        AudioManager.playTrack(moodTrack, context.mood);
+      const buffer = Speech.getAndClearBuffer();
+      if (buffer.length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
+      const ctx = await AI.analisarContext(this.apiKey, buffer);
+      if (ctx?.mood) {
+        this.playRandomFromMood(ctx.mood);
+        UI.addLogEntry(`Mood detectat: ${ctx.mood}`);
       }
     }, DIRECTOR_CONFIG.analysisInterval);
+  },
+
+  toggleMusic() {
+    AudioManager.stopTrack();
   },
 
   endSession() {
     if (!this.isSessionActive) return;
     this.isSessionActive = false;
-    if (this.intervalId) clearInterval(this.intervalId);
+    clearInterval(this.intervalId);
     Speech.stopListening();
     AudioManager.stopTrack();
     UI.showScreen('universe-selection-screen');
     UI.updateStatus("Sessió finalitzada.");
+  },
+
+  playEffect(id) {
+    AudioManager.playEffect(id);
+    UI.addLogEntry(`🔊 efecte: ${id}`);
   }
 };
