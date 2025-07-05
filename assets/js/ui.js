@@ -1,14 +1,12 @@
-import { APP_VERSION, API_KEY_STORAGE_ID, INSTALL_STEPS } from './config.js';
-
 export const UI = {
   landingScreen: null, landingStartBtn: null,
   carouselScreen: null, carouselPrev: null, carouselNext: null,
   apiKeyInput: null, saveApiKeyBtn: null,
-  universeSelectionScreen: null, backToLandingBtn: null, changeApiKeyBtn: null,
+  universeSelectionScreen: null, changeApiKeyBtn: null,
   uploadScreen: null, uploadCombat: null, uploadCalma: null, uploadMisteri: null, uploadDoneBtn: null,
   sessionScreen: null, toggleListeningBtn: null, stopMusicBtn: null, stopSessionBtn: null,
   transcriptPreview: null, musicStatusDot: null, musicStatusText: null, sessionLog: null,
-  carouselSteps: INSTALL_STEPS, currentStep: 0,
+  versionDisplay: null,
 
   init(version) {
     const byId = id => document.getElementById(id);
@@ -21,7 +19,6 @@ export const UI = {
     this.apiKeyInput = byId('api-key-input');
     this.saveApiKeyBtn = byId('save-api-key-btn');
     this.universeSelectionScreen = byId('universe-selection-screen');
-    this.backToLandingBtn = byId('back-to-landing-btn');
     this.changeApiKeyBtn = byId('change-api-key-btn');
     this.uploadScreen = byId('upload-screen');
     this.uploadCombat = byId('upload-combat');
@@ -36,47 +33,13 @@ export const UI = {
     this.musicStatusDot = byId('music-status-dot');
     this.musicStatusText = byId('music-status-text');
     this.sessionLog = byId('session-log');
+    this.versionDisplay = byId('version-display');
 
-    const versionDisplay = byId('version-display');
-    if (versionDisplay) versionDisplay.textContent = version;
-
-    const apiStatus = byId('api-status');
-    if (apiStatus) apiStatus.textContent = localStorage.getItem(API_KEY_STORAGE_ID) ? 'Clau API detectada' : 'Sense clau API';
-
-    this.carouselPrev?.addEventListener('click', () => this.showStep(this.currentStep - 1));
-    this.carouselNext?.addEventListener('click', () => this.showStep(this.currentStep + 1));
-
-    this.changeApiKeyBtn?.addEventListener('click', () => {
-      localStorage.removeItem(API_KEY_STORAGE_ID);
-      this.showScreen('carousel-screen');
-      this.updateStatus('Clau API eliminada');
-    });
-
-    this.showStep(0);
-  },
-
-  showStep(idx) {
-    if (idx < 0 || idx >= this.carouselSteps.length) return;
-    this.currentStep = idx;
-
-    const step = this.carouselSteps[idx];
-    const titleEl = document.getElementById('step-title');
-    const descEl = document.getElementById('step-desc');
-    const linkEl = document.getElementById('step-link');
-
-    titleEl.textContent = step.title;
-    descEl.textContent = step.desc;
-
-    if (step.link) {
-      linkEl.textContent = 'Anar al pas';
-      linkEl.href = step.link;
-      linkEl.classList.remove('hidden');
-    } else {
-      linkEl.classList.add('hidden');
+    if (this.versionDisplay) {
+      this.versionDisplay.textContent = version;
     }
 
-    this.carouselPrev.disabled = idx === 0;
-    this.carouselNext.disabled = idx === this.carouselSteps.length - 1;
+    this.landingStartBtn?.classList.remove('hidden');
   },
 
   showScreen(id) {
@@ -84,9 +47,8 @@ export const UI = {
     document.getElementById(id)?.classList.add('active');
   },
 
-  updateStatus(message) {
-    const el = document.getElementById('status-display');
-    if (el) el.textContent = message;
+  updateStatus(msg) {
+    document.getElementById('status-display')!.textContent = msg;
   },
 
   updateTranscript(text) {
@@ -101,11 +63,11 @@ export const UI = {
     if (this.musicStatusText) this.musicStatusText.textContent = isPlaying ? `Reproduint: ${name}` : 'Aturada';
   },
 
-  addLogEntry(message) {
+  addLogEntry(msg) {
     const time = new Date().toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' });
     const div = document.createElement('div');
-    div.innerHTML = `<span class="text-purple-400">[${time}]</span> ${message}`;
+    div.innerHTML = `<span class="text-purple-400">[${time}]</span> ${msg}`;
     this.sessionLog?.appendChild(div);
-    if (this.sessionLog) this.sessionLog.scrollTop = this.sessionLog.scrollHeight;
+    this.sessionLog!.scrollTop = this.sessionLog!.scrollHeight;
   }
 };
