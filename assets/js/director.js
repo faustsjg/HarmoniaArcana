@@ -10,36 +10,43 @@ export const Director = {
   moodLibrary: null,
   intervalId: null,
 
-  async init(apiKey) {
+  async init(apiKey, universe) {
     this.apiKey = apiKey;
     this.isSessionActive = true;
-    UI.showScreen('session-screen');
+
     await AudioManager.init();
 
-    // Load mood library
-    const res = await fetch('assets/sounds/univers/jrpg/jrpg.json');
-    this.moodLibrary = await res.json();
+    if (universe && universe !== 'custom') {
+      const res = await fetch(`assets/sounds/univers/${universe}/jrpg.json`);
+      this.moodLibrary = await res.json();
+    }
 
-    // Play theme
-    this.playRandomFromMood('tema');
+    UI.showScreen('session-screen');
+    UI.updateStatus('Sessió iniciada. Prem Escoltar.');
 
-    UI.updateStatus("Prem 'Escoltar' per començar");
     Speech.init(text => UI.updateTranscript(text));
+
+    this.playRandomFromMood('tema');
   },
 
   playRandomFromMood(mood) {
-    const arr = this.moodLibrary?.[mood];
-    if (!arr || arr.length === 0) return;
-    const choice = arr[Math.floor(Math.random() * arr.length)];
-    AudioManager.playTrack(`assets/sounds/univers/jrpg/${choice}`, mood);
+    const arr = this.moodLibrary?.[mood] || [];
+    if (arr.length) {
+      const choice = arr[Math.floor(Math.random() * arr.length)];
+      AudioManager.playTrack(`assets/sounds/univers/jrpg/${choice}`, mood);
+      UI.addLogEntry(`Reproduint ${choice}`);
+    }
   },
 
   toggleListening() {
     if (!this.isSessionActive) return;
     if (Speech.isListening) {
       Speech.stopListening();
+      UI.updateStatus('Mic inactiu');
+      clearInterval(this.intervalId);
     } else {
       Speech.startListening();
+      UI.updateStatus('Escoltant...');
       this.startAnalysisLoop();
     }
   },
@@ -49,29 +56,28 @@ export const Director = {
       const buffer = Speech.getAndClearBuffer();
       if (buffer.length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
       const ctx = await AI.analisarContext(this.apiKey, buffer);
-      if (ctx?.mood) {
-        this.playRandomFromMood(ctx.mood);
-        UI.addLogEntry(`Mood detectat: ${ctx.mood}`);
-      }
+      if (ctx?.mood) this.playRandomFromMood(ctx.mood);
     }, DIRECTOR_CONFIG.analysisInterval);
   },
 
   toggleMusic() {
-    AudioManager.stopTrack();
+    AudioManager.toggleTrack();
   },
 
   endSession() {
     if (!this.isSessionActive) return;
     this.isSessionActive = false;
-    clearInterval(this.intervalId);
+
     Speech.stopListening();
+    clearInterval(this.intervalId);
     AudioManager.stopTrack();
+
     UI.showScreen('universe-selection-screen');
-    UI.updateStatus("Sessió finalitzada.");
+    UI.updateStatus('Sessió finalitzada.');
   },
 
   playEffect(id) {
     AudioManager.playEffect(id);
-    UI.addLogEntry(`🔊 efecte: ${id}`);
+    UI.addLogEntry(`Efecte: ${id}`);
   }
 };
