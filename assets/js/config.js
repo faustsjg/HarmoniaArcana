@@ -1,4 +1,4 @@
-export const APP_VERSION = "v13.3.6";
+export const APP_VERSION = "v13.3.7";
 export const API_KEY_STORAGE_ID = 'harmoniaArcana_huggingFaceApiKey';
 
 export const MODELS = {
