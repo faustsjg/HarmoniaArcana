@@ -1,41 +1,56 @@
-import * as Tone from 'tone';
 import { UI } from './ui.js';
 
 export const AudioManager = {
+  isInitialized: false,
   player: null,
-  effectPlayers: {},
-  isPlaying: false,
+  currentTrackUrl: null,
+  currentEffect: null,
 
   async init() {
-    await Tone.start();
+    if (this.isInitialized || !window.Tone) return;
+    try {
+      await Tone.start();
+      Tone.Transport.start();
+      this.isInitialized = true;
+    } catch (error) {
+      console.error("Error inicialitzant Tone.js:", error);
+    }
   },
 
-  playTrack(url, name) {
-    this.stopTrack();
+  playTrack(url, moodName = '') {
+    if (!this.isInitialized || !window.Tone) return;
 
+    if (this.player) {
+      this.player.stop();
+      this.player.dispose();
+    }
+
+    this.currentTrackUrl = url;
     this.player = new Tone.Player({
-      url,
+      url: url,
       loop: true,
+      volume: -Infinity,
       autostart: true,
       onload: () => {
-        this.isPlaying = true;
-        UI.updateMusicStatus(true, name);
+        this.player.volume.rampTo(0, 2);
+        UI.updateMusicStatus(true, moodName);
       },
-      onerror: err => console.error(err)
+      onerror: err => {
+        console.error("Error reproduint la pista:", err);
+        UI.updateMusicStatus(false, "Error");
+      }
     }).toDestination();
   },
 
   toggleTrack() {
-    if (this.player) {
-      if (this.isPlaying) {
-        this.player.stop();
-        this.isPlaying = false;
-        UI.updateMusicStatus(false);
-      } else {
-        this.player.start();
-        this.isPlaying = true;
-        UI.updateMusicStatus(true);
-      }
+    if (!this.isInitialized || !this.player) return;
+
+    if (this.player.state === 'started') {
+      this.player.stop();
+      UI.updateMusicStatus(false);
+    } else {
+      this.player.start();
+      UI.updateMusicStatus(true, 'Reproducció');
     }
   },
 
@@ -44,21 +59,24 @@ export const AudioManager = {
       this.player.stop();
       this.player.dispose();
       this.player = null;
-      this.isPlaying = false;
+      this.currentTrackUrl = null;
       UI.updateMusicStatus(false);
     }
   },
 
-  playEffect(id) {
-    const url = `assets/sounds/effects/${id}.mp3`;
-    const p = new Tone.Player({
-      url,
+  playEffect(effectId) {
+    const effectUrl = `assets/sounds/effects/${effectId}.mp3`;
+
+    if (this.currentEffect) {
+      this.currentEffect.stop();
+      this.currentEffect.dispose();
+    }
+
+    this.currentEffect = new Tone.Player({
+      url: effectUrl,
+      volume: -6,
       autostart: true,
-      onload: () => {
-        p.dispose();
-      },
-      onerror: err => console.error(err)
+      onerror: err => console.error("Error efecte sonor:", err)
     }).toDestination();
-    this.effectPlayers[id] = p;
   }
 };
