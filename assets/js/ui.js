@@ -44,11 +44,13 @@ export const UI = {
 
   showScreen(id) {
     document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-    document.getElementById(id)?.classList.add('active');
+    const screen = document.getElementById(id);
+    if (screen) screen.classList.add('active');
   },
 
-  updateStatus(msg) {
-    document.getElementById('status-display')!.textContent = msg;
+  updateStatus(message) {
+    const status = document.getElementById('status-display');
+    if (status) status.textContent = message;
   },
 
   updateTranscript(text) {
@@ -67,7 +69,9 @@ export const UI = {
     const time = new Date().toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' });
     const div = document.createElement('div');
     div.innerHTML = `<span class="text-purple-400">[${time}]</span> ${msg}`;
-    this.sessionLog?.appendChild(div);
-    this.sessionLog!.scrollTop = this.sessionLog!.scrollHeight;
+    if (this.sessionLog) {
+      this.sessionLog.appendChild(div);
+      this.sessionLog.scrollTop = this.sessionLog.scrollHeight;
+    }
   }
 };
