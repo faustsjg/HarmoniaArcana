@@ -1,13 +1,18 @@
+import { APP_VERSION, API_KEY_STORAGE_ID, INSTALL_STEPS } from './config.js';
+
 export const UI = {
   landingScreen: null, landingStartBtn: null,
-  carouselScreen: null, carouselPrev: null, carouselNext: null, apiKeyInput: null, saveApiKeyBtn: null,
+  carouselScreen: null, carouselPrev: null, carouselNext: null,
+  apiKeyInput: null, saveApiKeyBtn: null,
   universeSelectionScreen: null, backToLandingBtn: null, changeApiKeyBtn: null,
   uploadScreen: null, uploadCombat: null, uploadCalma: null, uploadMisteri: null, uploadDoneBtn: null,
   sessionScreen: null, toggleListeningBtn: null, stopMusicBtn: null, stopSessionBtn: null,
   transcriptPreview: null, musicStatusDot: null, musicStatusText: null, sessionLog: null,
+  carouselSteps: INSTALL_STEPS, currentStep: 0,
 
   init(version) {
     const byId = id => document.getElementById(id);
+
     this.landingScreen = byId('landing-screen');
     this.landingStartBtn = byId('landing-start-btn');
     this.carouselScreen = byId('carousel-screen');
@@ -33,52 +38,45 @@ export const UI = {
     this.sessionLog = byId('session-log');
 
     const versionDisplay = byId('version-display');
-    if (versionDisplay) versionDisplay.textContent = `v13.3.2`;
+    if (versionDisplay) versionDisplay.textContent = version;
 
     const apiStatus = byId('api-status');
-    if (apiStatus) apiStatus.textContent = localStorage.getItem('harmoniaArcana_huggingFaceApiKey') ? 'Clau API detectada' : 'Sense clau API';
+    if (apiStatus) apiStatus.textContent = localStorage.getItem(API_KEY_STORAGE_ID) ? 'Clau API detectada' : 'Sense clau API';
+
+    this.carouselPrev?.addEventListener('click', () => this.showStep(this.currentStep - 1));
+    this.carouselNext?.addEventListener('click', () => this.showStep(this.currentStep + 1));
 
     this.changeApiKeyBtn?.addEventListener('click', () => {
-      localStorage.removeItem('harmoniaArcana_huggingFaceApiKey');
+      localStorage.removeItem(API_KEY_STORAGE_ID);
       this.showScreen('carousel-screen');
       this.updateStatus('Clau API eliminada');
     });
 
-    document.querySelectorAll('.universe-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const was = card.classList.contains('expanded');
-        document.querySelectorAll('.universe-card').forEach(c => {
-          c.classList.remove('expanded');
-          c.querySelector('.card-expanded')?.classList.add('hidden');
-        });
-        if (!was) {
-          card.classList.add('expanded');
-          card.querySelector('.card-expanded')?.classList.remove('hidden');
-        }
-      });
-      const close = card.querySelector('.back-universe');
-      close?.addEventListener('click', e => {
-        e.stopPropagation();
-        card.classList.remove('expanded');
-        card.querySelector('.card-expanded')?.classList.add('hidden');
-      });
-    });
+    this.showStep(0);
+  },
 
-    this.toggleListeningBtn?.addEventListener('click', () => {
-      const active = this.toggleListeningBtn.classList.toggle('active');
-      const i = this.toggleListeningBtn.querySelector('i');
-      const span = this.toggleListeningBtn.querySelector('span');
-      if (i) i.className = active ? 'fas fa-microphone' : 'fas fa-microphone-slash';
-      if (span) span.textContent = active ? 'Escoltant' : 'Escoltar';
-    });
+  showStep(idx) {
+    if (idx < 0 || idx >= this.carouselSteps.length) return;
+    this.currentStep = idx;
 
-    this.stopMusicBtn?.addEventListener('click', () => {
-      const active = this.stopMusicBtn.classList.toggle('active');
-      const i = this.stopMusicBtn.querySelector('i');
-      const span = this.stopMusicBtn.querySelector('span');
-      if (i) i.className = active ? 'fas fa-play' : 'fas fa-stop';
-      if (span) span.textContent = active ? 'Reprodueix' : 'Atura música';
-    });
+    const step = this.carouselSteps[idx];
+    const titleEl = document.getElementById('step-title');
+    const descEl = document.getElementById('step-desc');
+    const linkEl = document.getElementById('step-link');
+
+    titleEl.textContent = step.title;
+    descEl.textContent = step.desc;
+
+    if (step.link) {
+      linkEl.textContent = 'Anar al pas';
+      linkEl.href = step.link;
+      linkEl.classList.remove('hidden');
+    } else {
+      linkEl.classList.add('hidden');
+    }
+
+    this.carouselPrev.disabled = idx === 0;
+    this.carouselNext.disabled = idx === this.carouselSteps.length - 1;
   },
 
   showScreen(id) {
