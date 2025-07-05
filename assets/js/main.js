@@ -5,40 +5,89 @@ import { Director } from './director.js';
 document.addEventListener('DOMContentLoaded', () => {
   UI.init(APP_VERSION);
 
-  UI.landingStartBtn?.addEventListener('click', () => {
-    UI.landingStartBtn.classList.add('hidden');
-    UI.showScreen('carousel-screen');
-  });
+  // LANDING
+  if (UI.landingStartBtn) {
+    UI.landingStartBtn.addEventListener('click', () => {
+      UI.showScreen('carousel-screen');
+    });
+  }
 
-  UI.saveApiKeyBtn?.addEventListener('click', async () => {
-    const key = UI.apiKeyInput.value.trim();
-    if (!key.startsWith('hf_')) return alert('Clau no vàlida');
-    localStorage.setItem(API_KEY_STORAGE_ID, key);
-    UI.showScreen('universe-selection-screen');
-  });
+  // DESAR TOKEN
+  if (UI.saveApiKeyBtn) {
+    UI.saveApiKeyBtn.addEventListener('click', () => {
+      const key = UI.apiKeyInput?.value.trim();
+      if (!key?.startsWith('hf_')) return alert("Clau d'API no vàlida");
+      localStorage.setItem(API_KEY_STORAGE_ID, key);
+      UI.showScreen('universe-selection-screen');
+    });
+  }
 
-  document.querySelectorAll('[data-universe]').forEach(btn => {
-    btn.addEventListener('click', async () => {
+  // CANVIAR TOKEN
+  if (UI.changeApiKeyBtn) {
+    UI.changeApiKeyBtn.addEventListener('click', () => {
+      localStorage.removeItem(API_KEY_STORAGE_ID);
+      UI.showScreen('carousel-screen');
+    });
+  }
+
+  // SELECCIÓ UNIVERS
+  document.querySelectorAll('.universe-card').forEach(card => {
+    card.addEventListener('click', async () => {
+      const selected = card.dataset.universe;
       const apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
       if (!apiKey) return UI.showScreen('carousel-screen');
-      if (btn.dataset.universe === 'custom') UI.showScreen('upload-screen');
-      else await Director.init(apiKey);
+
+      if (selected === 'custom') {
+        UI.showScreen('upload-screen');
+      } else {
+        await Director.init(apiKey, selected); // Passa el nom de l'univers
+      }
     });
   });
 
-  UI.uploadDoneBtn?.addEventListener('click', () => {
-    const apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
-    Director.init(apiKey);
-  });
+  // FITXERS PROPIS
+  if (UI.uploadDoneBtn) {
+    UI.uploadDoneBtn.addEventListener('click', () => {
+      const apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
+      if (!apiKey) return UI.showScreen('carousel-screen');
+      Director.init(apiKey, 'custom');
+    });
+  }
 
-  UI.toggleListeningBtn?.addEventListener('click', () => Director.toggleListening());
-  UI.stopMusicBtn?.addEventListener('click', () => Director.toggleMusic());
-  UI.stopSessionBtn?.addEventListener('click', () => Director.endSession());
+  // BOTÓ ESCOLTAR
+  if (UI.toggleListeningBtn) {
+    UI.toggleListeningBtn.addEventListener('click', () => {
+      Director.toggleListening();
+    });
+  }
 
+  // BOTÓ ATURA / REPRÈN MÚSICA
+  if (UI.stopMusicBtn) {
+    UI.stopMusicBtn.addEventListener('click', () => {
+      Director.toggleMusic();
+    });
+  }
+
+  // BOTÓ FINALITZAR
+  if (UI.stopSessionBtn) {
+    UI.stopSessionBtn.addEventListener('click', () => {
+      Director.endSession();
+    });
+  }
+
+  // BOTONS D’EFECTES DE SO
   document.querySelectorAll('[id^=sound-]').forEach(btn => {
-    btn.addEventListener('click', () => Director.playEffect(btn.id.replace('sound-', '')));
+    btn.addEventListener('click', () => {
+      const id = btn.id.replace('sound-', '');
+      Director.playEffect(id);
+    });
   });
 
-  // Show landing by default
-  UI.showScreen('landing-screen');
+  // COMENÇAR segons si hi ha API guardada
+  const token = localStorage.getItem(API_KEY_STORAGE_ID);
+  if (token) {
+    UI.showScreen('universe-selection-screen');
+  } else {
+    UI.showScreen('landing-screen');
+  }
 });
