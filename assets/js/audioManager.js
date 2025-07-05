@@ -1,44 +1,64 @@
+import * as Tone from 'tone';
 import { UI } from './ui.js';
-import * as Tone from 'https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js';
-
 
 export const AudioManager = {
-  isInitialized: false,
-  musicPlayer: null,
-  currentTrackUrl: null,
-  effects: {},
+  player: null,
+  effectPlayers: {},
+  isPlaying: false,
 
   async init() {
-    if (this.isInitialized) return;
     await Tone.start();
-    Tone.Transport.start();
-    this.isInitialized = true;
-
-    const effectIds = ['encanteri','espasa','llampec','misil','porta','rugit'];
-    for (const id of effectIds) {
-      this.effects[id] = new Tone.Player(`assets/sounds/${id}.mp3`).toDestination();
-    }
   },
 
   playTrack(url, name) {
-    if (!this.isInitialized) return;
-    if (this.musicPlayer) this.musicPlayer.stop();
-    this.musicPlayer = new Tone.Player(url).toDestination();
-    this.musicPlayer.start();
-    this.currentTrackUrl = url;
-    UI.updateMusicStatus(true, name);
+    this.stopTrack();
+
+    this.player = new Tone.Player({
+      url,
+      loop: true,
+      autostart: true,
+      onload: () => {
+        this.isPlaying = true;
+        UI.updateMusicStatus(true, name);
+      },
+      onerror: err => console.error(err)
+    }).toDestination();
+  },
+
+  toggleTrack() {
+    if (this.player) {
+      if (this.isPlaying) {
+        this.player.stop();
+        this.isPlaying = false;
+        UI.updateMusicStatus(false);
+      } else {
+        this.player.start();
+        this.isPlaying = true;
+        UI.updateMusicStatus(true);
+      }
+    }
   },
 
   stopTrack() {
-    if (this.musicPlayer) {
-      this.musicPlayer.stop();
-      this.currentTrackUrl = null;
+    if (this.player) {
+      this.player.stop();
+      this.player.dispose();
+      this.player = null;
+      this.isPlaying = false;
       UI.updateMusicStatus(false);
     }
   },
 
   playEffect(id) {
-    const player = this.effects[id];
-    if (player) player.start();
+    const url = `assets/sounds/effects/${id}.mp3`;
+    const p = new Tone.Player({
+      url,
+      autostart: true,
+      onload: () => {
+        p.dispose();
+      },
+      onerror: err => console.error(err)
+    }).toDestination();
+    this.effectPlayers[id] = p;
   }
 };
