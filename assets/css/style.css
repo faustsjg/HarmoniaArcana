@@ -1,10 +1,13 @@
-/* FILE: assets/css/style.css */
-
+/* === BASE === */
 body {
   font-family: 'Inter', sans-serif;
   background-color: #1a1a2e;
+  color: #f3f4f6;
+  margin: 0;
+  padding: 0;
 }
 
+/* === UTILITATS === */
 .screen {
   display: none;
 }
@@ -12,19 +15,23 @@ body {
   display: block;
 }
 
+/* === TARGETES / CONTENIDORS === */
 .card-bg {
   background-color: #242444;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 10px rgba(0,0,0,0.25);
 }
 
+/* === INPUT === */
 .input-styled {
   background-color: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #f3f4f6;
   border-radius: 0.5rem;
   padding: 0.75rem 1rem;
-  width: 100%;
   transition: all 0.2s ease;
+  width: 100%;
+  font-size: 0.9rem;
 }
 .input-styled:focus {
   outline: none;
@@ -32,14 +39,16 @@ body {
   box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.4);
 }
 
+/* === BOTONS === */
 .btn-action-primary {
   background: linear-gradient(90deg, #8b5cf6 0%, #d946ef 100%);
   color: white;
   font-weight: 600;
   padding: 0.75rem;
   border-radius: 0.75rem;
-  transition: all 0.2s ease;
   border: none;
+  width: 100%;
+  transition: all 0.2s ease;
 }
 .btn-action-primary:hover {
   transform: translateY(-2px);
@@ -51,15 +60,14 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.6rem 1rem;
+  padding: 0.75rem;
   border-radius: 0.75rem;
   font-weight: 600;
   color: #d1d5db;
   background-color: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.2s ease-in-out;
-  text-align: center;
-  white-space: nowrap;
+  font-size: 0.9rem;
 }
 .btn-control:hover {
   background-color: rgba(255, 255, 255, 0.1);
@@ -70,67 +78,51 @@ body {
   color: white;
 }
 
-.universe-card {
-  background-color: #2a2a4f;
-  border-radius: 1rem;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-.universe-card:hover {
-  transform: scale(1.03);
-}
-.universe-card .title {
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-.universe-card .subtitle {
-  font-size: 0.875rem;
-  color: #a1a1aa;
-}
-.universe-card .card-expanded {
-  margin-top: 0.5rem;
-}
-.universe-card.expanded {
-  background-color: #3b3b5b;
-  transform: scale(1.05);
-}
-.btn-icon {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  padding: 0.25rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  cursor: pointer;
-}
-.btn-icon:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+/* === TEXTAREA (TRANSCRIPCIÓ) === */
+#transcript-preview {
+  resize: none;
+  font-family: monospace;
+  background-color: #111827;
+  border: 1px solid #374151;
 }
 
-/* Scrollbar estilitzada */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background-color: #6b7280;
-  border-radius: 4px;
+/* === SESSION LOG === */
+#session-log {
+  font-family: monospace;
+  background-color: #111827;
+  border: 1px solid #4b5563;
+  color: #cbd5e1;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  font-size: 0.8rem;
 }
 
-/* Responsive tweaks */
-@media (max-width: 640px) {
-  .universe-card {
-    padding: 0.75rem;
-  }
+/* === STATUS DOT === */
+#music-status-dot {
+  transition: background-color 0.3s ease;
+}
+
+/* === RESPONSIVE === */
+@media screen and (max-width: 640px) {
   .btn-control {
-    font-size: 0.875rem;
-    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    padding: 0.6rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  h1, h2 {
+    font-size: 1.25rem;
+  }
+
+  .input-styled {
+    font-size: 0.85rem;
+  }
+
+  .btn-action-primary {
+    font-size: 0.9rem;
   }
 }
