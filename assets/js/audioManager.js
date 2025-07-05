@@ -1,5 +1,6 @@
 import { UI } from './ui.js';
-//import * as Tone from 'tone';
+import * as Tone from 'https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js';
+
 
 export const AudioManager = {
   isInitialized: false,
