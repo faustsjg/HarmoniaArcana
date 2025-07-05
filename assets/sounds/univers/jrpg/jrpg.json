@@ -1,10 +1,11 @@
 {
-  "tema": ["1-01. Octopath Traveler -Main Theme-.mp3"],
+  "tema": [
+    "1-01. Octopath Traveler -Main Theme-.mp3"
+  ],
   "combat": [
     "2-11 Battle I.mp3",
     "3-01 Battle II.mp3",
-    "4-01 Battle III.mp3",
-    "Battle IV.mp3"
+    "4-01 Battle III.mp3"
   ],
   "boss": [
     "2-24 Decisive Battle I.mp3",
@@ -16,31 +17,27 @@
     "1-12 The Coastlands.mp3"
   ],
   "calma": [
-    "2-20 My Quiet Forest Home.mp3",
-    "2-04 Tranquil Days.mp3"
+    "2-04 Tranquil Days.mp3",
+    "2-09 A Brief Respite.mp3"
   ],
   "social": [
-    "2-14 Sunshade, City of Pleasures.mp3",
     "2-01 Flamesgrace, Guiding Light.mp3",
+    "2-14 Sunshade, City of Pleasures.mp3",
     "2-16 Clearbrook, by the Pristine Waters.mp3"
   ],
   "misteri": [
     "2-10 Dark Caverns.mp3",
-    "2-22 Beneath the Surface.mp3",
-    "Ovelia.mp3"
+    "2-22 Beneath the Surface.mp3"
   ],
   "tensio": [
-    "Creeping Dread.mp3",
     "2-19 Discord.mp3",
     "4-04 Pure Evil.mp3"
   ],
   "emocional": [
-    "A Mother's Love.mp3",
     "2-17 Reminiscence.mp3",
     "2-09 A Brief Respite.mp3"
   ],
   "triomf": [
-    "2-12 Victory Fanfare.mp3",
-    "For Absolute Victory.mp3"
+    "2-12 Victory Fanfare.mp3"
   ]
 }
