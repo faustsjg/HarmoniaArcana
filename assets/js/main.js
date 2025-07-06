@@ -1,93 +1,56 @@
-import { APP_VERSION, API_KEY_STORAGE_ID } from './config.js';
 import { UI } from './ui.js';
 import { Director } from './director.js';
+import { API_KEY_STORAGE_ID } from './config.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-  UI.init(APP_VERSION);
+let carouselIndex=0;
 
-  // LANDING
-  if (UI.landingStartBtn) {
-    UI.landingStartBtn.addEventListener('click', () => {
-      UI.showScreen('carousel-screen');
-    });
-  }
-
-  // DESAR TOKEN
-  if (UI.saveApiKeyBtn) {
-    UI.saveApiKeyBtn.addEventListener('click', () => {
-      const key = UI.apiKeyInput?.value.trim();
-      if (!key?.startsWith('hf_')) return alert("Clau d'API no vàlida");
-      localStorage.setItem(API_KEY_STORAGE_ID, key);
-      UI.showScreen('universe-selection-screen');
-    });
-  }
-
-  // CANVIAR TOKEN
-  if (UI.changeApiKeyBtn) {
-    UI.changeApiKeyBtn.addEventListener('click', () => {
-      localStorage.removeItem(API_KEY_STORAGE_ID);
-      UI.showScreen('carousel-screen');
-    });
-  }
-
-  // SELECCIÓ UNIVERS
-  document.querySelectorAll('.universe-card').forEach(card => {
-    card.addEventListener('click', async () => {
-      const selected = card.dataset.universe;
-      const apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
-      if (!apiKey) return UI.showScreen('carousel-screen');
-
-      if (selected === 'custom') {
-        UI.showScreen('upload-screen');
-      } else {
-        await Director.init(apiKey, selected); // Passa el nom de l'univers
-      }
-    });
-  });
-
-  // FITXERS PROPIS
-  if (UI.uploadDoneBtn) {
-    UI.uploadDoneBtn.addEventListener('click', () => {
-      const apiKey = localStorage.getItem(API_KEY_STORAGE_ID);
-      if (!apiKey) return UI.showScreen('carousel-screen');
-      Director.init(apiKey, 'custom');
-    });
-  }
-
-  // BOTÓ ESCOLTAR
-  if (UI.toggleListeningBtn) {
-    UI.toggleListeningBtn.addEventListener('click', () => {
-      Director.toggleListening();
-    });
-  }
-
-  // BOTÓ ATURA / REPRÈN MÚSICA
-  if (UI.stopMusicBtn) {
-    UI.stopMusicBtn.addEventListener('click', () => {
-      Director.toggleMusic();
-    });
-  }
-
-  // BOTÓ FINALITZAR
-  if (UI.stopSessionBtn) {
-    UI.stopSessionBtn.addEventListener('click', () => {
-      Director.endSession();
-    });
-  }
-
-  // BOTONS D’EFECTES DE SO
-  document.querySelectorAll('[id^=sound-]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.id.replace('sound-', '');
-      Director.playEffect(id);
-    });
-  });
-
-  // COMENÇAR segons si hi ha API guardada
-  const token = localStorage.getItem(API_KEY_STORAGE_ID);
-  if (token) {
-    UI.showScreen('universe-selection-screen');
-  } else {
-    UI.showScreen('landing-screen');
-  }
+document.addEventListener('DOMContentLoaded',()=>{
+  UI.init(API_KEY_STORAGE_ID);
+  bindHandlers();
 });
+
+function bindHandlers(){
+  UI.landingStartBtn.onclick = ()=>UI.showScreen('carousel-screen');
+  UI.carouselPrev.onclick = ()=>{ if(carouselIndex>0) updateCarousel(--carouselIndex);};
+  UI.carouselNext.onclick = ()=>{
+    if(carouselIndex<2) updateCarousel(++carouselIndex);
+    else UI.showScreen('universe-selection-screen');
+  };
+  UI.saveApiKeyBtn.onclick =()=>{
+    const key=UI.apiKeyInput.value.trim();
+    if(!key.startsWith('hf_')) return alert('Clau no vàlida');
+    localStorage.setItem(API_KEY_STORAGE_ID, key);
+    UI.showScreen('universe-selection-screen');
+  };
+  UI.changeApiKeyBtn.onclick=()=>{
+    localStorage.removeItem(API_KEY_STORAGE_ID);
+    UI.showScreen('carousel-screen');
+  };
+  document.querySelectorAll('.universe-card').forEach(c=>{
+    c.onclick=()=>{
+      const uni=c.dataset.universe, key=localStorage.getItem(API_KEY_STORAGE_ID);
+      if(!key) return alert('Clau no desada');
+      if(uni==='custom') return UI.showScreen('upload-screen');
+      Director.init(key, uni);
+    };
+  });
+  UI.uploadDoneBtn.onclick=()=>{
+    const key=localStorage.getItem(API_KEY_STORAGE_ID);
+    Director.init(key, 'custom');
+  };
+  UI.toggleListeningBtn.onclick=()=> Director.toggleListening();
+  UI.stopMusicBtn.onclick=()=> Director.toggleMusic();
+  UI.stopSessionBtn.onclick=()=> Director.endSession();
+  document.querySelectorAll('#effect-buttons button').forEach(btn=>{
+    btn.onclick=()=> Director.playEffect(btn.dataset.effect);
+  });
+  updateCarousel(0);
+}
+
+function updateCarousel(i){
+  carouselIndex=i;
+  document.querySelectorAll('.carousel-step').forEach((el,idx)=>{
+    idx===i?el.classList.remove('hidden'):el.classList.add('hidden');
+  });
+  UI.carouselPrev.style.visibility = i===0?'hidden':'visible';
+}
