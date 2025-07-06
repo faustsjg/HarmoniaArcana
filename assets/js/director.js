@@ -1,109 +1,61 @@
-import { DIRECTOR_CONFIG } from './config.js';
 import { UI } from './ui.js';
 import { AI } from './ai.js';
 import { Speech } from './speech.js';
 import { AudioManager } from './audioManager.js';
 
+const soundMap = { tema:[], combat:[], calma:[], misteri:[], tensio:[], social:[], boss:[], emocional:[], triomf:[] };
+
 export const Director = {
-  apiKey: null,
-  isSessionActive: false,
-  moodLibrary: {},
-  intervalId: null,
-  currentMood: null,
-
-  async init(apiKey, universe) {
-    this.apiKey = apiKey;
-    this.isSessionActive = true;
-    this.currentMood = null;
-
+  apiKey:null, mood:null, isActive:false, intervalId:null,
+  async init(key, universe) {
+    this.apiKey = key; this.isActive = true;
     await AudioManager.init();
-
-    if (universe !== 'custom') {
-      const response = await fetch(`assets/sounds/univers/${universe}/jrpg.json`);
-      this.moodLibrary = await response.json();
-    } else {
-      // Lògica per univers personalitzat podria anar aquí
-      this.moodLibrary = {
-        tema: [],
-        combat: [],
-        calma: [],
-        misteri: []
-      };
+    if (universe==='jrpg') {
+      const m = await fetch('assets/sounds/univers/jrpg.json').then(r=>r.json());
+      Object.assign(soundMap, m);
     }
-
     UI.showScreen('session-screen');
-    UI.updateStatus('Sessió iniciada. Prem "Escoltar" per començar.');
-    UI.updateTranscript('');
-    Speech.init(text => UI.updateTranscript(text));
-    this.playTrackForMood('tema');
+    UI.addLogEntry('Sessió iniciada');
+    Speech.startListening();
+    this.mood='tema';
+    this.playMood(this.mood);
+    this.intervalId = setInterval(()=>this.doAnalysis(),15000);
   },
-
-  playTrackForMood(mood) {
-    const options = this.moodLibrary[mood];
-    if (!options || options.length === 0) {
-      console.warn(`No hi ha pistes per al mood: ${mood}`);
-      return;
+  async doAnalysis() {
+    const txt = Speech.getAndClearBuffer();
+    if (txt.length < 25) return;
+    const res = await AI.analisarContext(this.apiKey, txt);
+    if (res?.mood && res.mood !== this.mood && soundMap[res.mood]?.length) {
+      this.playMood(res.mood);
     }
-
-    const next = options[Math.floor(Math.random() * options.length)];
-    const url = `assets/sounds/univers/jrpg/${next}`;
-    AudioManager.playTrack(url, mood);
-    this.currentMood = mood;
-    UI.addLogEntry(`🎵 Canvi a mood: ${mood}`);
   },
-
+  playMood(mood) {
+    this.mood = mood;
+    const arr = soundMap[mood];
+    const choice = arr[Math.floor(Math.random()*arr.length)];
+    AudioManager.playTrack(`assets/sounds/univers/jrpg/${choice}`, mood);
+    UI.updateMusicStatus(true, mood);
+    UI.addLogEntry(`Mood: ${mood}`);
+  },
   toggleListening() {
-    if (!this.isSessionActive) return;
-
-    const isActive = Speech.isListening;
-    if (isActive) {
-      Speech.stopListening();
-      clearInterval(this.intervalId);
-      UI.updateStatus('Micròfon aturat');
-    } else {
-      Speech.startListening();
-      UI.updateStatus('🎙️ Escoltant...');
-      this.analysisLoop();
-    }
+    if (!this.isActive) return;
+    Speech.isListening ? Speech.stopListening() : Speech.startListening();
+    UI.toggleListeningBtn.classList.toggle('active');
   },
-
-  analysisLoop() {
-    this.intervalId = setInterval(async () => {
-      if (!this.isSessionActive || !Speech.isListening) return;
-
-      const text = Speech.getAndClearBuffer();
-      if (text.length < DIRECTOR_CONFIG.minCharsForAnalysis) return;
-
-      const result = await AI.analisarContext(this.apiKey, text);
-      if (result && result.mood && result.mood !== this.currentMood) {
-        if (this.moodLibrary[result.mood]) {
-          this.playTrackForMood(result.mood);
-        } else {
-          console.warn(`Mood rebut desconegut: ${result.mood}`);
-        }
-      }
-    }, DIRECTOR_CONFIG.analysisInterval);
-  },
-
   toggleMusic() {
     AudioManager.toggleTrack();
+    UI.stopMusicBtn.classList.toggle('active');
   },
-
+  playEffect(id) {
+    AudioManager.playEffect(id);
+    UI.addLogEntry(`Efecte: ${id}`);
+  },
   endSession() {
-    if (!this.isSessionActive) return;
-
-    this.isSessionActive = false;
+    this.isActive = false;
     clearInterval(this.intervalId);
     Speech.stopListening();
     AudioManager.stopTrack();
-
     UI.showScreen('universe-selection-screen');
-    UI.updateStatus('Sessió finalitzada.');
-    UI.addLogEntry('Sessió tancada');
-  },
-
-  playEffect(id) {
-    AudioManager.playEffect(id);
-    UI.addLogEntry(`🔊 Efecte reproduït: ${id}`);
+    UI.addLogEntry('Sessió finalitzada');
   }
 };
