@@ -1,123 +1,61 @@
-/* General */
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #1a1a2e;
+  background: #1a1a2e;
   color: #f3f4f6;
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
 }
-
-.screen {
-  display: none;
+.screen { display: none; }
+.screen.active { display: block; }
+.card-bg {
+  background-color: #242444;
+  border: 1px solid rgba(255,255,255,0.1);
 }
-.screen.active {
-  display: block;
-}
-
-/* Botons */
 .btn-action-primary {
-  background: linear-gradient(90deg, #8b5cf6 0%, #d946ef 100%);
+  background: linear-gradient(90deg,#8b5cf6,#d946ef);
   color: white;
   font-weight: 600;
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem;
   border-radius: 0.75rem;
-  transition: all 0.2s ease;
-  border: none;
-  cursor: pointer;
+  width: 100%;
+  transition: all .2s;
 }
 .btn-action-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 20px rgba(139,92,246,0.4);
 }
-
 .btn-control {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  color: #d1d5db;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease-in-out;
-}
-.btn-control:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-.btn-control.active {
-  background-color: #8b5cf6;
-  color: white;
-}
-
-/* Inputs */
-.input-styled {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #f3f4f6;
   border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  width: 100%;
-  transition: all 0.2s ease;
+  font-weight: 600;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #d1d5db;
+  transition: all .2s;
+}
+.btn-control:hover, .btn-control.active {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+.input-styled {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #f3f4f6;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  transition: all .2s;
 }
 .input-styled:focus {
   outline: none;
   border-color: #a78bfa;
-  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.4);
+  box-shadow: 0 0 0 3px rgba(167,139,250,0.4);
 }
-
-/* Targetes d'univers */
-.universe-card {
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-.universe-card:hover {
-  transform: scale(1.02);
-  background-color: rgba(139, 92, 246, 0.1);
-}
-
-/* Efecte quan s’expandeix una targeta */
-.universe-card.expanded {
-  background-color: rgba(139, 92, 246, 0.2);
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
-  transform: scale(1.05);
-}
-
-/* Expanded content (ocult per defecte) */
-.card-expanded {
-  margin-top: 1rem;
-}
-.card-expanded.hidden {
-  display: none;
-}
-
-/* Containers */
-.card-bg {
-  background-color: #242444;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-}
-
-/* Log i transcripció */
-#session-log {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid #374151;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  max-height: 6rem;
-  overflow-y: auto;
-}
-
-/* Responsive */
+.carousel-step { font-size: 1rem; }
+.hidden { display: none; }
 @media (max-width: 640px) {
-  .grid {
-    grid-template-columns: 1fr !important;
-  }
-  .btn-action-primary,
-  .btn-control {
-    font-size: 0.875rem;
+  .btn-control, .btn-action-primary {
+    width: 100%;
   }
 }
