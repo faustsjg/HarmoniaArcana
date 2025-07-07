@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function bindHandlers() {
-  UI.landingStartBtn.onclick = () => UI.showScreen('carousel-screen');
+  UI.landingStartBtn.onclick = () => UI.showScreen('landing-screen') && UI.showScreen('carousel-screen');
 
   UI.carouselPrev.onclick = () => {
     if (carouselIndex > 0) updateCarousel(--carouselIndex);
@@ -18,7 +18,9 @@ function bindHandlers() {
 
   UI.carouselNext.onclick = () => {
     if (carouselIndex < 2) updateCarousel(++carouselIndex);
-    else UI.showScreen('universe-selection-screen');
+    else if (!!localStorage.getItem(API_KEY_STORAGE_ID)) {
+      UI.showScreen('universe-selection-screen');
+    }
   };
 
   UI.saveApiKeyBtn.onclick = () => {
@@ -68,5 +70,6 @@ function updateCarousel(i) {
   document.querySelectorAll('.carousel-step').forEach((el, idx) => {
     idx === i ? el.classList.remove('hidden') : el.classList.add('hidden');
   });
-  UI.carouselPrev.style.visibility = i === 0 ? 'hidden' : 'visible';
+  document.getElementById('carousel-prev').style.visibility = i === 0 ? 'hidden' : 'visible';
+  document.getElementById('carousel-next').textContent = i === 2 ? 'Finalitza' : 'Endavant';
 }
