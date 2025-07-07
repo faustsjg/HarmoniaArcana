@@ -1,12 +1,14 @@
+import { API_KEY_STORAGE_ID, APP_VERSION } from './config.js';
+
 export const UI = {
   landingStartBtn: null,
   carouselPrev: null, carouselNext: null, saveApiKeyBtn: null,
   apiKeyInput: null, apiStatus: null,
   changeApiKeyBtn: null,
-  sessionScreen: null, toggleListeningBtn: null, stopMusicBtn: null, stopSessionBtn: null,
+  toggleListeningBtn: null, stopMusicBtn: null, stopSessionBtn: null,
   transcriptPreview: null, musicStatusDot: null, musicStatusText: null, sessionLog: null,
 
-  init(version) {
+  init() {
     this.landingStartBtn = document.getElementById('landing-start-btn');
     this.carouselPrev = document.getElementById('carousel-prev');
     this.carouselNext = document.getElementById('carousel-next');
@@ -22,9 +24,11 @@ export const UI = {
     this.musicStatusDot = document.getElementById('music-status-dot');
     this.musicStatusText = document.getElementById('music-status-text');
     this.sessionLog = document.getElementById('session-log');
+    document.getElementById('version-display').textContent = APP_VERSION;
 
-    document.getElementById('version-display').textContent = version;
-    this.apiStatus.textContent = localStorage.getItem(API_KEY_STORAGE_ID) ? 'Clau API detectada' : 'Sense clau API';
+    const hasKey = !!localStorage.getItem(API_KEY_STORAGE_ID);
+    this.apiStatus.textContent = hasKey ? 'Clau API detectada' : 'Sense clau API';
+    this.apiStatus.style.color = hasKey ? '#10b981' : '#dc2626';
   },
 
   showScreen(id) {
