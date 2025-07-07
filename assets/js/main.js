@@ -10,7 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function bindHandlers() {
-  UI.landingStartBtn.onclick = () => UI.showScreen('landing-screen') && UI.showScreen('carousel-screen');
+  UI.landingStartBtn.onclick = () => {
+    const hasKey = !!localStorage.getItem(API_KEY_STORAGE_ID);
+    carouselIndex = hasKey ? null : 0;
+    UI.showScreen(hasKey ? 'universe-selection-screen' : 'carousel-screen');
+    if (carouselIndex === 0) updateCarousel(0);
+  };
 
   UI.carouselPrev.onclick = () => {
     if (carouselIndex > 0) updateCarousel(--carouselIndex);
@@ -18,7 +23,7 @@ function bindHandlers() {
 
   UI.carouselNext.onclick = () => {
     if (carouselIndex < 2) updateCarousel(++carouselIndex);
-    else if (!!localStorage.getItem(API_KEY_STORAGE_ID)) {
+    else if (localStorage.getItem(API_KEY_STORAGE_ID)) {
       UI.showScreen('universe-selection-screen');
     }
   };
@@ -36,7 +41,9 @@ function bindHandlers() {
     localStorage.removeItem(API_KEY_STORAGE_ID);
     UI.apiStatus.textContent = 'Sense clau API';
     UI.apiStatus.style.color = '#dc2626';
+    carouselIndex = 0;
     UI.showScreen('carousel-screen');
+    updateCarousel(0);
   };
 
   document.querySelectorAll('.universe-card').forEach(c => {
@@ -61,8 +68,6 @@ function bindHandlers() {
   document.querySelectorAll('#effect-buttons button').forEach(btn => {
     btn.onclick = () => Director.playEffect(btn.dataset.effect);
   });
-
-  updateCarousel(0);
 }
 
 function updateCarousel(i) {
