@@ -1,61 +1,67 @@
 import { UI } from './ui.js';
-import { AI } from './ai.js';
-import { Speech } from './speech.js';
 import { AudioManager } from './audioManager.js';
-
-const soundMap = { tema:[], combat:[], calma:[], misteri:[], tensio:[], social:[], boss:[], emocional:[], triomf:[] };
+import { Speech } from './speech.js';
+import { AI } from './ai.js';
 
 export const Director = {
-  apiKey:null, mood:null, isActive:false, intervalId:null,
-  async init(key, universe) {
-    this.apiKey = key; this.isActive = true;
-    await AudioManager.init();
-    if (universe==='jrpg') {
-      const m = await fetch('assets/sounds/univers/jrpg.json').then(r=>r.json());
-      Object.assign(soundMap, m);
+  apiKey: null,
+  contextActual: {},
+  isSessionActive: false,
+  tracksByMood: {},
+
+  async init(apiKey, universe) {
+    this.apiKey = apiKey;
+    if (universe === 'jrpg') {
+      const resp = await fetch(`assets/sounds/univers/jrpg/jrpg.json`);
+      this.tracksByMood = await resp.json();
     }
+    this.contextActual = {};
+    AudioManager.init();
     UI.showScreen('session-screen');
-    UI.addLogEntry('Sessió iniciada');
-    Speech.startListening();
-    this.mood='tema';
-    this.playMood(this.mood);
-    this.intervalId = setInterval(()=>this.doAnalysis(),15000);
   },
-  async doAnalysis() {
-    const txt = Speech.getAndClearBuffer();
-    if (txt.length < 25) return;
-    const res = await AI.analisarContext(this.apiKey, txt);
-    if (res?.mood && res.mood !== this.mood && soundMap[res.mood]?.length) {
-      this.playMood(res.mood);
+
+  async toggleListening() {
+    if (!this.isSessionActive) {
+      Speech.startListening();
+      UI.toggleListeningBtn.textContent = 'Desactivar micròfon';
+      this.isSessionActive = true;
+      this.runLoop();
+    } else {
+      Speech.stopListening();
+      UI.toggleListeningBtn.textContent = 'Activar micròfon';
+      this.isSessionActive = false;
     }
   },
-  playMood(mood) {
-    this.mood = mood;
-    const arr = soundMap[mood];
-    const choice = arr[Math.floor(Math.random()*arr.length)];
-    AudioManager.playTrack(`assets/sounds/univers/jrpg/${choice}`, mood);
-    UI.updateMusicStatus(true, mood);
-    UI.addLogEntry(`Mood: ${mood}`);
+
+  runLoop() {
+    if (!this.isSessionActive) return;
+    setTimeout(async () => {
+      const text = Speech.getAndClearBuffer();
+      if (text.length > 25) {
+        const moodObj = await AI.analisarContext(this.apiKey, text);
+        if (moodObj?.mood && moodObj.mood !== this.contextActual.mood) {
+          this.contextActual = moodObj;
+          const list = this.tracksByMood[moodObj.mood];
+          if (list && list.length > 0) {
+            const choice = list[Math.floor(Math.random()*list.length)];
+            AudioManager.playTrack(`assets/sounds/univers/jrpg/${choice}`, moodObj.mood);
+          }
+        }
+      }
+      this.runLoop();
+    }, 15000);
   },
-  toggleListening() {
-    if (!this.isActive) return;
-    Speech.isListening ? Speech.stopListening() : Speech.startListening();
-    UI.toggleListeningBtn.classList.toggle('active');
-  },
+
   toggleMusic() {
     AudioManager.toggleTrack();
-    UI.stopMusicBtn.classList.toggle('active');
   },
-  playEffect(id) {
-    AudioManager.playEffect(id);
-    UI.addLogEntry(`Efecte: ${id}`);
-  },
+
   endSession() {
-    this.isActive = false;
-    clearInterval(this.intervalId);
-    Speech.stopListening();
     AudioManager.stopTrack();
     UI.showScreen('universe-selection-screen');
-    UI.addLogEntry('Sessió finalitzada');
+  },
+
+  playEffect(effect) {
+    AudioManager.playEffect(effect);
   }
 };
