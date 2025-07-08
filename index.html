@@ -8,18 +8,24 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
-<body class="min-h-screen bg-brand-dark text-gray-200 p-4">
+<body class="min-h-screen bg-brand-dark text-gray-200 p-4 flex flex-col">
+
+  <!-- Header Botons Sessió -->
+  <div class="flex justify-end space-x-2 mb-4">
+    <button id="toggle-listening-btn" class="btn-control bg-purple-600 text-white">Activar micròfon</button>
+    <button id="stop-music-btn" class="btn-control bg-indigo-600 text-white">Atura música</button>
+    <button id="stop-session-btn" class="btn-control bg-red-600 text-white">Finalitzar sessió</button>
+  </div>
 
   <!-- Landing Page -->
-  <section id="landing-screen" class="screen active flex flex-col items-center justify-center text-center h-full">
+  <section id="landing-screen" class="screen flex-1 flex flex-col items-center justify-center text-center">
     <h1 class="text-4xl font-bold mb-4">Harmonia Arcana</h1>
     <p class="text-xl mb-6">El teu DJ per a sessions de rol èpiques</p>
     <button id="landing-start-btn" class="btn-action-primary mb-6">Començar</button>
-    <p id="version-display" class="text-xs text-gray-400"></p>
   </section>
 
   <!-- Carrusel API Key -->
-  <section id="carousel-screen" class="screen hidden max-w-md mx-auto card-bg p-6 rounded-xl">
+  <section id="carousel-screen" class="screen hidden flex-1 max-w-md mx-auto card-bg p-6 rounded-xl">
     <h2 id="carousel-title" class="text-2xl font-bold mb-4">Configuració de Clau API</h2>
     <div id="carousel-content" class="mb-4">
       <div class="carousel-step">Pas 1: Accedeix a Hugging Face i accepta la llicència del model Llama 3.1</div>
@@ -35,10 +41,10 @@
   </section>
 
   <!-- Selecció d'Univers -->
-  <section id="universe-selection-screen" class="screen hidden max-w-2xl mx-auto card-bg p-6 rounded-xl">
+  <section id="universe-selection-screen" class="screen hidden flex-1 max-w-2xl mx-auto card-bg p-6 rounded-xl">
     <h2 class="text-2xl font-semibold mb-4">Escull l’univers sonor</h2>
     <p id="api-status" class="text-sm mb-4 text-gray-300"></p>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
       <div class="universe-card card-bg p-4 rounded-lg cursor-pointer" data-universe="jrpg">
         <h3 class="text-lg font-bold">JRPG</h3>
         <p class="text-sm text-gray-400">Amb pistes d’Octopath Traveler</p>
@@ -52,7 +58,7 @@
   </section>
 
   <!-- Upload Personalitzat -->
-  <section id="upload-screen" class="screen hidden max-w-md mx-auto card-bg p-6 rounded-xl">
+  <section id="upload-screen" class="screen hidden flex-1 max-w-md mx-auto card-bg p-6 rounded-xl">
     <h2 class="text-2xl font-semibold mb-4">Puja les teves pistes</h2>
     <label class="block text-sm mb-1">Combat</label>
     <input id="upload-combat" type="file" accept="audio/mp3" class="input-styled mb-4"/>
@@ -64,7 +70,7 @@
   </section>
 
   <!-- Pantalla de Sessió Activa -->
-  <section id="session-screen" class="screen hidden max-w-3xl mx-auto card-bg p-6 rounded-xl">
+  <section id="session-screen" class="screen hidden flex-1 max-w-3xl mx-auto card-bg p-6 rounded-xl flex flex-col">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-xl font-semibold">Sessió Activa</h2>
       <div class="flex items-center">
@@ -72,7 +78,7 @@
         <span id="music-status-text">Aturada</span>
       </div>
     </div>
-    <textarea id="transcript-preview" readonly class="w-full h-24 bg-transparent border border-gray-600 rounded-md p-2 text-sm mb-4 text-gray-300"></textarea>
+    <textarea id="transcript-preview" readonly class="w-full h-24 bg-transparent border border-gray-600 rounded-md p-2 text-smmb-4 text-gray-300 flex-1"></textarea>
     <div id="effect-buttons" class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
       <button data-effect="espasa" class="btn-control">Espasa</button>
       <button data-effect="rugit" class="btn-control">Rugit</button>
@@ -82,12 +88,12 @@
       <button data-effect="llamp" class="btn-control">Llamp</button>
     </div>
     <div id="session-log" class="bg-brand-dark border border-gray-600 rounded-md p-2 h-32 overflow-y-auto text-sm mb-4"></div>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-      <button id="toggle-listening-btn" class="btn-control">Activar micròfon</button>
-      <button id="stop-music-btn" class="btn-control">Atura música</button>
-      <button id="stop-session-btn" class="btn-control bg-red-600 hover:bg-red-700 text-white">Finalitzar sessió</button>
-    </div>
   </section>
+
+  <!-- Footer Versió -->
+  <footer class="text-center py-2 text-xs text-gray-400">
+    Versió: <span id="version-display"></span>
+  </footer>
 
   <!-- Scripts -->
   <script type="module" src="assets/js/config.js"></script>
