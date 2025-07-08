@@ -12,9 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
 function bindHandlers() {
   UI.landingStartBtn.onclick = () => {
     const hasKey = !!localStorage.getItem(API_KEY_STORAGE_ID);
-    carouselIndex = hasKey ? null : 0;
-    UI.showScreen(hasKey ? 'universe-selection-screen' : 'carousel-screen');
-    if (carouselIndex === 0) updateCarousel(0);
+    if (hasKey) {
+      UI.showScreen('universe-selection-screen');
+    } else {
+      carouselIndex = 0;
+      updateCarousel(0);
+      UI.showScreen('carousel-screen');
+    }
   };
 
   UI.carouselPrev.onclick = () => {
@@ -42,8 +46,8 @@ function bindHandlers() {
     UI.apiStatus.textContent = 'Sense clau API';
     UI.apiStatus.style.color = '#dc2626';
     carouselIndex = 0;
-    UI.showScreen('carousel-screen');
     updateCarousel(0);
+    UI.showScreen('carousel-screen');
   };
 
   document.querySelectorAll('.universe-card').forEach(c => {
@@ -57,10 +61,10 @@ function bindHandlers() {
   });
 
   document.getElementById('upload-done-btn').onclick = () => {
-    const key = localStorage.getItem(API_KEY_STORAGE_ID);
-    Director.init(key, 'custom');
+    Director.init(localStorage.getItem(API_KEY_STORAGE_ID), 'custom');
   };
 
+  // Botons sessions
   UI.toggleListeningBtn.onclick = () => Director.toggleListening();
   UI.stopMusicBtn.onclick = () => Director.toggleMusic();
   UI.stopSessionBtn.onclick = () => Director.endSession();
@@ -73,7 +77,7 @@ function bindHandlers() {
 function updateCarousel(i) {
   carouselIndex = i;
   document.querySelectorAll('.carousel-step').forEach((el, idx) => {
-    idx === i ? el.classList.remove('hidden') : el.classList.add('hidden');
+    el.classList.toggle('hidden', idx !== i);
   });
   document.getElementById('carousel-prev').style.visibility = i === 0 ? 'hidden' : 'visible';
   document.getElementById('carousel-next').textContent = i === 2 ? 'Finalitza' : 'Endavant';
