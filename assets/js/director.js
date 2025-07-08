@@ -14,6 +14,11 @@ export const Director = {
     if (universe === 'jrpg') {
       const resp = await fetch(`assets/sounds/univers/jrpg/jrpg.json`);
       this.tracksByMood = await resp.json();
+      // Reproduir tema principal immediatament
+      const mainList = this.tracksByMood['tema'] || [];
+      if (mainList.length > 0) {
+        AudioManager.playTrack(`assets/sounds/univers/jrpg/${mainList[0]}`, 'Tema principal');
+      }
     }
     this.contextActual = {};
     AudioManager.init();
@@ -33,7 +38,7 @@ export const Director = {
     }
   },
 
-  runLoop() {
+  async runLoop() {
     if (!this.isSessionActive) return;
     setTimeout(async () => {
       const text = Speech.getAndClearBuffer();
@@ -42,8 +47,8 @@ export const Director = {
         if (moodObj?.mood && moodObj.mood !== this.contextActual.mood) {
           this.contextActual = moodObj;
           const list = this.tracksByMood[moodObj.mood];
-          if (list && list.length > 0) {
-            const choice = list[Math.floor(Math.random()*list.length)];
+          if (list && list.length) {
+            const choice = list[Math.floor(Math.random() * list.length)];
             AudioManager.playTrack(`assets/sounds/univers/jrpg/${choice}`, moodObj.mood);
           }
         }
@@ -59,6 +64,9 @@ export const Director = {
   endSession() {
     AudioManager.stopTrack();
     UI.showScreen('universe-selection-screen');
+    AudioManager.stopAllEffects();
+    this.isSessionActive = false;
+    UI.toggleListeningBtn.textContent = 'Activar micròfon';
   },
 
   playEffect(effect) {
