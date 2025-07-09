@@ -10,13 +10,6 @@
 </head>
 <body class="min-h-screen bg-brand-dark text-gray-200 p-4 flex flex-col">
 
-  <!-- Header Botons Sessió -->
-  <div class="flex justify-end space-x-2 mb-4">
-    <button id="toggle-listening-btn" class="btn-control bg-purple-600 text-white">Activar micròfon</button>
-    <button id="stop-music-btn" class="btn-control bg-indigo-600 text-white">Atura música</button>
-    <button id="stop-session-btn" class="btn-control bg-red-600 text-white">Finalitzar sessió</button>
-  </div>
-
   <!-- Landing Page -->
   <section id="landing-screen" class="screen flex-1 flex flex-col items-center justify-center text-center">
     <h1 class="text-4xl font-bold mb-4">Harmonia Arcana</h1>
@@ -26,7 +19,7 @@
 
   <!-- Carrusel API Key -->
   <section id="carousel-screen" class="screen hidden flex-1 max-w-md mx-auto card-bg p-6 rounded-xl">
-    <h2 id="carousel-title" class="text-2xl font-bold mb-4">Configuració de Clau API</h2>
+    <h2 class="text-2xl font-bold mb-4">Configuració de Clau API</h2>
     <div id="carousel-content" class="mb-4">
       <div class="carousel-step">Pas 1: Accedeix a Hugging Face i accepta la llicència del model Llama 3.1</div>
       <div class="carousel-step hidden">Pas 2: Crea un token personal (amb permisos d'inferència).</div>
@@ -78,7 +71,7 @@
         <span id="music-status-text">Aturada</span>
       </div>
     </div>
-    <textarea id="transcript-preview" readonly class="w-full h-24 bg-transparent border border-gray-600 rounded-md p-2 text-smmb-4 text-gray-300 flex-1"></textarea>
+    <textarea id="transcript-preview" readonly class="w-full h-24 bg-transparent border border-gray-600 rounded-md p-2 text-sm mb-4 text-gray-300"></textarea>
     <div id="effect-buttons" class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
       <button data-effect="espasa" class="btn-control">Espasa</button>
       <button data-effect="rugit" class="btn-control">Rugit</button>
